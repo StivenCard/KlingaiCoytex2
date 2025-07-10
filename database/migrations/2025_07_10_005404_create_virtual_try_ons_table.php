@@ -19,7 +19,6 @@ return new class extends Migration
             $table->integer('output_count')->default(1);
             $table->json('result_image_paths')->nullable(); // URLs de resultados guardados
             $table->enum('status', ['submitted', 'processing', 'completed', 'failed'])->default('submitted');
-            $table->text('task_status_msg')->nullable();
             $table->timestamps();
         });
     }

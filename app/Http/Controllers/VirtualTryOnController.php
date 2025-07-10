@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Services\KlingAi\KlingApiService;
 use App\Services\KlingAi\ImageProcessingService;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 class VirtualTryOnController extends Controller
 {
@@ -20,13 +21,38 @@ class VirtualTryOnController extends Controller
 
     public function show()
     {
-        return view('virtual-try-on');
+        // Obtener modelos default disponibles
+        $defaultModels = $this->getDefaultModels();
+
+        return view('virtual-try-on', compact('defaultModels'));
+    }
+
+    public function getDefaultModels()
+    {
+        $modelsPath = public_path('klingai/default_models');
+        $defaultModels = [];
+
+        if (is_dir($modelsPath)) {
+            $files = scandir($modelsPath);
+            foreach ($files as $file) {
+                if (in_array(pathinfo($file, PATHINFO_EXTENSION), ['jpg', 'jpeg', 'png'])) {
+                    $defaultModels[] = [
+                        'filename' => $file,
+                        'url' => asset('klingai/default_models/' . $file),
+                        'name' => pathinfo($file, PATHINFO_FILENAME)
+                    ];
+                }
+            }
+        }
+
+        return $defaultModels;
     }
 
     public function generate(Request $request)
     {
         $request->validate([
             'model_source' => 'required|in:virtual,default,upload',
+            'selected_default_model' => 'required_if:model_source,default|string',
             'human_image' => 'required_if:model_source,upload|file|image|max:10240',
             'garment_type' => 'required|in:single,multiple',
             'single_garment' => 'required_if:garment_type,single|file|image|max:10240',
@@ -36,6 +62,9 @@ class VirtualTryOnController extends Controller
         ]);
 
         try {
+            // Guardar imágenes localmente
+            $storedPaths = $this->saveInputImages($request);
+
             // Procesar imagen del modelo humano
             $humanImage = $this->processHumanImage($request);
 
@@ -53,17 +82,23 @@ class VirtualTryOnController extends Controller
             // Llamada a la API
             $response = $this->apiService->virtualTryOn($payload);
 
-            // Log de request y response
-            Log::channel('api')->info('Virtual Try-On Request', [
-                'payload' => $payload,
-                'response' => $response,
+            // Log simple
+            Log::info('Virtual Try-On Request', [
+                'task_id' => $response['data']['task_id'] ?? null,
+                'model_source' => $request->input('model_source'),
+                'garment_type' => $request->input('garment_type'),
+                'stored_paths' => $storedPaths,
+                'response_code' => $response['code'] ?? null,
                 'timestamp' => now(),
             ]);
 
             return response()->json($response);
 
         } catch (\Exception $e) {
-            Log::error('Virtual Try-On Error', ['error' => $e->getMessage()]);
+            Log::error('Virtual Try-On Error', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
             return response()->json(['error' => $e->getMessage()], 422);
         }
     }
@@ -72,16 +107,105 @@ class VirtualTryOnController extends Controller
     {
         try {
             $response = $this->apiService->checkTaskStatus($taskId);
-            Log::channel('api')->info('Virtual Try-On Status', [
+
+            // Descargar y guardar resultados si están listos
+            if (isset($response['data']['task_status']) && $response['data']['task_status'] === 'succeed') {
+                $savedResults = $this->saveResultImages($response['data']['task_result']['images'] ?? []);
+
+                Log::info('Virtual Try-On Results Saved', [
+                    'task_id' => $taskId,
+                    'saved_results' => $savedResults,
+                    'timestamp' => now(),
+                ]);
+            }
+
+            Log::info('Virtual Try-On Status Check', [
                 'task_id' => $taskId,
-                'response' => $response,
+                'status' => $response['data']['task_status'] ?? 'unknown',
+                'has_results' => isset($response['data']['task_result']),
                 'timestamp' => now(),
             ]);
+
             return response()->json($response);
         } catch (\Exception $e) {
-            Log::error('Virtual Try-On Status Error', ['error' => $e->getMessage()]);
+            Log::error('Virtual Try-On Status Error', [
+                'task_id' => $taskId,
+                'error' => $e->getMessage()
+            ]);
             return response()->json(['error' => $e->getMessage()], 422);
         }
+    }
+
+    // Guardar imágenes de entrada
+    private function saveInputImages(Request $request): array
+    {
+        $savedPaths = [];
+
+        try {
+            // Guardar imagen del modelo humano
+            if ($request->model_source === 'upload' && $request->hasFile('human_image')) {
+                $savedPaths['human_image'] = $this->imageService->saveImage(
+                    $request->file('human_image'),
+                    'klingai/tryon_inputs/human',
+                    'human_'
+                );
+            } elseif ($request->model_source === 'default') {
+                // Registrar qué modelo default se usó
+                $savedPaths['selected_default_model'] = $request->input('selected_default_model');
+            }
+
+            // Guardar imagen(es) de prenda
+            if ($request->garment_type === 'single' && $request->hasFile('single_garment')) {
+                $savedPaths['garment_image'] = $this->imageService->saveImage(
+                    $request->file('single_garment'),
+                    'klingai/tryon_inputs/garments',
+                    'single_'
+                );
+            } elseif ($request->garment_type === 'multiple') {
+                if ($request->hasFile('top_garment') && $request->hasFile('bottom_garment')) {
+                    $savedPaths['combined_garment'] = $this->imageService->saveCombinedImage(
+                        $request->file('top_garment'),
+                        $request->file('bottom_garment'),
+                        'klingai/combined_garments'
+                    );
+                }
+            }
+
+            return $savedPaths;
+        } catch (\Exception $e) {
+            Log::warning('Error saving input images', ['error' => $e->getMessage()]);
+            return [];
+        }
+    }
+
+    // Guardar resultados de la API
+    private function saveResultImages(array $images): array
+    {
+        $savedResults = [];
+
+        foreach ($images as $image) {
+            try {
+                $savedPath = $this->imageService->downloadAndSaveImage(
+                    $image['url'],
+                    'klingai/tryon_results',
+                    'result_'
+                );
+
+                $savedResults[] = [
+                    'index' => $image['index'],
+                    'original_url' => $image['url'],
+                    'saved_path' => $savedPath,
+                    'local_url' => Storage::url($savedPath)
+                ];
+            } catch (\Exception $e) {
+                Log::warning('Error saving result image', [
+                    'url' => $image['url'],
+                    'error' => $e->getMessage()
+                ]);
+            }
+        }
+
+        return $savedResults;
     }
 
     private function processHumanImage(Request $request)
@@ -90,12 +214,11 @@ class VirtualTryOnController extends Controller
             return $this->imageService->convertToBase64($request->file('human_image'));
         }
         if ($request->model_source === 'virtual') {
-            // Aquí deberías obtener el base64 de un modelo virtual generado previamente
-            // Por simplicidad, retorna un string de ejemplo
+            // TODO: Obtener base64 de modelo virtual generado
             return 'base64-string-of-virtual-model';
         }
-        // Default model
-        return $this->getDefaultModel();
+        // Default model seleccionado
+        return $this->imageService->getSelectedDefaultModelBase64($request->input('selected_default_model'));
     }
 
     private function processGarments(Request $request)
@@ -108,13 +231,5 @@ class VirtualTryOnController extends Controller
             $request->file('top_garment'),
             $request->file('bottom_garment')
         );
-    }
-
-    private function getDefaultModel()
-    {
-        // Retorna el base64 de una imagen predefinida (puedes cargarla desde storage o public)
-        $path = public_path('default-models/model1.png');
-        $image = \Intervention\Image\Facades\Image::make($path);
-        return base64_encode($image->encode('png'));
     }
 }
