@@ -529,7 +529,8 @@ function checkTaskStatus(taskId) {
                     const result = resultsHistory.find(r => r.task_id === taskId);
                     if (result) {
                         result.status = 'completed';
-                        result.result_image_paths = response.data.task_result.images.map(img => img.url);
+                        // 🔥 USAR URLs LOCALES EN LUGAR DE URLs EXTERNAS
+                        result.result_image_paths = response.data.local_images || [];
                         updateResultInHistory(result);
                     }
                     resetGenerateButton();

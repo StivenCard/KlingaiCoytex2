@@ -112,27 +112,6 @@ class ImageProcessingService
         }
     }
 
-    // 🔥 NUEVO: Obtener imagen default como base64
-    public function getDefaultModelBase64(): string
-    {
-        $defaultModels = [
-            'model1.jpg',
-            'model2.jpg',
-            'model3.jpg'
-        ];
-
-        foreach ($defaultModels as $model) {
-            $path = public_path('klingai/default_models/' . $model);
-            if (file_exists($path)) {
-                $image = Image::make($path);
-                return base64_encode($image->encode('png'));
-            }
-        }
-
-        // Si no existe ningún modelo default, crear placeholder
-        return $this->createPlaceholderImage();
-    }
-
     // 🔥 NUEVO: Crear imagen placeholder
     private function createPlaceholderImage(): string
     {
