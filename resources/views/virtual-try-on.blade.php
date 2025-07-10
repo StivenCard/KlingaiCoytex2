@@ -1,293 +1,574 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <title>AI Virtual Try-On</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        /* 🔥 NUEVO: Estilos para modelos default */
-        .model-card {
-            cursor: pointer;
-            transition: all 0.3s ease;
-            border: 2px solid transparent;
-        }
+@extends('layouts.app')
 
-        .model-card:hover {
-            border-color: #0d6efd;
-            transform: translateY(-2px);
-        }
+@section('content')
+<!-- HEADER -->
+<header class="main-header">
+    <div class="main-tabs">
+        <a href="#" class="main-tab">Virtual Model</a>
+        <a href="#" class="main-tab active">AI Virtual Try-On</a>
 
-        .model-card.selected {
-            border-color: #0d6efd;
-            background-color: #e7f3ff;
-        }
+        <div class="help-icons">
+            <a href="#" class="help-icon">
+                <i class="far fa-question-circle"></i>
+                User Guide
+            </a>
+            <a href="#" class="help-icon">
+                <i class="far fa-lightbulb"></i>
+                Guideline
+            </a>
+        </div>
+    </div>
+</header>
 
-        .model-image {
-            height: 250px;
-            object-fit: cover;
-            object-position: center;
-            width: 100%;
-        }
+<!-- MAIN CONTAINER -->
+<div class="main-container">
+    <!-- LEFT PANEL -->
+    <div class="left-panel">
+        <!-- MODEL SELECTION TABS -->
+        <div class="sub-tabs">
+            <button class="sub-tab" data-tab="virtual">Virtual Model</button>
+            <button class="sub-tab active" data-tab="default">Default</button>
+            <button class="sub-tab" data-tab="upload">Upload</button>
+        </div>
 
-        .model-radio {
-            display: none;
-        }
+        <!-- MODEL GRID CONTAINER -->
+        <div class="model-grid-container">
+            <!-- VIRTUAL MODELS SECTION -->
+            <div class="tab-content d-none" data-content="virtual">
+                <div class="model-grid" id="virtualModelGrid">
+                    <!-- Virtual models will be loaded here -->
+                </div>
+            </div>
 
-        .model-label {
-            margin: 0;
-            padding: 10px;
-            text-align: center;
-            font-weight: 500;
-            color: #495057;
-        }
-
-        .model-card.selected .model-label {
-            color: #0d6efd;
-            font-weight: 600;
-        }
-
-        .selected-indicator {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background: #0d6efd;
-            color: white;
-            border-radius: 50%;
-            width: 24px;
-            height: 24px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 12px;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        }
-
-        .model-card.selected .selected-indicator {
-            opacity: 1;
-        }
-    </style>
-</head>
-<body>
-<div class="container py-4">
-    <h1 class="text-center mb-4">AI Virtual Try-On</h1>
-    <form id="tryOnForm" enctype="multipart/form-data">
-        @csrf
-        <div class="mb-3">
-            <label>Modelo:</label>
-            <select name="model_source" class="form-select" id="modelSource">
-                <option value="default">Default</option>
-                <option value="upload">Upload</option>
-            </select>
-
-            <!-- 🔥 ARREGLADO: Selección de modelos default -->
-            <div id="defaultModelSelection" class="mt-3">
-                <label class="form-label">Selecciona un modelo:</label>
-                <div class="row">
+            <!-- DEFAULT MODELS SECTION -->
+            <div class="tab-content" data-content="default">
+                <div class="model-grid" id="defaultModelGrid">
                     @forelse($defaultModels as $model)
-                        <div class="col-lg-3 col-md-4 col-sm-6 mb-3">
-                            <div class="card model-card h-100" data-model="{{ $model['filename'] }}">
-                                <div class="position-relative">
-                                    <img src="{{ $model['url'] }}" class="model-image" alt="{{ $model['name'] }}">
-                                    <div class="selected-indicator">
-                                        <i class="fas fa-check"></i>✓
-                                    </div>
-                                </div>
-                                <div class="card-body p-0">
-                                    <input class="model-radio" type="radio" name="selected_default_model" value="{{ $model['filename'] }}" id="model_{{ $loop->index }}">
-                                    <label class="model-label w-100" for="model_{{ $loop->index }}">
-                                        {{ $model['name'] }}
-                                    </label>
-                                </div>
-                            </div>
+                        <div class="model-item" data-model="{{ $model['filename'] }}">
+                            <img src="{{ $model['url'] }}" alt="{{ $model['name'] }}">
+                            <input type="radio" name="selected_default_model" value="{{ $model['filename'] }}" class="d-none">
                         </div>
                     @empty
-                        <div class="col-12">
-                            <div class="alert alert-warning">
-                                No hay modelos default disponibles. Coloca imágenes en <code>public/klingai/default_models/</code>
+                        <div style="grid-column: 1 / -1; text-align: center; padding: 40px;">
+                            <div style="color: var(--text-secondary);">
+                                <i class="fas fa-images" style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;"></i>
+                                <p>No hay modelos default disponibles</p>
+                                <small>Coloca imágenes en public/klingai/default_models/</small>
                             </div>
                         </div>
                     @endforelse
                 </div>
             </div>
 
-            <!-- 🔥 EXISTENTE: Upload de modelo -->
-            <div id="uploadModelSection" class="mt-3" style="display: none;">
-                <input type="file" name="human_image" class="form-control" accept=".jpg,.jpeg,.png">
+            <!-- UPLOAD MODELS SECTION -->
+            <div class="tab-content d-none" data-content="upload">
+                <div class="upload-area" id="humanUploadArea" onclick="triggerFileInput('humanImageInput')">
+                    <div class="upload-icon">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                    </div>
+                    <div class="upload-text">Upload Human Model</div>
+                    <input type="file" id="humanImageInput" name="human_image" accept=".jpg,.jpeg,.png" class="file-input">
+
+                    <!-- PREVIEW -->
+                    <div class="image-preview" id="humanPreview">
+                        <img src="" alt="Preview">
+                        <button class="remove-btn" onclick="clearFileInput('humanImageInput', 'humanUploadArea', 'humanPreview')">
+                            <i class="fas fa-times"></i>
+                        </button>
+                        <button class="reupload-btn" onclick="triggerFileInput('humanImageInput')">
+                            <i class="fas fa-upload"></i>
+                            Re-upload
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <div class="mb-3">
-            <label>Tipo de prenda:</label>
-            <select name="garment_type" class="form-select" id="garmentType">
-                <option value="single">Single</option>
-                <option value="multiple">Multiple</option>
+        <!-- GARMENT SECTION -->
+        <div class="garment-section">
+            <!-- GARMENT TABS -->
+            <div class="garment-tabs">
+                <button class="garment-tab active" data-garment="single">Single Garment</button>
+                <button class="garment-tab" data-garment="multiple">Multiple Garments</button>
+            </div>
+
+            <!-- SINGLE GARMENT -->
+            <div class="garment-content" data-garment-content="single">
+                <div class="upload-area" id="singleUploadArea" onclick="triggerFileInput('singleGarmentInput')">
+                    <div class="upload-icon">
+                        <i class="fas fa-tshirt"></i>
+                    </div>
+                    <div class="upload-text">Upload Single Garment</div>
+                    <input type="file" id="singleGarmentInput" name="single_garment" accept=".jpg,.jpeg,.png" class="file-input">
+
+                    <!-- PREVIEW -->
+                    <div class="image-preview" id="singlePreview">
+                        <img src="" alt="Preview">
+                        <button class="remove-btn" onclick="clearFileInput('singleGarmentInput', 'singleUploadArea', 'singlePreview')">
+                            <i class="fas fa-times"></i>
+                        </button>
+                        <button class="reupload-btn" onclick="triggerFileInput('singleGarmentInput')">
+                            <i class="fas fa-upload"></i>
+                            Re-upload
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MULTIPLE GARMENTS -->
+            <div class="garment-content d-none" data-garment-content="multiple">
+                <div class="upload-area" id="topUploadArea" onclick="triggerFileInput('topGarmentInput')" style="margin-bottom: 12px;">
+                    <div class="upload-icon">
+                        <i class="fas fa-tshirt"></i>
+                    </div>
+                    <div class="upload-text">Upload Top Garment</div>
+                    <input type="file" id="topGarmentInput" name="top_garment" accept=".jpg,.jpeg,.png" class="file-input">
+
+                    <!-- PREVIEW -->
+                    <div class="image-preview" id="topPreview">
+                        <img src="" alt="Preview">
+                        <button class="remove-btn" onclick="clearFileInput('topGarmentInput', 'topUploadArea', 'topPreview')">
+                            <i class="fas fa-times"></i>
+                        </button>
+                        <button class="reupload-btn" onclick="triggerFileInput('topGarmentInput')">
+                            <i class="fas fa-upload"></i>
+                            Re-upload
+                        </button>
+                    </div>
+                </div>
+
+                <div class="upload-area" id="bottomUploadArea" onclick="triggerFileInput('bottomGarmentInput')">
+                    <div class="upload-icon">
+                        <i class="fas fa-tshirt"></i>
+                    </div>
+                    <div class="upload-text">Upload Bottom Garment</div>
+                    <input type="file" id="bottomGarmentInput" name="bottom_garment" accept=".jpg,.jpeg,.png" class="file-input">
+
+                    <!-- PREVIEW -->
+                    <div class="image-preview" id="bottomPreview">
+                        <img src="" alt="Preview">
+                        <button class="remove-btn" onclick="clearFileInput('bottomGarmentInput', 'bottomUploadArea', 'bottomPreview')">
+                            <i class="fas fa-times"></i>
+                        </button>
+                        <button class="reupload-btn" onclick="triggerFileInput('bottomGarmentInput')">
+                            <i class="fas fa-upload"></i>
+                            Re-upload
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- OUTPUT SELECTOR -->
+            <select class="output-selector" name="output_count">
+                <option value="1">1 Output</option>
+                <option value="2">2 Outputs</option>
+                <option value="3">3 Outputs</option>
+                <option value="4">4 Outputs</option>
             </select>
+
+            <!-- GENERATE BUTTON -->
+            <button class="generate-btn" id="generateBtn">
+                <i class="fas fa-magic"></i>
+                Generate
+            </button>
+        </div>
+    </div>
+
+    <!-- RIGHT PANEL -->
+    <div class="right-panel">
+        <div class="results-header">
+            <i class="fas fa-images"></i>
+            <span>AI Outfit</span>
         </div>
 
-        <div class="mb-3" id="singleGarment">
-            <label>Prenda:</label>
-            <input type="file" name="single_garment" class="form-control" accept=".jpg,.jpeg,.png">
+        <div class="results-content">
+            <div class="result-section">
+                <div id="resultsContainer">
+                    <!-- Results will be loaded here -->
+                </div>
+            </div>
         </div>
-
-        <div class="mb-3 d-none" id="multipleGarments">
-            <label>Top:</label>
-            <input type="file" name="top_garment" class="form-control mb-2" accept=".jpg,.jpeg,.png">
-            <label>Bottom:</label>
-            <input type="file" name="bottom_garment" class="form-control" accept=".jpg,.jpeg,.png">
-        </div>
-
-        <div class="mb-3">
-            <label>Cantidad de resultados:</label>
-            <select name="output_count" class="form-select">
-                @for ($i = 1; $i <= 4; $i++)
-                    <option value="{{ $i }}">{{ $i }}</option>
-                @endfor
-            </select>
-        </div>
-
-        <button type="submit" class="btn btn-primary w-100" id="generateBtn">Generar</button>
-    </form>
-
-    <div id="resultsContainer" class="mt-4" style="display:none;">
-        <h4>Resultados</h4>
-        <div id="gallery" class="row"></div>
     </div>
 </div>
 
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<!-- HIDDEN FORM FOR SUBMISSION -->
+<form id="hiddenForm" style="display: none;" enctype="multipart/form-data">
+    @csrf
+    <input type="hidden" name="model_source" id="hiddenModelSource">
+    <input type="hidden" name="selected_default_model" id="hiddenSelectedModel">
+    <input type="hidden" name="garment_type" id="hiddenGarmentType" value="single">
+    <input type="hidden" name="output_count" id="hiddenOutputCount" value="1">
+</form>
+
+<!-- 🔥 NUEVO: PASAR DATOS DEL SERVIDOR A JAVASCRIPT -->
 <script>
-// 🔥 NUEVO: Manejar selección de modelos default
-$(document).on('click', '.model-card', function() {
-    // Remover selección anterior
-    $('.model-card').removeClass('selected');
+    window.existingTryOns = @json($existingTryOns);
+</script>
+@endsection
 
-    // Agregar selección actual
-    $(this).addClass('selected');
+@push('scripts')
+<script>
+// GLOBAL VARIABLES
+let resultsHistory = [];
 
-    // Marcar el radio button correspondiente
-    const modelFilename = $(this).data('model');
-    $(`input[value="${modelFilename}"]`).prop('checked', true);
-
-    console.log('Modelo seleccionado:', modelFilename);
-});
-
-// 🔥 EXISTENTE: Manejar selección de tipo de modelo
-$('#modelSource').change(function() {
-    if ($(this).val() === 'upload') {
-        $('#defaultModelSelection').hide();
-        $('#uploadModelSection').show();
+$(document).ready(function() {
+    // 🔥 CAMBIO 4: CARGAR RESULTADOS EXISTENTES DEL SERVIDOR
+    if (window.existingTryOns && window.existingTryOns.length > 0) {
+        resultsHistory = window.existingTryOns;
+        renderResultsHistory();
     } else {
-        $('#defaultModelSelection').show();
-        $('#uploadModelSection').hide();
-        // Limpiar selección cuando cambie a default
-        $('.model-card').removeClass('selected');
+        showEmptyState();
+    }
+
+    // TAB SWITCHING
+    $('.sub-tab').click(function() {
+        const tab = $(this).data('tab');
+
+        $('.sub-tab').removeClass('active');
+        $(this).addClass('active');
+
+        $('.tab-content').addClass('d-none');
+        $(`[data-content="${tab}"]`).removeClass('d-none');
+
+        $('#hiddenModelSource').val(tab);
+
+        $('.model-item').removeClass('selected');
         $('input[name="selected_default_model"]').prop('checked', false);
-    }
-});
+        $('#hiddenSelectedModel').val('');
+    });
 
-// 🔥 EXISTENTE: Manejar tipo de prenda
-$('#garmentType').change(function() {
-    if ($(this).val() === 'multiple') {
-        $('#singleGarment').addClass('d-none');
-        $('#multipleGarments').removeClass('d-none');
-    } else {
-        $('#singleGarment').removeClass('d-none');
-        $('#multipleGarments').addClass('d-none');
-    }
-});
+    // GARMENT TAB SWITCHING
+    $('.garment-tab').click(function() {
+        const garment = $(this).data('garment');
 
-// 🔥 MEJORADO: Validación de formulario
-$('#tryOnForm').on('submit', function(e) {
-    e.preventDefault();
+        $('.garment-tab').removeClass('active');
+        $(this).addClass('active');
 
-    // Validar modelo default seleccionado
-    if ($('#modelSource').val() === 'default') {
-        if (!$('input[name="selected_default_model"]:checked').length) {
-            alert('Por favor selecciona un modelo default');
-            return;
-        }
-    }
+        $('.garment-content').addClass('d-none');
+        $(`[data-garment-content="${garment}"]`).removeClass('d-none');
 
-    // Validar prendas
-    const garmentType = $('#garmentType').val();
-    if (garmentType === 'single') {
-        if (!$('input[name="single_garment"]')[0].files.length) {
-            alert('Por favor selecciona una prenda');
-            return;
-        }
-    } else {
-        if (!$('input[name="top_garment"]')[0].files.length || !$('input[name="bottom_garment"]')[0].files.length) {
-            alert('Por favor selecciona tanto el top como el bottom');
-            return;
-        }
-    }
+        $('#hiddenGarmentType').val(garment);
+    });
 
-    let formData = new FormData(this);
-    $('#generateBtn').prop('disabled', true);
-    $('#resultsContainer').show();
-    $('#gallery').html('<div class="col-12 text-center py-5"><p>Generando resultados...</p></div>');
+    // MODEL SELECTION
+    $(document).on('click', '.model-item', function() {
+        $('.model-item').removeClass('selected');
+        $(this).addClass('selected');
 
-    // 🔥 DEBUG: Verificar qué se está enviando
-    console.log('Enviando formulario...');
-    console.log('Modelo seleccionado:', $('input[name="selected_default_model"]:checked').val());
-    console.log('Tipo de modelo:', $('#modelSource').val());
+        const modelValue = $(this).data('model');
+        $(this).find('input[name="selected_default_model"]').prop('checked', true);
+        $('#hiddenSelectedModel').val(modelValue);
+    });
 
-    $.ajax({
-        url: "{{ route('virtual-try-on.generate') }}",
-        type: 'POST',
-        data: formData,
-        processData: false,
-        contentType: false,
-        success: function(response) {
-            console.log('Respuesta exitosa:', response);
-            if (response.data && response.data.task_id) {
-                checkTaskStatus(response.data.task_id);
-            } else {
-                $('#gallery').html('<div class="col-12 alert alert-danger">Error en la generación</div>');
-                $('#generateBtn').prop('disabled', false);
-            }
-        },
-        error: function(xhr) {
-            console.log('Error en la petición:', xhr.responseJSON);
-            $('#gallery').html('<div class="col-12 alert alert-danger">'+(xhr.responseJSON?.error || 'Error del servidor')+'</div>');
-            $('#generateBtn').prop('disabled', false);
+    // OUTPUT COUNT UPDATE
+    $('.output-selector').change(function() {
+        $('#hiddenOutputCount').val($(this).val());
+    });
+
+    // FILE INPUT HANDLERS CON PREVIEW
+    $('#humanImageInput').change(function() {
+        if (this.files.length > 0) {
+            showImagePreview(this.files[0], 'humanPreview', 'humanUploadArea');
         }
     });
+
+    $('#singleGarmentInput').change(function() {
+        if (this.files.length > 0) {
+            showImagePreview(this.files[0], 'singlePreview', 'singleUploadArea');
+        }
+    });
+
+    $('#topGarmentInput').change(function() {
+        if (this.files.length > 0) {
+            showImagePreview(this.files[0], 'topPreview', 'topUploadArea');
+        }
+    });
+
+    $('#bottomGarmentInput').change(function() {
+        if (this.files.length > 0) {
+            showImagePreview(this.files[0], 'bottomPreview', 'bottomUploadArea');
+        }
+    });
+
+    // GENERATE BUTTON
+    $('#generateBtn').click(function() {
+        const modelSource = $('#hiddenModelSource').val() || 'default';
+        const garmentType = $('#hiddenGarmentType').val();
+
+        // Validation
+        if (modelSource === 'default' && !$('#hiddenSelectedModel').val()) {
+            alert('Please select a default model');
+            return;
+        }
+
+        if (modelSource === 'upload' && !$('#humanImageInput')[0].files.length) {
+            alert('Please upload a human model image');
+            return;
+        }
+
+        if (garmentType === 'single' && !$('#singleGarmentInput')[0].files.length) {
+            alert('Please upload a garment');
+            return;
+        }
+
+        if (garmentType === 'multiple') {
+            if (!$('#topGarmentInput')[0].files.length || !$('#bottomGarmentInput')[0].files.length) {
+                alert('Please upload both top and bottom garments');
+                return;
+            }
+        }
+
+        // Prepare FormData
+        const formData = new FormData();
+        formData.append('_token', $('input[name="_token"]').val());
+        formData.append('model_source', modelSource);
+        formData.append('garment_type', garmentType);
+        formData.append('output_count', $('#hiddenOutputCount').val());
+
+        if (modelSource === 'default') {
+            formData.append('selected_default_model', $('#hiddenSelectedModel').val());
+        } else if (modelSource === 'upload') {
+            formData.append('human_image', $('#humanImageInput')[0].files[0]);
+        }
+
+        if (garmentType === 'single') {
+            formData.append('single_garment', $('#singleGarmentInput')[0].files[0]);
+        } else {
+            formData.append('top_garment', $('#topGarmentInput')[0].files[0]);
+            formData.append('bottom_garment', $('#bottomGarmentInput')[0].files[0]);
+        }
+
+        // UI feedback
+        $(this).prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Generating...');
+
+        // Create temporary result entry
+        const tempResult = {
+            id: 'temp_' + Date.now(),
+            model_type: modelSource,
+            garments_type: garmentType,
+            status: 'processing',
+            created_at: new Date().toISOString(),
+            task_id: null,
+            result_image_paths: []
+        };
+
+        addResultToHistory(tempResult);
+
+        // AJAX call
+        $.ajax({
+            url: "{{ route('virtual-try-on.generate') }}",
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function(response) {
+                console.log('Success:', response);
+                if (response.data && response.data.task_id) {
+                    tempResult.task_id = response.data.task_id;
+                    updateResultInHistory(tempResult);
+                    checkTaskStatus(response.data.task_id);
+                } else {
+                    tempResult.status = 'failed';
+                    updateResultInHistory(tempResult);
+                    resetGenerateButton();
+                }
+            },
+            error: function(xhr) {
+                console.log('Error:', xhr.responseJSON);
+                tempResult.status = 'failed';
+                updateResultInHistory(tempResult);
+                resetGenerateButton();
+            }
+        });
+    });
+
+    // Initialize
+    $('#hiddenModelSource').val('default');
+    loadVirtualModels();
 });
 
-// 🔥 EXISTENTE: Polling de estado
+// 🔥 CORREGIDO: FUNCIÓN PARA TRIGGER FILE INPUT
+function triggerFileInput(inputId) {
+    event.stopPropagation();
+    document.getElementById(inputId).click();
+}
+
+// MOSTRAR PREVIEW DE IMAGEN
+function showImagePreview(file, previewId, uploadAreaId) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const preview = document.getElementById(previewId);
+        const uploadArea = document.getElementById(uploadAreaId);
+
+        preview.querySelector('img').src = e.target.result;
+        preview.style.display = 'block';
+        uploadArea.classList.add('has-file');
+
+        // Hide upload content
+        uploadArea.querySelector('.upload-icon').style.display = 'none';
+        uploadArea.querySelector('.upload-text').style.display = 'none';
+    };
+    reader.readAsDataURL(file);
+}
+
+// LIMPIAR INPUT DE ARCHIVO
+function clearFileInput(inputId, uploadAreaId, previewId) {
+    event.stopPropagation();
+
+    const input = document.getElementById(inputId);
+    const uploadArea = document.getElementById(uploadAreaId);
+    const preview = document.getElementById(previewId);
+
+    input.value = '';
+    preview.style.display = 'none';
+    uploadArea.classList.remove('has-file');
+
+    // Show upload content
+    uploadArea.querySelector('.upload-icon').style.display = 'block';
+    uploadArea.querySelector('.upload-text').style.display = 'block';
+}
+
+// MOSTRAR ESTADO VACÍO
+function showEmptyState() {
+    $('#resultsContainer').html(`
+        <div id="emptyState" class="text-center" style="padding: 60px 20px; color: var(--text-secondary);">
+            <i class="fas fa-tshirt" style="font-size: 48px; margin-bottom: 16px; opacity: 0.3;"></i>
+            <p>No results yet</p>
+            <small>Complete the form to generate your first try-on</small>
+        </div>
+    `);
+}
+
+// AGREGAR RESULTADO AL HISTORIAL
+function addResultToHistory(result) {
+    resultsHistory.unshift(result);
+    renderResultsHistory();
+}
+
+// ACTUALIZAR RESULTADO EN HISTORIAL
+function updateResultInHistory(updatedResult) {
+    const index = resultsHistory.findIndex(r => r.id === updatedResult.id || r.task_id === updatedResult.task_id);
+    if (index !== -1) {
+        resultsHistory[index] = { ...resultsHistory[index], ...updatedResult };
+        renderResultsHistory();
+    }
+}
+
+// RENDERIZAR HISTORIAL
+function renderResultsHistory() {
+    const container = $('#resultsContainer');
+
+    if (resultsHistory.length === 0) {
+        showEmptyState();
+        return;
+    }
+
+    let html = '';
+
+    resultsHistory.forEach((result, index) => {
+        const statusClass = result.status === 'completed' ? 'status-completed' :
+                           result.status === 'processing' ? 'status-processing' : 'status-failed';
+
+        const date = new Date(result.created_at).toLocaleString();
+
+        html += `
+            <div class="result-group">
+                <div class="result-group-header">
+                    <div class="result-group-info">
+                        <div><strong>Task ${result.task_id || 'Pending'}</strong></div>
+                        <div>${date}</div>
+                        <div>Model: ${result.model_type} | Garments: ${result.garments_type}</div>
+                    </div>
+                    <div class="result-group-status ${statusClass}">
+                        ${result.status.toUpperCase()}
+                    </div>
+                </div>
+                <div class="result-grid" id="result-grid-${index}">
+        `;
+
+        if (result.result_image_paths && result.result_image_paths.length > 0) {
+            result.result_image_paths.forEach((path, imgIndex) => {
+                html += `
+                    <div class="result-item">
+                        <img src="${path}" alt="Result ${imgIndex + 1}">
+                    </div>
+                `;
+            });
+        } else if (result.status === 'processing') {
+            html += `
+                <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--text-secondary);">
+                    <div class="spinner-border text-primary" role="status"></div>
+                    <p style="margin-top: 16px;">Processing...</p>
+                </div>
+            `;
+        } else {
+            html += `
+                <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--text-secondary);">
+                    <i class="fas fa-exclamation-circle" style="font-size: 32px; margin-bottom: 16px; opacity: 0.5;"></i>
+                    <p>No results available</p>
+                </div>
+            `;
+        }
+
+        html += `
+                </div>
+            </div>
+        `;
+    });
+
+    container.html(html);
+}
+
+// POLLING FUNCTION (UPDATED)
 function checkTaskStatus(taskId) {
     setTimeout(function poll() {
         $.get(`/virtual-try-on/status/${taskId}`, function(response) {
             if (response.data) {
                 const status = response.data.task_status;
                 if (status === 'succeed') {
-                    displayResults(response.data.task_result.images);
+                    const result = resultsHistory.find(r => r.task_id === taskId);
+                    if (result) {
+                        result.status = 'completed';
+                        result.result_image_paths = response.data.task_result.images.map(img => img.url);
+                        updateResultInHistory(result);
+                    }
+                    resetGenerateButton();
                 } else if (status === 'processing' || status === 'submitted') {
                     setTimeout(poll, 3000);
                 } else {
-                    $('#gallery').html('<div class="col-12 alert alert-danger">'+(response.data.task_status_msg || 'Task failed')+'</div>');
-                    $('#generateBtn').prop('disabled', false);
+                    const result = resultsHistory.find(r => r.task_id === taskId);
+                    if (result) {
+                        result.status = 'failed';
+                        updateResultInHistory(result);
+                    }
+                    resetGenerateButton();
                 }
-            } else {
-                $('#gallery').html('<div class="col-12 alert alert-danger">Error checking status</div>');
-                $('#generateBtn').prop('disabled', false);
             }
         }).fail(function() {
-            $('#gallery').html('<div class="col-12 alert alert-danger">Error checking task status</div>');
-            $('#generateBtn').prop('disabled', false);
+            const result = resultsHistory.find(r => r.task_id === taskId);
+            if (result) {
+                result.status = 'failed';
+                updateResultInHistory(result);
+            }
+            resetGenerateButton();
         });
     }, 2000);
 }
 
-function displayResults(images) {
-    $('#gallery').empty();
-    images.forEach(image => {
-        $('#gallery').append(`<div class="col-md-6"><img src="${image.url}" class="img-fluid mb-3"></div>`);
-    });
-    $('#generateBtn').prop('disabled', false);
+// RESET GENERATE BUTTON
+function resetGenerateButton() {
+    $('#generateBtn').prop('disabled', false).html('<i class="fas fa-magic"></i> Generate');
+}
+
+// LOAD VIRTUAL MODELS
+function loadVirtualModels() {
+    $('#virtualModelGrid').html(`
+        <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--text-secondary);">
+            <i class="fas fa-user" style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;"></i>
+            <p>No virtual models available</p>
+            <small>Generate virtual models first</small>
+        </div>
+    `);
 }
 </script>
-</body>
-</html>
+@endpush

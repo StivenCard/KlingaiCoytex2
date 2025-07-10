@@ -19,7 +19,6 @@ class VirtualTryOn extends Model
         'output_count',
         'result_image_paths',
         'status',
-        'task_status_msg',
     ];
 
     protected $casts = [

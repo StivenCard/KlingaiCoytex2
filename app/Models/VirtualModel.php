@@ -14,16 +14,16 @@ class VirtualModel extends Model
         'model_name',
         'prompt',
         'gender',
-        'age',
+        'age_group',
         'skin_tone',
         'aspect_ratio',
         'output_count',
         'result_image_paths',
         'status',
-        'task_status_msg',
     ];
 
     protected $casts = [
         'result_image_paths' => 'array',
     ];
 }
+
