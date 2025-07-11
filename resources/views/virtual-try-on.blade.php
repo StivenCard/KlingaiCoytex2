@@ -1,34 +1,19 @@
 @extends('layouts.app')
 
 @section('content')
-<!-- HEADER -->
-<header class="main-header">
-    <div class="main-tabs">
-        <a href="#" class="main-tab">Virtual Model</a>
-        <a href="#" class="main-tab active">AI Virtual Try-On</a>
-
-        <div class="help-icons">
-            <a href="#" class="help-icon">
-                <i class="far fa-question-circle"></i>
-                User Guide
-            </a>
-            <a href="#" class="help-icon">
-                <i class="far fa-lightbulb"></i>
-                Guideline
-            </a>
-        </div>
-    </div>
-</header>
-
-<!-- MAIN CONTAINER -->
+<!-- 🔥 MAIN CONTAINER CON NUEVA ESTRUCTURA -->
 <div class="main-container">
     <!-- LEFT PANEL -->
     <div class="left-panel">
-        <!-- MODEL SELECTION TABS -->
+        <!-- MODEL SELECTION TABS CON INFO BUTTON -->
         <div class="sub-tabs">
             <button class="sub-tab" data-tab="virtual">Virtual Model</button>
             <button class="sub-tab active" data-tab="default">Default</button>
             <button class="sub-tab" data-tab="upload">Upload</button>
+            <!-- 🔥 ICONO DE INFORMACIÓN PARA MODELOS -->
+            <button class="info-btn" id="modelInfoBtn" title="Model Guidelines">
+                <i class="fas fa-info-circle"></i>
+            </button>
         </div>
 
         <!-- MODEL GRID CONTAINER -->
@@ -86,10 +71,16 @@
 
         <!-- GARMENT SECTION -->
         <div class="garment-section">
-            <!-- GARMENT TABS -->
-            <div class="garment-tabs">
-                <button class="garment-tab active" data-garment="single">Single Garment</button>
-                <button class="garment-tab" data-garment="multiple">Multiple Garments</button>
+            <!-- GARMENT TABS CON INFO BUTTON -->
+            <div class="garment-tabs-container">
+                <div class="garment-tabs">
+                    <button class="garment-tab active" data-garment="single">Single Garment</button>
+                    <button class="garment-tab" data-garment="multiple">Multiple Garments</button>
+                </div>
+                <!-- 🔥 ICONO DE INFORMACIÓN PARA PRENDAS -->
+                <button class="info-btn" id="garmentInfoBtn" title="Garment Guidelines">
+                    <i class="fas fa-info-circle"></i>
+                </button>
             </div>
 
             <!-- SINGLE GARMENT -->
@@ -191,6 +182,114 @@
     </div>
 </div>
 
+<!-- 🔥 TOOLTIP PARA MODELOS -->
+<div class="info-tooltip" id="modelTooltip">
+    <div class="tooltip-header">
+        <h6><i class="fas fa-user"></i> Model Guidelines</h6>
+        <button class="tooltip-close" onclick="hideTooltip('modelTooltip')">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+    <div class="tooltip-content">
+        <div class="tooltip-specs">
+            <p><strong>Requirements:</strong></p>
+            <ul>
+                <li>Size: Up to 50MB</li>
+                <li>Resolution: Short side ≥512px, Long side ≤4096px</li>
+                <li>Formats: JPG/PNG</li>
+            </ul>
+        </div>
+
+        <!-- SECCIÓN VÁLIDOS -->
+        <div class="guidelines-section">
+            <h6 class="section-title valid">✓ Follow these guidelines for best results</h6>
+            <div class="guidelines-images-single-row">
+                @forelse($validModels as $model)
+                    <div class="guideline-item-horizontal">
+                        <div class="guideline-image">
+                            <img src="{{ $model['url'] }}" alt="{{ $model['description'] }}">
+                        </div>
+                        <div class="guideline-label valid">{{ $model['description'] }}</div>
+                    </div>
+                @empty
+                    <p class="no-images">No valid models found</p>
+                @endforelse
+            </div>
+        </div>
+
+        <!-- SECCIÓN INVÁLIDOS -->
+        <div class="guidelines-section">
+            <h6 class="section-title invalid">✗ Avoid these examples, as they may reduce quality</h6>
+            <div class="guidelines-images-single-row">
+                @forelse($invalidModels as $model)
+                    <div class="guideline-item-horizontal">
+                        <div class="guideline-image">
+                            <img src="{{ $model['url'] }}" alt="{{ $model['description'] }}">
+                        </div>
+                        <div class="guideline-label invalid">{{ $model['description'] }}</div>
+                    </div>
+                @empty
+                    <p class="no-images">No invalid models found</p>
+                @endforelse
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 🔥 TOOLTIP PARA PRENDAS -->
+<div class="info-tooltip" id="garmentTooltip">
+    <div class="tooltip-header">
+        <h6><i class="fas fa-tshirt"></i> Garment Guidelines</h6>
+        <button class="tooltip-close" onclick="hideTooltip('garmentTooltip')">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+    <div class="tooltip-content">
+        <div class="tooltip-specs">
+            <p><strong>Requirements:</strong></p>
+            <ul>
+                <li>Size: Up to 50MB</li>
+                <li>Resolution: Short side ≥512px, Long side ≤4096px</li>
+                <li>Formats: JPG/PNG</li>
+            </ul>
+        </div>
+
+        <!-- SECCIÓN VÁLIDOS -->
+        <div class="guidelines-section">
+            <h6 class="section-title valid">✓ Follow these guidelines for best results</h6>
+            <div class="guidelines-images-single-row">
+                @forelse($validGarments as $garment)
+                    <div class="guideline-item-horizontal">
+                        <div class="guideline-image">
+                            <img src="{{ $garment['url'] }}" alt="{{ $garment['description'] }}">
+                        </div>
+                        <div class="guideline-label valid">{{ $garment['description'] }}</div>
+                    </div>
+                @empty
+                    <p class="no-images">No valid garments found</p>
+                @endforelse
+            </div>
+        </div>
+
+        <!-- SECCIÓN INVÁLIDOS -->
+        <div class="guidelines-section">
+            <h6 class="section-title invalid">✗ Avoid these examples, as they may reduce quality</h6>
+            <div class="guidelines-images-single-row">
+                @forelse($invalidGarments as $garment)
+                    <div class="guideline-item-horizontal">
+                        <div class="guideline-image">
+                            <img src="{{ $garment['url'] }}" alt="{{ $garment['description'] }}">
+                        </div>
+                        <div class="guideline-label invalid">{{ $garment['description'] }}</div>
+                    </div>
+                @empty
+                    <p class="no-images">No invalid garments found</p>
+                @endforelse
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- HIDDEN FORM FOR SUBMISSION -->
 <form id="hiddenForm" style="display: none;" enctype="multipart/form-data">
     @csrf
@@ -200,7 +299,7 @@
     <input type="hidden" name="output_count" id="hiddenOutputCount" value="1">
 </form>
 
-<!-- 🔥 NUEVO: PASAR DATOS DEL SERVIDOR A JAVASCRIPT -->
+<!-- 🔥 PASAR DATOS SIMPLES DEL MODELO -->
 <script>
     window.existingTryOns = @json($existingTryOns);
 </script>
@@ -212,41 +311,62 @@
 let resultsHistory = [];
 
 $(document).ready(function() {
-    // 🔥 CAMBIO 4: CARGAR RESULTADOS EXISTENTES DEL SERVIDOR
+    // ✅ PROCESAMIENTO SIMPLIFICADO DE DATOS DEL MODELO
     if (window.existingTryOns && window.existingTryOns.length > 0) {
-        resultsHistory = window.existingTryOns;
+        resultsHistory = window.existingTryOns.map(tryOn => ({
+            id: tryOn.id,
+            task_id: tryOn.task_id,
+            model_type: tryOn.model_type,
+            garments_type: tryOn.garments_type,
+            // ✅ TRANSFORMAR STATUS EN FRONTEND
+            status: tryOn.status === 'completed' ? 'completed' : 'processing',
+            created_at: tryOn.created_at,
+            // ✅ CONVERTIR RUTAS A URLS EN FRONTEND
+            result_image_paths: tryOn.result_image_paths ?
+                tryOn.result_image_paths.map(path => `/storage/${path}`) : []
+        }));
         renderResultsHistory();
     } else {
         showEmptyState();
     }
 
+    // 🔥 TOOLTIPS
+    $('#modelInfoBtn').click(function(e) {
+        e.stopPropagation();
+        hideTooltip('garmentTooltip');
+        toggleTooltip('modelTooltip', e.target);
+    });
+
+    $('#garmentInfoBtn').click(function(e) {
+        e.stopPropagation();
+        hideTooltip('modelTooltip');
+        toggleTooltip('garmentTooltip', e.target);
+    });
+
+    $(document).click(function() {
+        hideTooltip('modelTooltip');
+        hideTooltip('garmentTooltip');
+    });
+
     // TAB SWITCHING
     $('.sub-tab').click(function() {
         const tab = $(this).data('tab');
-
         $('.sub-tab').removeClass('active');
         $(this).addClass('active');
-
         $('.tab-content').addClass('d-none');
         $(`[data-content="${tab}"]`).removeClass('d-none');
-
         $('#hiddenModelSource').val(tab);
-
         $('.model-item').removeClass('selected');
         $('input[name="selected_default_model"]').prop('checked', false);
         $('#hiddenSelectedModel').val('');
     });
 
-    // GARMENT TAB SWITCHING
     $('.garment-tab').click(function() {
         const garment = $(this).data('garment');
-
         $('.garment-tab').removeClass('active');
         $(this).addClass('active');
-
         $('.garment-content').addClass('d-none');
         $(`[data-garment-content="${garment}"]`).removeClass('d-none');
-
         $('#hiddenGarmentType').val(garment);
     });
 
@@ -254,18 +374,17 @@ $(document).ready(function() {
     $(document).on('click', '.model-item', function() {
         $('.model-item').removeClass('selected');
         $(this).addClass('selected');
-
         const modelValue = $(this).data('model');
         $(this).find('input[name="selected_default_model"]').prop('checked', true);
         $('#hiddenSelectedModel').val(modelValue);
     });
 
-    // OUTPUT COUNT UPDATE
+    // OUTPUT COUNT
     $('.output-selector').change(function() {
         $('#hiddenOutputCount').val($(this).val());
     });
 
-    // FILE INPUT HANDLERS CON PREVIEW
+    // FILE HANDLERS
     $('#humanImageInput').change(function() {
         if (this.files.length > 0) {
             showImagePreview(this.files[0], 'humanPreview', 'humanUploadArea');
@@ -341,7 +460,7 @@ $(document).ready(function() {
         // UI feedback
         $(this).prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Generating...');
 
-        // Create temporary result entry
+        // Create temporary result
         const tempResult = {
             id: 'temp_' + Date.now(),
             model_type: modelSource,
@@ -387,48 +506,67 @@ $(document).ready(function() {
     loadVirtualModels();
 });
 
-// 🔥 CORREGIDO: FUNCIÓN PARA TRIGGER FILE INPUT
+// ✅ FUNCIONES SIMPLIFICADAS - SIN CAMBIOS MAYORES
+function toggleTooltip(tooltipId, targetElement) {
+    const tooltip = document.getElementById(tooltipId);
+    const rect = targetElement.getBoundingClientRect();
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+
+    if (tooltip.style.display === 'block') {
+        hideTooltip(tooltipId);
+    } else {
+        tooltip.style.display = 'block';
+        let left = rect.left - 450;
+        if (left < 10) left = 10;
+        if (left + 1000 > viewportWidth) left = viewportWidth - 1010;
+        let top = rect.bottom + 10;
+        if (top + 450 > viewportHeight) {
+            top = rect.top - 460;
+        }
+        if (top < 10) {
+            top = (viewportHeight - 450) / 2;
+        }
+        tooltip.style.left = left + 'px';
+        tooltip.style.top = top + 'px';
+    }
+}
+
+function hideTooltip(tooltipId) {
+    document.getElementById(tooltipId).style.display = 'none';
+}
+
 function triggerFileInput(inputId) {
     event.stopPropagation();
     document.getElementById(inputId).click();
 }
 
-// MOSTRAR PREVIEW DE IMAGEN
 function showImagePreview(file, previewId, uploadAreaId) {
     const reader = new FileReader();
     reader.onload = function(e) {
         const preview = document.getElementById(previewId);
         const uploadArea = document.getElementById(uploadAreaId);
-
         preview.querySelector('img').src = e.target.result;
         preview.style.display = 'block';
         uploadArea.classList.add('has-file');
-
-        // Hide upload content
         uploadArea.querySelector('.upload-icon').style.display = 'none';
         uploadArea.querySelector('.upload-text').style.display = 'none';
     };
     reader.readAsDataURL(file);
 }
 
-// LIMPIAR INPUT DE ARCHIVO
 function clearFileInput(inputId, uploadAreaId, previewId) {
     event.stopPropagation();
-
     const input = document.getElementById(inputId);
     const uploadArea = document.getElementById(uploadAreaId);
     const preview = document.getElementById(previewId);
-
     input.value = '';
     preview.style.display = 'none';
     uploadArea.classList.remove('has-file');
-
-    // Show upload content
     uploadArea.querySelector('.upload-icon').style.display = 'block';
     uploadArea.querySelector('.upload-text').style.display = 'block';
 }
 
-// MOSTRAR ESTADO VACÍO
 function showEmptyState() {
     $('#resultsContainer').html(`
         <div id="emptyState" class="text-center" style="padding: 60px 20px; color: var(--text-secondary);">
@@ -439,13 +577,11 @@ function showEmptyState() {
     `);
 }
 
-// AGREGAR RESULTADO AL HISTORIAL
 function addResultToHistory(result) {
     resultsHistory.unshift(result);
     renderResultsHistory();
 }
 
-// ACTUALIZAR RESULTADO EN HISTORIAL
 function updateResultInHistory(updatedResult) {
     const index = resultsHistory.findIndex(r => r.id === updatedResult.id || r.task_id === updatedResult.task_id);
     if (index !== -1) {
@@ -454,21 +590,17 @@ function updateResultInHistory(updatedResult) {
     }
 }
 
-// RENDERIZAR HISTORIAL
 function renderResultsHistory() {
     const container = $('#resultsContainer');
-
     if (resultsHistory.length === 0) {
         showEmptyState();
         return;
     }
 
     let html = '';
-
     resultsHistory.forEach((result, index) => {
         const statusClass = result.status === 'completed' ? 'status-completed' :
                            result.status === 'processing' ? 'status-processing' : 'status-failed';
-
         const date = new Date(result.created_at).toLocaleString();
 
         html += `
@@ -510,16 +642,12 @@ function renderResultsHistory() {
             `;
         }
 
-        html += `
-                </div>
-            </div>
-        `;
+        html += `</div></div>`;
     });
 
     container.html(html);
 }
 
-// POLLING FUNCTION (UPDATED)
 function checkTaskStatus(taskId) {
     setTimeout(function poll() {
         $.get(`/virtual-try-on/status/${taskId}`, function(response) {
@@ -529,7 +657,6 @@ function checkTaskStatus(taskId) {
                     const result = resultsHistory.find(r => r.task_id === taskId);
                     if (result) {
                         result.status = 'completed';
-                        // 🔥 USAR URLs LOCALES EN LUGAR DE URLs EXTERNAS
                         result.result_image_paths = response.data.local_images || [];
                         updateResultInHistory(result);
                     }
@@ -556,12 +683,10 @@ function checkTaskStatus(taskId) {
     }, 2000);
 }
 
-// RESET GENERATE BUTTON
 function resetGenerateButton() {
     $('#generateBtn').prop('disabled', false).html('<i class="fas fa-magic"></i> Generate');
 }
 
-// LOAD VIRTUAL MODELS
 function loadVirtualModels() {
     $('#virtualModelGrid').html(`
         <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--text-secondary);">
