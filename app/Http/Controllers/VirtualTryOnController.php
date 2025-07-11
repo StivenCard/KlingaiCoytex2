@@ -7,6 +7,7 @@ use App\Services\KlingAi\KlingApiService;
 use App\Services\KlingAi\ImageProcessingService;
 use App\Services\GuidelinesService;
 use App\Models\VirtualTryOn;
+use App\Models\VirtualModel;
 use Illuminate\Support\Facades\Storage;
 
 class VirtualTryOnController extends Controller
@@ -20,10 +21,13 @@ class VirtualTryOnController extends Controller
     public function show()
     {
         $defaultModels = $this->guidelines->getDefaultModels();
+        $virtualModels = VirtualModel::where('status', 'completed')
+            ->latest()
+            ->take(20)
+            ->get();
         $existingTryOns = VirtualTryOn::latest()->take(20)->get();
         $guidelines = $this->guidelines->getAllGuidelines();
 
-        // Extraer las guidelines individuales
         $validModels = $guidelines['validModels'];
         $invalidModels = $guidelines['invalidModels'];
         $validGarments = $guidelines['validGarments'];
@@ -31,6 +35,7 @@ class VirtualTryOnController extends Controller
 
         return view('virtual-try-on', compact(
             'defaultModels',
+            'virtualModels',
             'existingTryOns',
             'validModels',
             'invalidModels',
@@ -44,6 +49,7 @@ class VirtualTryOnController extends Controller
         $request->validate([
             'model_source' => 'required|in:virtual,default,upload',
             'selected_default_model' => 'required_if:model_source,default',
+            'selected_virtual_model' => 'required_if:model_source,virtual|exists:virtual_models,id',
             'human_image' => 'required_if:model_source,upload|file|image|max:51200',
             'garment_type' => 'required|in:single,multiple',
             'single_garment' => 'required_if:garment_type,single|file|image|max:51200',
@@ -119,7 +125,7 @@ class VirtualTryOnController extends Controller
     {
         return match($request->model_source) {
             'upload' => $this->images->convertToBase64($request->file('human_image')),
-            'virtual' => 'base64-string-of-virtual-model',
+            'virtual' => $this->images->getVirtualModelBase64($request->selected_virtual_model),
             'default' => $this->images->getSelectedDefaultModelBase64($request->selected_default_model),
             default => throw new \Exception('Invalid model source')
         };
@@ -143,6 +149,10 @@ class VirtualTryOnController extends Controller
         }
         if ($request->model_source === 'default') {
             return 'default_models/' . $request->selected_default_model;
+        }
+        if ($request->model_source === 'virtual') {
+            $model = VirtualModel::find($request->selected_virtual_model);
+            return $model ? $model->result_image_paths[0] : null;
         }
         return null;
     }

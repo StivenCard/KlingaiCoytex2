@@ -1,68 +1,79 @@
 @extends('layouts.app')
 
 @section('content')
-<!-- 🔥 MAIN CONTAINER CON NUEVA ESTRUCTURA -->
 <div class="main-container">
     <!-- LEFT PANEL -->
     <div class="left-panel">
-        <!-- MODEL SELECTION TABS CON INFO BUTTON -->
+        <!-- TABS -->
         <div class="sub-tabs">
             <button class="sub-tab" data-tab="virtual">Virtual Model</button>
             <button class="sub-tab active" data-tab="default">Default</button>
             <button class="sub-tab" data-tab="upload">Upload</button>
-            <!-- 🔥 ICONO DE INFORMACIÓN PARA MODELOS -->
             <button class="info-btn" id="modelInfoBtn" title="Model Guidelines">
                 <i class="fas fa-info-circle"></i>
             </button>
         </div>
 
-        <!-- MODEL GRID CONTAINER -->
-        <div class="model-grid-container">
-            <!-- VIRTUAL MODELS SECTION -->
+        <!-- SCROLL CONTAINER -->
+        <div class="scroll-container">
+            <!-- VIRTUAL MODELS -->
             <div class="tab-content d-none" data-content="virtual">
-                <div class="model-grid" id="virtualModelGrid">
-                    <!-- Virtual models will be loaded here -->
-                </div>
-            </div>
-
-            <!-- DEFAULT MODELS SECTION -->
-            <div class="tab-content" data-content="default">
-                <div class="model-grid" id="defaultModelGrid">
-                    @forelse($defaultModels as $model)
-                        <div class="model-item" data-model="{{ $model['filename'] }}">
-                            <img src="{{ $model['url'] }}" alt="{{ $model['name'] }}">
-                            <input type="radio" name="selected_default_model" value="{{ $model['filename'] }}" class="d-none">
+                <div class="grid-3" id="virtualModelGrid">
+                    @forelse($virtualModels as $model)
+                        <div class="item" data-model="{{ $model->id }}">
+                            <img src="{{ $model->preview_url }}" alt="{{ $model->display_name }}">
+                            <input type="radio" name="selected_virtual_model" value="{{ $model->id }}" class="d-none">
+                            <div class="overlay">
+                                <div class="badges">
+                                    <span class="badge {{ $model->gender }}">{{ ucfirst($model->gender) }}</span>
+                                    <span class="badge">{{ ucfirst($model->age_group) }}</span>
+                                    <span class="badge">{{ ucfirst($model->skin_tone) }}</span>
+                                </div>
+                                <div class="overlay-title">{{ $model->display_name }}</div>
+                                <div class="overlay-date">{{ $model->formatted_date }}</div>
+                            </div>
                         </div>
                     @empty
-                        <div style="grid-column: 1 / -1; text-align: center; padding: 40px;">
-                            <div style="color: var(--text-secondary);">
-                                <i class="fas fa-images" style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;"></i>
-                                <p>No hay modelos default disponibles</p>
-                                <small>Coloca imágenes en public/klingai/default_models/</small>
-                            </div>
+                        <div class="no-images">
+                            <i class="fas fa-user" style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;"></i>
+                            <p>No virtual models available</p>
+                            <small><a href="{{ route('virtual-model') }}" style="color: var(--accent-2); text-decoration: none;">Generate virtual models first</a></small>
                         </div>
                     @endforelse
                 </div>
             </div>
 
-            <!-- UPLOAD MODELS SECTION -->
+            <!-- DEFAULT MODELS -->
+            <div class="tab-content" data-content="default">
+                <div class="grid-3" id="defaultModelGrid">
+                    @forelse($defaultModels as $model)
+                        <div class="item" data-model="{{ $model['filename'] }}">
+                            <img src="{{ $model['url'] }}" alt="{{ $model['name'] }}">
+                            <input type="radio" name="selected_default_model" value="{{ $model['filename'] }}" class="d-none">
+                        </div>
+                    @empty
+                        <div class="no-images">
+                            <i class="fas fa-images" style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;"></i>
+                            <p>No hay modelos default disponibles</p>
+                            <small>Coloca imágenes en public/klingai/default_models/</small>
+                        </div>
+                    @endforelse
+                </div>
+            </div>
+
+            <!-- UPLOAD -->
             <div class="tab-content d-none" data-content="upload">
-                <div class="upload-area" id="humanUploadArea" onclick="triggerFileInput('humanImageInput')">
-                    <div class="upload-icon">
-                        <i class="fas fa-cloud-upload-alt"></i>
-                    </div>
+                <div class="upload" id="humanUploadArea" onclick="triggerFileInput('humanImageInput')">
+                    <div class="upload-icon"><i class="fas fa-cloud-upload-alt"></i></div>
                     <div class="upload-text">Upload Human Model</div>
                     <input type="file" id="humanImageInput" name="human_image" accept=".jpg,.jpeg,.png" class="file-input">
-
-                    <!-- PREVIEW -->
-                    <div class="image-preview" id="humanPreview">
+                    <div class="preview" id="humanPreview">
                         <img src="" alt="Preview">
                         <button class="remove-btn" onclick="clearFileInput('humanImageInput', 'humanUploadArea', 'humanPreview')">
                             <i class="fas fa-times"></i>
                         </button>
                         <button class="reupload-btn" onclick="triggerFileInput('humanImageInput')">
-                            <i class="fas fa-upload"></i>
-                            Re-upload
+                            <i class="fas fa-upload"></i> Re-upload
                         </button>
                     </div>
                 </div>
@@ -70,14 +81,13 @@
         </div>
 
         <!-- GARMENT SECTION -->
-        <div class="garment-section">
-            <!-- GARMENT TABS CON INFO BUTTON -->
-            <div class="garment-tabs-container">
-                <div class="garment-tabs">
-                    <button class="garment-tab active" data-garment="single">Single Garment</button>
-                    <button class="garment-tab" data-garment="multiple">Multiple Garments</button>
+        <div class="section">
+            <!-- TABS -->
+            <div class="tabs-container">
+                <div class="tabs">
+                    <button class="tab active" data-garment="single">Single Garment</button>
+                    <button class="tab" data-garment="multiple">Multiple Garments</button>
                 </div>
-                <!-- 🔥 ICONO DE INFORMACIÓN PARA PRENDAS -->
                 <button class="info-btn" id="garmentInfoBtn" title="Garment Guidelines">
                     <i class="fas fa-info-circle"></i>
                 </button>
@@ -85,22 +95,17 @@
 
             <!-- SINGLE GARMENT -->
             <div class="garment-content" data-garment-content="single">
-                <div class="upload-area" id="singleUploadArea" onclick="triggerFileInput('singleGarmentInput')">
-                    <div class="upload-icon">
-                        <i class="fas fa-tshirt"></i>
-                    </div>
+                <div class="upload" id="singleUploadArea" onclick="triggerFileInput('singleGarmentInput')">
+                    <div class="upload-icon"><i class="fas fa-tshirt"></i></div>
                     <div class="upload-text">Upload Single Garment</div>
                     <input type="file" id="singleGarmentInput" name="single_garment" accept=".jpg,.jpeg,.png" class="file-input">
-
-                    <!-- PREVIEW -->
-                    <div class="image-preview" id="singlePreview">
+                    <div class="preview" id="singlePreview">
                         <img src="" alt="Preview">
                         <button class="remove-btn" onclick="clearFileInput('singleGarmentInput', 'singleUploadArea', 'singlePreview')">
                             <i class="fas fa-times"></i>
                         </button>
                         <button class="reupload-btn" onclick="triggerFileInput('singleGarmentInput')">
-                            <i class="fas fa-upload"></i>
-                            Re-upload
+                            <i class="fas fa-upload"></i> Re-upload
                         </button>
                     </div>
                 </div>
@@ -108,59 +113,45 @@
 
             <!-- MULTIPLE GARMENTS -->
             <div class="garment-content d-none" data-garment-content="multiple">
-                <div class="upload-area" id="topUploadArea" onclick="triggerFileInput('topGarmentInput')" style="margin-bottom: 12px;">
-                    <div class="upload-icon">
-                        <i class="fas fa-tshirt"></i>
-                    </div>
+                <div class="upload" id="topUploadArea" onclick="triggerFileInput('topGarmentInput')" style="margin-bottom: 12px;">
+                    <div class="upload-icon"><i class="fas fa-tshirt"></i></div>
                     <div class="upload-text">Upload Top Garment</div>
                     <input type="file" id="topGarmentInput" name="top_garment" accept=".jpg,.jpeg,.png" class="file-input">
-
-                    <!-- PREVIEW -->
-                    <div class="image-preview" id="topPreview">
+                    <div class="preview" id="topPreview">
                         <img src="" alt="Preview">
                         <button class="remove-btn" onclick="clearFileInput('topGarmentInput', 'topUploadArea', 'topPreview')">
                             <i class="fas fa-times"></i>
                         </button>
                         <button class="reupload-btn" onclick="triggerFileInput('topGarmentInput')">
-                            <i class="fas fa-upload"></i>
-                            Re-upload
+                            <i class="fas fa-upload"></i> Re-upload
                         </button>
                     </div>
                 </div>
 
-                <div class="upload-area" id="bottomUploadArea" onclick="triggerFileInput('bottomGarmentInput')">
-                    <div class="upload-icon">
-                        <i class="fas fa-tshirt"></i>
-                    </div>
+                <div class="upload" id="bottomUploadArea" onclick="triggerFileInput('bottomGarmentInput')">
+                    <div class="upload-icon"><i class="fas fa-tshirt"></i></div>
                     <div class="upload-text">Upload Bottom Garment</div>
                     <input type="file" id="bottomGarmentInput" name="bottom_garment" accept=".jpg,.jpeg,.png" class="file-input">
-
-                    <!-- PREVIEW -->
-                    <div class="image-preview" id="bottomPreview">
+                    <div class="preview" id="bottomPreview">
                         <img src="" alt="Preview">
                         <button class="remove-btn" onclick="clearFileInput('bottomGarmentInput', 'bottomUploadArea', 'bottomPreview')">
                             <i class="fas fa-times"></i>
                         </button>
                         <button class="reupload-btn" onclick="triggerFileInput('bottomGarmentInput')">
-                            <i class="fas fa-upload"></i>
-                            Re-upload
+                            <i class="fas fa-upload"></i> Re-upload
                         </button>
                     </div>
                 </div>
             </div>
 
-            <!-- OUTPUT SELECTOR -->
-            <select class="output-selector" name="output_count">
-                <option value="1">1 Output</option>
-                <option value="2">2 Outputs</option>
-                <option value="3">3 Outputs</option>
-                <option value="4">4 Outputs</option>
+            <!-- 🔥 OUTPUT BLOQUEADO -->
+            <select class="selector" name="output_count" disabled>
+                <option value="1" selected>1 Output (Fixed)</option>
             </select>
 
-            <!-- GENERATE BUTTON -->
-            <button class="generate-btn" id="generateBtn">
-                <i class="fas fa-magic"></i>
-                Generate
+            <!-- GENERATE -->
+            <button class="btn-generate" id="generateBtn">
+                <i class="fas fa-magic"></i> Generate
             </button>
         </div>
     </div>
@@ -169,21 +160,18 @@
     <div class="right-panel">
         <div class="results-header">
             <i class="fas fa-images"></i>
-            <span>AI Outfit</span>
+            <span>AI Outfit Results</span>
         </div>
-
         <div class="results-content">
-            <div class="result-section">
-                <div id="resultsContainer">
-                    <!-- Results will be loaded here -->
-                </div>
+            <div id="resultsContainer">
+                <!-- Results will be loaded here -->
             </div>
         </div>
     </div>
 </div>
 
-<!-- 🔥 TOOLTIP PARA MODELOS -->
-<div class="info-tooltip" id="modelTooltip">
+<!-- TOOLTIPS -->
+<div class="tooltip" id="modelTooltip">
     <div class="tooltip-header">
         <h6><i class="fas fa-user"></i> Model Guidelines</h6>
         <button class="tooltip-close" onclick="hideTooltip('modelTooltip')">
@@ -199,13 +187,11 @@
                 <li>Formats: JPG/PNG</li>
             </ul>
         </div>
-
-        <!-- SECCIÓN VÁLIDOS -->
         <div class="guidelines-section">
             <h6 class="section-title valid">✓ Follow these guidelines for best results</h6>
-            <div class="guidelines-images-single-row">
+            <div class="grid-6">
                 @forelse($validModels as $model)
-                    <div class="guideline-item-horizontal">
+                    <div class="guideline-item">
                         <div class="guideline-image">
                             <img src="{{ $model['url'] }}" alt="{{ $model['description'] }}">
                         </div>
@@ -216,13 +202,11 @@
                 @endforelse
             </div>
         </div>
-
-        <!-- SECCIÓN INVÁLIDOS -->
         <div class="guidelines-section">
-            <h6 class="section-title invalid">✗ Avoid these examples, as they may reduce quality</h6>
-            <div class="guidelines-images-single-row">
+            <h6 class="section-title invalid">✗ Avoid these examples</h6>
+            <div class="grid-6">
                 @forelse($invalidModels as $model)
-                    <div class="guideline-item-horizontal">
+                    <div class="guideline-item">
                         <div class="guideline-image">
                             <img src="{{ $model['url'] }}" alt="{{ $model['description'] }}">
                         </div>
@@ -236,8 +220,7 @@
     </div>
 </div>
 
-<!-- 🔥 TOOLTIP PARA PRENDAS -->
-<div class="info-tooltip" id="garmentTooltip">
+<div class="tooltip" id="garmentTooltip">
     <div class="tooltip-header">
         <h6><i class="fas fa-tshirt"></i> Garment Guidelines</h6>
         <button class="tooltip-close" onclick="hideTooltip('garmentTooltip')">
@@ -253,13 +236,11 @@
                 <li>Formats: JPG/PNG</li>
             </ul>
         </div>
-
-        <!-- SECCIÓN VÁLIDOS -->
         <div class="guidelines-section">
-            <h6 class="section-title valid">✓ Follow these guidelines for best results</h6>
-            <div class="guidelines-images-single-row">
+            <h6 class="section-title valid">✓ Follow these guidelines</h6>
+            <div class="grid-6">
                 @forelse($validGarments as $garment)
-                    <div class="guideline-item-horizontal">
+                    <div class="guideline-item">
                         <div class="guideline-image">
                             <img src="{{ $garment['url'] }}" alt="{{ $garment['description'] }}">
                         </div>
@@ -270,13 +251,11 @@
                 @endforelse
             </div>
         </div>
-
-        <!-- SECCIÓN INVÁLIDOS -->
         <div class="guidelines-section">
-            <h6 class="section-title invalid">✗ Avoid these examples, as they may reduce quality</h6>
-            <div class="guidelines-images-single-row">
+            <h6 class="section-title invalid">✗ Avoid these examples</h6>
+            <div class="grid-6">
                 @forelse($invalidGarments as $garment)
-                    <div class="guideline-item-horizontal">
+                    <div class="guideline-item">
                         <div class="guideline-image">
                             <img src="{{ $garment['url'] }}" alt="{{ $garment['description'] }}">
                         </div>
@@ -290,65 +269,112 @@
     </div>
 </div>
 
-<!-- HIDDEN FORM FOR SUBMISSION -->
+<!-- 🔥 MODAL PARA VER RESULTADOS -->
+<div class="modal fade" id="imageModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content" style="background: var(--bg-2); border: 1px solid var(--border);">
+            <div class="modal-header" style="border-bottom: 1px solid var(--border);">
+                <h5 class="modal-title" style="color: var(--txt-1);">
+                    <i class="fas fa-images"></i> Result Preview
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" style="filter: invert(1);"></button>
+            </div>
+            <div class="modal-body p-0">
+                <!-- IMAGE CONTAINER -->
+                <div class="image-viewer-container" style="position: relative; height: 70vh; overflow: hidden; background: var(--bg-1);">
+                    <img id="modalImage" src="" alt="Result Image" style="width: 100%; height: 100%; object-fit: contain; cursor: grab; transition: transform 0.3s;">
+                </div>
+
+                <!-- CONTROLS -->
+                <div class="image-controls" style="background: var(--bg-3); padding: 15px; border-top: 1px solid var(--border);">
+                    <div class="row align-items-center">
+                        <div class="col-md-6">
+                            <!-- ZOOM CONTROLS -->
+                            <div class="zoom-controls">
+                                <button class="btn btn-sm" style="background: var(--bg-2); border: 1px solid var(--border); color: var(--txt-1); margin-right: 5px;" onclick="zoomImage(0.9)">
+                                    <i class="fas fa-search-minus"></i>
+                                </button>
+                                <span style="color: var(--txt-2); margin: 0 10px; font-size: 14px;" id="zoomLevel">100%</span>
+                                <button class="btn btn-sm" style="background: var(--bg-2); border: 1px solid var(--border); color: var(--txt-1); margin-left: 5px;" onclick="zoomImage(1.1)">
+                                    <i class="fas fa-search-plus"></i>
+                                </button>
+                                <button class="btn btn-sm" style="background: var(--bg-2); border: 1px solid var(--border); color: var(--txt-1); margin-left: 10px;" onclick="resetZoom()">
+                                    <i class="fas fa-expand-arrows-alt"></i> Reset
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-md-6 text-end">
+                            <!-- DOWNLOAD BUTTON -->
+                            <button class="btn" style="background: var(--accent-1); border: none; color: white; padding: 8px 16px;" onclick="downloadImage()">
+                                <i class="fas fa-download"></i> Download
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- HIDDEN FORM -->
 <form id="hiddenForm" style="display: none;" enctype="multipart/form-data">
     @csrf
     <input type="hidden" name="model_source" id="hiddenModelSource">
     <input type="hidden" name="selected_default_model" id="hiddenSelectedModel">
+    <input type="hidden" name="selected_virtual_model" id="hiddenSelectedVirtualModel">
     <input type="hidden" name="garment_type" id="hiddenGarmentType" value="single">
     <input type="hidden" name="output_count" id="hiddenOutputCount" value="1">
 </form>
 
-<!-- 🔥 PASAR DATOS SIMPLES DEL MODELO -->
 <script>
-    window.existingTryOns = @json($existingTryOns);
+window.existingTryOns = @json($existingTryOns);
 </script>
 @endsection
 
 @push('scripts')
 <script>
-// GLOBAL VARIABLES
 let resultsHistory = [];
 
+// 🔥 VARIABLES PARA ZOOM
+let currentZoom = 1;
+let currentImageSrc = '';
+let isDragging = false;
+let startX, startY, translateX = 0, translateY = 0;
+
 $(document).ready(function() {
-    // ✅ PROCESAMIENTO SIMPLIFICADO DE DATOS DEL MODELO
-    if (window.existingTryOns && window.existingTryOns.length > 0) {
+    // INIT DATA
+    if (window.existingTryOns?.length) {
         resultsHistory = window.existingTryOns.map(tryOn => ({
             id: tryOn.id,
             task_id: tryOn.task_id,
             model_type: tryOn.model_type,
             garments_type: tryOn.garments_type,
-            // ✅ TRANSFORMAR STATUS EN FRONTEND
             status: tryOn.status === 'completed' ? 'completed' : 'processing',
             created_at: tryOn.created_at,
-            // ✅ CONVERTIR RUTAS A URLS EN FRONTEND
-            result_image_paths: tryOn.result_image_paths ?
-                tryOn.result_image_paths.map(path => `/storage/${path}`) : []
+            result_image_paths: tryOn.result_image_paths?.map(path => `/storage/${path}`) || []
         }));
         renderResultsHistory();
     } else {
         showEmptyState();
     }
 
-    // 🔥 TOOLTIPS
-    $('#modelInfoBtn').click(function(e) {
+    // TOOLTIPS
+    $('#modelInfoBtn').click(e => {
         e.stopPropagation();
         hideTooltip('garmentTooltip');
         toggleTooltip('modelTooltip', e.target);
     });
-
-    $('#garmentInfoBtn').click(function(e) {
+    $('#garmentInfoBtn').click(e => {
         e.stopPropagation();
         hideTooltip('modelTooltip');
         toggleTooltip('garmentTooltip', e.target);
     });
-
-    $(document).click(function() {
+    $(document).click(() => {
         hideTooltip('modelTooltip');
         hideTooltip('garmentTooltip');
     });
 
-    // TAB SWITCHING
+    // TABS
     $('.sub-tab').click(function() {
         const tab = $(this).data('tab');
         $('.sub-tab').removeClass('active');
@@ -356,14 +382,14 @@ $(document).ready(function() {
         $('.tab-content').addClass('d-none');
         $(`[data-content="${tab}"]`).removeClass('d-none');
         $('#hiddenModelSource').val(tab);
-        $('.model-item').removeClass('selected');
-        $('input[name="selected_default_model"]').prop('checked', false);
-        $('#hiddenSelectedModel').val('');
+        $('.item').removeClass('selected');
+        $('input[name^="selected_"]').prop('checked', false);
+        $('#hiddenSelectedModel, #hiddenSelectedVirtualModel').val('');
     });
 
-    $('.garment-tab').click(function() {
+    $('.tab').click(function() {
         const garment = $(this).data('garment');
-        $('.garment-tab').removeClass('active');
+        $('.tab').removeClass('active');
         $(this).addClass('active');
         $('.garment-content').addClass('d-none');
         $(`[data-garment-content="${garment}"]`).removeClass('d-none');
@@ -371,85 +397,76 @@ $(document).ready(function() {
     });
 
     // MODEL SELECTION
-    $(document).on('click', '.model-item', function() {
-        $('.model-item').removeClass('selected');
+    $(document).on('click', '.item', function() {
+        $('.item').removeClass('selected');
         $(this).addClass('selected');
         const modelValue = $(this).data('model');
-        $(this).find('input[name="selected_default_model"]').prop('checked', true);
-        $('#hiddenSelectedModel').val(modelValue);
+
+        if ($(this).find('input[name="selected_default_model"]').length) {
+            $(this).find('input[name="selected_default_model"]').prop('checked', true);
+            $('#hiddenSelectedModel').val(modelValue);
+            $('#hiddenSelectedVirtualModel').val('');
+        } else {
+            $(this).find('input[name="selected_virtual_model"]').prop('checked', true);
+            $('#hiddenSelectedVirtualModel').val(modelValue);
+            $('#hiddenSelectedModel').val('');
+        }
     });
 
-    // OUTPUT COUNT
-    $('.output-selector').change(function() {
-        $('#hiddenOutputCount').val($(this).val());
-    });
+    // 🔥 OUTPUT COUNT FIJO EN 1
+    $('#hiddenOutputCount').val('1');
 
     // FILE HANDLERS
-    $('#humanImageInput').change(function() {
-        if (this.files.length > 0) {
-            showImagePreview(this.files[0], 'humanPreview', 'humanUploadArea');
-        }
+    const fileInputs = ['humanImageInput', 'singleGarmentInput', 'topGarmentInput', 'bottomGarmentInput'];
+    const previews = ['humanPreview', 'singlePreview', 'topPreview', 'bottomPreview'];
+    const areas = ['humanUploadArea', 'singleUploadArea', 'topUploadArea', 'bottomUploadArea'];
+
+    fileInputs.forEach((input, i) => {
+        $(`#${input}`).change(function() {
+            if (this.files.length > 0) {
+                showImagePreview(this.files[0], previews[i], areas[i]);
+            }
+        });
     });
 
-    $('#singleGarmentInput').change(function() {
-        if (this.files.length > 0) {
-            showImagePreview(this.files[0], 'singlePreview', 'singleUploadArea');
-        }
-    });
-
-    $('#topGarmentInput').change(function() {
-        if (this.files.length > 0) {
-            showImagePreview(this.files[0], 'topPreview', 'topUploadArea');
-        }
-    });
-
-    $('#bottomGarmentInput').change(function() {
-        if (this.files.length > 0) {
-            showImagePreview(this.files[0], 'bottomPreview', 'bottomUploadArea');
-        }
-    });
-
-    // GENERATE BUTTON
+    // GENERATE
     $('#generateBtn').click(function() {
         const modelSource = $('#hiddenModelSource').val() || 'default';
         const garmentType = $('#hiddenGarmentType').val();
 
         // Validation
-        if (modelSource === 'default' && !$('#hiddenSelectedModel').val()) {
-            alert('Please select a default model');
-            return;
-        }
+        const validations = {
+            default: () => !$('#hiddenSelectedModel').val() && alert('Please select a default model'),
+            virtual: () => !$('#hiddenSelectedVirtualModel').val() && alert('Please select a virtual model'),
+            upload: () => !$('#humanImageInput')[0].files.length && alert('Please upload a human model image')
+        };
 
-        if (modelSource === 'upload' && !$('#humanImageInput')[0].files.length) {
-            alert('Please upload a human model image');
-            return;
-        }
+        if (validations[modelSource]?.()) return;
 
         if (garmentType === 'single' && !$('#singleGarmentInput')[0].files.length) {
-            alert('Please upload a garment');
-            return;
+            return alert('Please upload a garment');
         }
 
-        if (garmentType === 'multiple') {
-            if (!$('#topGarmentInput')[0].files.length || !$('#bottomGarmentInput')[0].files.length) {
-                alert('Please upload both top and bottom garments');
-                return;
-            }
+        if (garmentType === 'multiple' && (!$('#topGarmentInput')[0].files.length || !$('#bottomGarmentInput')[0].files.length)) {
+            return alert('Please upload both top and bottom garments');
         }
 
-        // Prepare FormData
+        // PREPARE DATA
         const formData = new FormData();
         formData.append('_token', $('input[name="_token"]').val());
         formData.append('model_source', modelSource);
         formData.append('garment_type', garmentType);
-        formData.append('output_count', $('#hiddenOutputCount').val());
+        formData.append('output_count', '1'); // 🔥 SIEMPRE 1
 
-        if (modelSource === 'default') {
-            formData.append('selected_default_model', $('#hiddenSelectedModel').val());
-        } else if (modelSource === 'upload') {
-            formData.append('human_image', $('#humanImageInput')[0].files[0]);
-        }
+        // MODEL DATA
+        const modelActions = {
+            default: () => formData.append('selected_default_model', $('#hiddenSelectedModel').val()),
+            virtual: () => formData.append('selected_virtual_model', $('#hiddenSelectedVirtualModel').val()),
+            upload: () => formData.append('human_image', $('#humanImageInput')[0].files[0])
+        };
+        modelActions[modelSource]();
 
+        // GARMENT DATA
         if (garmentType === 'single') {
             formData.append('single_garment', $('#singleGarmentInput')[0].files[0]);
         } else {
@@ -457,10 +474,10 @@ $(document).ready(function() {
             formData.append('bottom_garment', $('#bottomGarmentInput')[0].files[0]);
         }
 
-        // UI feedback
+        // UI
         $(this).prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Generating...');
 
-        // Create temporary result
+        // TEMP RESULT
         const tempResult = {
             id: 'temp_' + Date.now(),
             model_type: modelSource,
@@ -470,19 +487,17 @@ $(document).ready(function() {
             task_id: null,
             result_image_paths: []
         };
-
         addResultToHistory(tempResult);
 
-        // AJAX call
+        // AJAX
         $.ajax({
             url: "{{ route('virtual-try-on.generate') }}",
             type: 'POST',
             data: formData,
             processData: false,
             contentType: false,
-            success: function(response) {
-                console.log('Success:', response);
-                if (response.data && response.data.task_id) {
+            success: response => {
+                if (response.data?.task_id) {
                     tempResult.task_id = response.data.task_id;
                     updateResultInHistory(tempResult);
                     checkTaskStatus(response.data.task_id);
@@ -492,8 +507,7 @@ $(document).ready(function() {
                     resetGenerateButton();
                 }
             },
-            error: function(xhr) {
-                console.log('Error:', xhr.responseJSON);
+            error: () => {
                 tempResult.status = 'failed';
                 updateResultInHistory(tempResult);
                 resetGenerateButton();
@@ -501,13 +515,87 @@ $(document).ready(function() {
         });
     });
 
-    // Initialize
     $('#hiddenModelSource').val('default');
-    loadVirtualModels();
 });
 
-// ✅ FUNCIONES SIMPLIFICADAS - SIN CAMBIOS MAYORES
-function toggleTooltip(tooltipId, targetElement) {
+// 🔥 ABRIR MODAL
+const openImageModal = (imageSrc, title) => {
+    currentImageSrc = imageSrc;
+    currentZoom = 1;
+    translateX = 0;
+    translateY = 0;
+
+    $('#modalImage').attr('src', imageSrc);
+    $('.modal-title').html(`<i class="fas fa-images"></i> ${title}`);
+    $('#zoomLevel').text('100%');
+    updateImageTransform();
+    $('#imageModal').modal('show');
+};
+
+// 🔥 ZOOM FUNCTION
+const zoomImage = (factor) => {
+    currentZoom *= factor;
+    currentZoom = Math.max(0.5, Math.min(currentZoom, 5)); // Límites 50% - 500%
+    updateImageTransform();
+    $('#zoomLevel').text(Math.round(currentZoom * 100) + '%');
+};
+
+// 🔥 RESET ZOOM
+const resetZoom = () => {
+    currentZoom = 1;
+    translateX = 0;
+    translateY = 0;
+    updateImageTransform();
+    $('#zoomLevel').text('100%');
+};
+
+// 🔥 UPDATE TRANSFORM
+const updateImageTransform = () => {
+    $('#modalImage').css('transform', `translate(${translateX}px, ${translateY}px) scale(${currentZoom})`);
+};
+
+// 🔥 DOWNLOAD IMAGE
+const downloadImage = () => {
+    if (!currentImageSrc) return;
+
+    const link = document.createElement('a');
+    link.href = currentImageSrc;
+    link.download = `virtual-try-on-result-${Date.now()}.jpg`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+};
+
+// 🔥 DRAG FUNCTIONALITY
+$('#modalImage').on('mousedown', function(e) {
+    if (currentZoom <= 1) return;
+    isDragging = true;
+    startX = e.clientX - translateX;
+    startY = e.clientY - translateY;
+    $(this).css('cursor', 'grabbing');
+});
+
+$(document).on('mousemove', function(e) {
+    if (!isDragging) return;
+    translateX = e.clientX - startX;
+    translateY = e.clientY - startY;
+    updateImageTransform();
+});
+
+$(document).on('mouseup', function() {
+    isDragging = false;
+    $('#modalImage').css('cursor', 'grab');
+});
+
+// 🔥 WHEEL ZOOM
+$('#modalImage').on('wheel', function(e) {
+    e.preventDefault();
+    const factor = e.originalEvent.deltaY > 0 ? 0.9 : 1.1;
+    zoomImage(factor);
+});
+
+// UTILITIES
+const toggleTooltip = (tooltipId, targetElement) => {
     const tooltip = document.getElementById(tooltipId);
     const rect = targetElement.getBoundingClientRect();
     const viewportWidth = window.innerWidth;
@@ -521,29 +609,23 @@ function toggleTooltip(tooltipId, targetElement) {
         if (left < 10) left = 10;
         if (left + 1000 > viewportWidth) left = viewportWidth - 1010;
         let top = rect.bottom + 10;
-        if (top + 450 > viewportHeight) {
-            top = rect.top - 460;
-        }
-        if (top < 10) {
-            top = (viewportHeight - 450) / 2;
-        }
+        if (top + 450 > viewportHeight) top = rect.top - 460;
+        if (top < 10) top = (viewportHeight - 450) / 2;
         tooltip.style.left = left + 'px';
         tooltip.style.top = top + 'px';
     }
-}
+};
 
-function hideTooltip(tooltipId) {
-    document.getElementById(tooltipId).style.display = 'none';
-}
+const hideTooltip = tooltipId => document.getElementById(tooltipId).style.display = 'none';
 
-function triggerFileInput(inputId) {
+const triggerFileInput = inputId => {
     event.stopPropagation();
     document.getElementById(inputId).click();
-}
+};
 
-function showImagePreview(file, previewId, uploadAreaId) {
+const showImagePreview = (file, previewId, uploadAreaId) => {
     const reader = new FileReader();
-    reader.onload = function(e) {
+    reader.onload = e => {
         const preview = document.getElementById(previewId);
         const uploadArea = document.getElementById(uploadAreaId);
         preview.querySelector('img').src = e.target.result;
@@ -553,9 +635,9 @@ function showImagePreview(file, previewId, uploadAreaId) {
         uploadArea.querySelector('.upload-text').style.display = 'none';
     };
     reader.readAsDataURL(file);
-}
+};
 
-function clearFileInput(inputId, uploadAreaId, previewId) {
+const clearFileInput = (inputId, uploadAreaId, previewId) => {
     event.stopPropagation();
     const input = document.getElementById(inputId);
     const uploadArea = document.getElementById(uploadAreaId);
@@ -565,136 +647,125 @@ function clearFileInput(inputId, uploadAreaId, previewId) {
     uploadArea.classList.remove('has-file');
     uploadArea.querySelector('.upload-icon').style.display = 'block';
     uploadArea.querySelector('.upload-text').style.display = 'block';
-}
+};
 
-function showEmptyState() {
+const showEmptyState = () => {
     $('#resultsContainer').html(`
-        <div id="emptyState" class="text-center" style="padding: 60px 20px; color: var(--text-secondary);">
+        <div class="text-center" style="padding: 60px 20px; color: var(--txt-2);">
             <i class="fas fa-tshirt" style="font-size: 48px; margin-bottom: 16px; opacity: 0.3;"></i>
             <p>No results yet</p>
             <small>Complete the form to generate your first try-on</small>
         </div>
     `);
-}
+};
 
-function addResultToHistory(result) {
+const addResultToHistory = result => {
     resultsHistory.unshift(result);
     renderResultsHistory();
-}
+};
 
-function updateResultInHistory(updatedResult) {
+const updateResultInHistory = updatedResult => {
     const index = resultsHistory.findIndex(r => r.id === updatedResult.id || r.task_id === updatedResult.task_id);
     if (index !== -1) {
         resultsHistory[index] = { ...resultsHistory[index], ...updatedResult };
         renderResultsHistory();
     }
-}
+};
 
-function renderResultsHistory() {
+const renderResultsHistory = () => {
     const container = $('#resultsContainer');
-    if (resultsHistory.length === 0) {
-        showEmptyState();
-        return;
-    }
+    if (resultsHistory.length === 0) return showEmptyState();
 
     let html = '';
     resultsHistory.forEach((result, index) => {
-        const statusClass = result.status === 'completed' ? 'status-completed' :
-                           result.status === 'processing' ? 'status-processing' : 'status-failed';
+        const statusClass = `status ${result.status}`;
         const date = new Date(result.created_at).toLocaleString();
 
         html += `
             <div class="result-group">
-                <div class="result-group-header">
-                    <div class="result-group-info">
+                <div class="result-header">
+                    <div class="result-info">
                         <div><strong>Task ${result.task_id || 'Pending'}</strong></div>
                         <div>${date}</div>
                         <div>Model: ${result.model_type} | Garments: ${result.garments_type}</div>
                     </div>
-                    <div class="result-group-status ${statusClass}">
-                        ${result.status.toUpperCase()}
-                    </div>
+                    <div class="${statusClass}">${result.status.toUpperCase()}</div>
                 </div>
-                <div class="result-grid" id="result-grid-${index}">
-        `;
+                <div class="grid-4">`;
 
-        if (result.result_image_paths && result.result_image_paths.length > 0) {
+        if (result.result_image_paths?.length) {
             result.result_image_paths.forEach((path, imgIndex) => {
-                html += `
-                    <div class="result-item">
-                        <img src="${path}" alt="Result ${imgIndex + 1}">
+                // 🔥 AGREGAR CLICK PARA ABRIR MODAL
+                html += `<div class="item" style="cursor: pointer; position: relative;" onclick="openImageModal('${path}', 'Result ${imgIndex + 1}')">
+                    <img src="${path}" alt="Result ${imgIndex + 1}">
+                    <div class="image-overlay" style="position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.7); border-radius: 4px; padding: 4px 8px; opacity: 0; transition: opacity 0.3s;">
+                        <i class="fas fa-search-plus" style="color: white; font-size: 12px;"></i>
                     </div>
-                `;
+                </div>`;
             });
         } else if (result.status === 'processing') {
-            html += `
-                <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--text-secondary);">
-                    <div class="spinner-border text-primary" role="status"></div>
-                    <p style="margin-top: 16px;">Processing...</p>
-                </div>
-            `;
+            html += `<div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--txt-2);">
+                <div class="spinner-border text-primary" role="status"></div>
+                <p style="margin-top: 16px;">Processing...</p>
+            </div>`;
         } else {
-            html += `
-                <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--text-secondary);">
-                    <i class="fas fa-exclamation-circle" style="font-size: 32px; margin-bottom: 16px; opacity: 0.5;"></i>
-                    <p>No results available</p>
-                </div>
-            `;
+            html += `<div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--txt-2);">
+                <i class="fas fa-exclamation-circle" style="font-size: 32px; margin-bottom: 16px; opacity: 0.5;"></i>
+                <p>No results available</p>
+            </div>`;
         }
 
         html += `</div></div>`;
     });
 
     container.html(html);
-}
 
-function checkTaskStatus(taskId) {
+    // 🔥 AGREGAR HOVER EFFECT PARA OVERLAY
+    $('.item').hover(
+        function() { $(this).find('.image-overlay').css('opacity', '1'); },
+        function() { $(this).find('.image-overlay').css('opacity', '0'); }
+    );
+};
+
+const checkTaskStatus = taskId => {
     setTimeout(function poll() {
-        $.get(`/virtual-try-on/status/${taskId}`, function(response) {
-            if (response.data) {
-                const status = response.data.task_status;
-                if (status === 'succeed') {
-                    const result = resultsHistory.find(r => r.task_id === taskId);
-                    if (result) {
-                        result.status = 'completed';
-                        result.result_image_paths = response.data.local_images || [];
-                        updateResultInHistory(result);
+        $.get(`/virtual-try-on/status/${taskId}`)
+            .done(response => {
+                if (response.data) {
+                    const status = response.data.task_status;
+                    if (status === 'succeed') {
+                        const result = resultsHistory.find(r => r.task_id === taskId);
+                        if (result) {
+                            result.status = 'completed';
+                            result.result_image_paths = response.data.local_images || [];
+                            updateResultInHistory(result);
+                        }
+                        resetGenerateButton();
+                    } else if (status === 'processing' || status === 'submitted') {
+                        setTimeout(poll, 3000);
+                    } else {
+                        const result = resultsHistory.find(r => r.task_id === taskId);
+                        if (result) {
+                            result.status = 'failed';
+                            updateResultInHistory(result);
+                        }
+                        resetGenerateButton();
                     }
-                    resetGenerateButton();
-                } else if (status === 'processing' || status === 'submitted') {
-                    setTimeout(poll, 3000);
-                } else {
-                    const result = resultsHistory.find(r => r.task_id === taskId);
-                    if (result) {
-                        result.status = 'failed';
-                        updateResultInHistory(result);
-                    }
-                    resetGenerateButton();
                 }
-            }
-        }).fail(function() {
-            const result = resultsHistory.find(r => r.task_id === taskId);
-            if (result) {
-                result.status = 'failed';
-                updateResultInHistory(result);
-            }
-            resetGenerateButton();
-        });
+            })
+            .fail(() => {
+                const result = resultsHistory.find(r => r.task_id === taskId);
+                if (result) {
+                    result.status = 'failed';
+                    updateResultInHistory(result);
+                }
+                resetGenerateButton();
+            });
     }, 2000);
-}
+};
 
-function resetGenerateButton() {
+const resetGenerateButton = () => {
     $('#generateBtn').prop('disabled', false).html('<i class="fas fa-magic"></i> Generate');
-}
-
-function loadVirtualModels() {
-    $('#virtualModelGrid').html(`
-        <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--text-secondary);">
-            <i class="fas fa-user" style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;"></i>
-            <p>No virtual models available</p>
-            <small>Generate virtual models first</small>
-        </div>
-    `);
-}
+};
 </script>
 @endpush

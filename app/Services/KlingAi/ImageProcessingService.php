@@ -6,6 +6,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Intervention\Image\Facades\Image;
+use App\Models\VirtualModel;
 
 class ImageProcessingService
 {
@@ -44,7 +45,6 @@ class ImageProcessingService
         return base64_encode($canvas->encode('png'));
     }
 
-    // 🔥 NUEVO: Guardar imagen individual
     public function saveImage(UploadedFile $file, string $directory, string $prefix = ''): string
     {
         $this->validateImage($file);
@@ -57,7 +57,6 @@ class ImageProcessingService
         return $path;
     }
 
-    // 🔥 NUEVO: Guardar imagen combinada
     public function saveCombinedImage(UploadedFile $file1, UploadedFile $file2, string $directory): string
     {
         $this->validateImage($file1);
@@ -90,7 +89,6 @@ class ImageProcessingService
         return $path;
     }
 
-    // 🔥 NUEVO: Descargar imagen de URL y guardarla
     public function downloadAndSaveImage(string $url, string $directory, string $prefix = ''): string
     {
         try {
@@ -112,7 +110,57 @@ class ImageProcessingService
         }
     }
 
-    // 🔥 NUEVO: Crear imagen placeholder
+    public function getSelectedDefaultModelBase64(string $selectedModel): string
+    {
+        $path = public_path('klingai/default_models/' . $selectedModel);
+
+        if (file_exists($path)) {
+            $image = Image::make($path);
+            return base64_encode($image->encode('png'));
+        }
+
+        return $this->createPlaceholderImage();
+    }
+
+    // 🔥 NUEVO: Obtener modelo virtual como base64
+    public function getVirtualModelBase64(string $virtualModelId): string
+    {
+        $model = VirtualModel::find($virtualModelId);
+
+        if (!$model || $model->status !== 'completed') {
+            throw new \Exception('Virtual model not found or not completed');
+        }
+
+        $imagePaths = $model->result_image_paths;
+        if (empty($imagePaths)) {
+            throw new \Exception('Virtual model has no generated images');
+        }
+
+        // Usar la primera imagen generada
+        $imagePath = $imagePaths[0];
+        $fullPath = storage_path('app/public/' . $imagePath);
+
+        if (!file_exists($fullPath)) {
+            throw new \Exception('Virtual model image file not found');
+        }
+
+        $image = Image::make($fullPath);
+        return base64_encode($image->encode('png'));
+    }
+
+    // 🔥 NUEVO: Convertir cualquier imagen guardada a base64
+    public function convertStoredImageToBase64(string $storagePath): string
+    {
+        $fullPath = storage_path('app/public/' . $storagePath);
+
+        if (!file_exists($fullPath)) {
+            throw new \Exception('Image file not found: ' . $storagePath);
+        }
+
+        $image = Image::make($fullPath);
+        return base64_encode($image->encode('png'));
+    }
+
     private function createPlaceholderImage(): string
     {
         $image = Image::canvas(512, 768, '#f8f9fa');
@@ -126,7 +174,6 @@ class ImageProcessingService
         return base64_encode($image->encode('png'));
     }
 
-    // 🔥 MEJORADO: Validación de imagen
     private function validateImage(UploadedFile $file): void
     {
         if ($file->getSize() > 10 * 1024 * 1024) {
@@ -148,19 +195,4 @@ class ImageProcessingService
             throw new \Exception('Resolución no permitida. Mínimo 300px, máximo 4096px.');
         }
     }
-
-    // 🔥 NUEVO: Obtener modelo default seleccionado
-    public function getSelectedDefaultModelBase64(string $selectedModel): string
-    {
-        $path = public_path('klingai/default_models/' . $selectedModel);
-
-        if (file_exists($path)) {
-            $image = Image::make($path);
-            return base64_encode($image->encode('png'));
-        }
-
-        // Si no existe el modelo seleccionado, crear placeholder
-        return $this->createPlaceholderImage();
-    }
-
 }
