@@ -5,13 +5,16 @@ namespace App\Services\KlingAi;
 use Firebase\JWT\JWT;
 use App\Models\ApiLog;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Exception;
 
 class KlingApiService
 {
-    protected string $baseUrl;
-    protected string $accessKey;
-    protected string $secretKey;
+    private string $baseUrl;
+    private string $accessKey;
+    private string $secretKey;
+    private ?string $jwtToken = null;
+    private int $jwtExpiresAt = 0;
 
     public function __construct()
     {
@@ -19,28 +22,37 @@ class KlingApiService
         $this->accessKey = config('services.kling.access_key');
         $this->secretKey = config('services.kling.secret_key');
 
-        if (empty($this->baseUrl) || empty($this->accessKey) || empty($this->secretKey)) {
-            throw new Exception('KlingAI API configuration missing');
+        if (!$this->baseUrl || !$this->accessKey || !$this->secretKey) {
+            throw new Exception('KlingAI configuration missing');
         }
     }
 
-    protected function generateJwtToken(): string
+    private function generateJwtToken(): string
     {
-        $headers = [
-            "alg" => "HS256",
-            "typ" => "JWT"
-        ];
+        if ($this->jwtToken && time() < $this->jwtExpiresAt) {
+            return $this->jwtToken;
+        }
+
+        $expiresAt = time() + 1800; // 30 minutos
 
         $payload = [
             "iss" => $this->accessKey,
-            "exp" => time() + 1800,
+            "exp" => $expiresAt,
             "nbf" => time() - 5
         ];
 
-        return JWT::encode($payload, $this->secretKey, 'HS256', null, $headers);
+        $this->jwtToken = JWT::encode($payload, $this->secretKey, 'HS256');
+        $this->jwtExpiresAt = $expiresAt;
+
+        Log::debug('JWT Token generado', [
+            'expires_at' => date('Y-m-d H:i:s', $this->jwtExpiresAt),
+            'iss' => $this->accessKey
+        ]);
+
+        return $this->jwtToken;
     }
 
-    protected function getAuthHeader(): array
+    private function getHeaders(): array
     {
         return [
             'Authorization' => 'Bearer ' . $this->generateJwtToken(),
@@ -48,98 +60,89 @@ class KlingApiService
         ];
     }
 
-    protected function postRequest(string $path, array $data, string $typeModel): array
+    private function post(string $path, array $data, string $type): array
     {
         try {
-            $response = Http::withHeaders($this->getAuthHeader())
+            $response = Http::withHeaders($this->getHeaders())
                 ->timeout(120)
                 ->retry(2, 1000)
                 ->post($this->baseUrl . $path, $data);
 
-            $json = $response->json();
+            $result = $response->json();
 
             if ($response->failed()) {
-                $statusCode = $response->status();
-                $apiMessage = $json['message'] ?? 'Unknown API Error';
-                $apiCode = $json['code'] ?? 'N/A';
-                throw new Exception("API request failed: Status {$statusCode}, Code: {$apiCode}, Message: {$apiMessage}");
+                throw new Exception("API Error: {$response->status()} - " . ($result['message'] ?? 'Unknown error'));
             }
 
-            // ApiLog simple
-            ApiLog::create([
-                'operation_type' => $typeModel,
-                'task_id' => $json['data']['task_id'] ?? null,
-                'model_name' => $data['model_name'] ?? null,
-                'prompt' => $data['prompt'] ?? null,
-                'status' => 'completed',
-                'task_status' => $json['data']['task_status'] ?? null,
-                'request_data' => $data,
-                'response_data' => $json,
-                'endpoint' => $this->baseUrl . $path,
-                'http_method' => 'POST',
-            ]);
-
-            return $json;
+            $this->log($type, $data, $result, $path);
+            return $result;
 
         } catch (Exception $e) {
-            // ApiLog de error
-            ApiLog::create([
-                'operation_type' => $typeModel,
-                'model_name' => $data['model_name'] ?? null,
-                'prompt' => $data['prompt'] ?? null,
-                'status' => 'failed',
-                'request_data' => $data,
-                'error_details' => ['message' => $e->getMessage()],
-                'endpoint' => $this->baseUrl . $path,
-                'http_method' => 'POST',
-            ]);
-
-            throw new Exception("KlingAI API Error: " . $e->getMessage());
+            $this->log($type, $data, null, $path, $e->getMessage());
+            throw new Exception("KlingAI Error: " . $e->getMessage());
         }
     }
 
-    protected function getRequest(string $path, string $typeModel): array
+    private function get(string $path): array
     {
-        try {
-            $response = Http::withHeaders($this->getAuthHeader())
-                ->timeout(30)
-                ->get($this->baseUrl . $path);
+        $response = Http::withHeaders($this->getHeaders())
+            ->timeout(30)
+            ->get($this->baseUrl . $path);
 
-            $json = $response->json();
+        $result = $response->json();
 
-            if ($response->failed()) {
-                $statusCode = $response->status();
-                $apiMessage = $json['message'] ?? 'Unknown API Error';
-                $apiCode = $json['code'] ?? 'N/A';
-                throw new Exception("API request failed: Status {$statusCode}, Code: {$apiCode}, Message: {$apiMessage}");
-            }
-
-            return $json;
-
-        } catch (Exception $e) {
-            throw new Exception("KlingAI API Error: " . $e->getMessage());
+        if ($response->failed()) {
+            throw new Exception("API Error: {$response->status()} - " . ($result['message'] ?? 'Unknown error'));
         }
+
+        return $result;
+    }
+
+    private function log(string $type, array $data, ?array $result, string $path, ?string $error = null): void
+    {
+        ApiLog::create([
+            'operation_type' => $type,
+            'task_id' => $result['data']['task_id'] ?? null,
+            'model_name' => $data['model_name'] ?? null,
+            'prompt' => $data['prompt'] ?? null,
+            'status' => $error ? 'failed' : 'completed',
+            'task_status' => $result['data']['task_status'] ?? null,
+            'request_data' => $data,
+            'response_data' => $result,
+            'error_details' => $error ? ['message' => $error] : null,
+            'endpoint' => $this->baseUrl . $path,
+            'http_method' => $error ? 'POST' : ($result ? 'POST' : 'GET'),
+        ]);
+    }
+
+    /**
+     * Limpiar token manualmente (útil para testing o errores de auth)
+     */
+    public function clearToken(): void
+    {
+        $this->jwtToken = null;
+        $this->jwtExpiresAt = 0;
     }
 
     // Virtual Model
     public function createImageGenerationTask(array $data): array
     {
-        return $this->postRequest('/v1/images/generations', $data, 'virtual_model');
+        return $this->post('/v1/images/generations', $data, 'virtual_model');
     }
 
     public function getImageGenerationResult(string $taskId): array
     {
-        return $this->getRequest('/v1/images/generations/' . $taskId, 'virtual_model');
+        return $this->get('/v1/images/generations/' . $taskId);
     }
 
     // Virtual Try-On
     public function createVirtualTryOn(array $data): array
     {
-        return $this->postRequest('/v1/images/kolors-virtual-try-on', $data, 'virtual_try_on');
+        return $this->post('/v1/images/kolors-virtual-try-on', $data, 'virtual_try_on');
     }
 
     public function getVirtualTryOnResult(string $taskId): array
     {
-        return $this->getRequest('/v1/images/kolors-virtual-try-on/' . $taskId, 'virtual_try_on');
+        return $this->get('/v1/images/kolors-virtual-try-on/' . $taskId);
     }
 }
