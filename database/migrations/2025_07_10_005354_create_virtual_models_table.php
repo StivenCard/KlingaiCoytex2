@@ -15,11 +15,10 @@ return new class extends Migration
             $table->text('prompt')->nullable();
             $table->enum('gender', ['male', 'female'])->default('male');
             $table->enum('age_group', ['children', 'youth', 'elderly'])->default('youth');
-            $table->enum('skin_tone', ['light', 'medium', 'dark','olive'])->default('medium'); // Tono de piel del modelo
-            $table->string('hints')->nullable(); // Sugerencias para el modelo
-            $table->enum('aspect_ratio', ['1:1', '9:16', '2:3',  '3:4'])->default('3:4');// 16:9, 9:16, 1:1, etc
+            $table->enum('skin_tone', ['light', 'medium', 'dark','olive'])->default('medium');
+            $table->enum('aspect_ratio', ['1:1', '9:16', '2:3',  '3:4'])->default('3:4');
             $table->integer('output_count')->default(1);
-            $table->json('result_image_paths')->nullable(); // URLs de imágenes guardadas
+            $table->json('result_image_paths')->nullable();
             $table->enum('status', ['submitted', 'processing', 'completed', 'failed'])->default('submitted');
             $table->timestamps();
         });

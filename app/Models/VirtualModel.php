@@ -17,7 +17,6 @@ class VirtualModel extends Model
         'gender',
         'age_group',
         'skin_tone',
-        'hints',
         'aspect_ratio',
         'output_count',
         'result_image_paths',
@@ -28,7 +27,7 @@ class VirtualModel extends Model
         'result_image_paths' => 'array',
     ];
 
-    // 🔥 ACCESSORS PARA FRONTEND
+    // 🔥 ACCESSORS PARA FRONTEND (SIN CAMBIOS)
     public function getPreviewUrlAttribute(): ?string
     {
         if (empty($this->result_image_paths)) {

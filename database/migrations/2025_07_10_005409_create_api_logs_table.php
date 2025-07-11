@@ -14,15 +14,21 @@ return new class extends Migration
             $table->string('task_id')->nullable();
             $table->string('model_name')->nullable();
             $table->text('prompt')->nullable(); // Solo para virtual_model
-            $table->text('hints_used')->nullable(); // Hints aplicados
             $table->enum('status', ['submitted', 'processing', 'completed', 'failed']);
-            $table->string('task_status')->nullable(); // Estado de la API
+            $table->string('task_status')->nullable();
             $table->text('task_status_msg')->nullable();
-            $table->json('request_data')->nullable(); // Payload enviado (sin imágenes base64)
-            $table->json('response_data')->nullable(); // Respuesta de la API
-            $table->json('error_details')->nullable(); // Detalles de errores
-            $table->string('endpoint'); // URL del endpoint usado
-            $table->string('http_method'); // GET/POST
+
+            // 🔥 MANTENER request_data PARA virtual_model (metadatos)
+            $table->json('request_data')->nullable();
+
+            // 🔥 AGREGAR rutas específicas PARA virtual_try_on
+            $table->string('human_image_path')->nullable(); // Solo try-on
+            $table->string('cloth_image_path')->nullable(); // Solo try-on
+
+            $table->json('response_data')->nullable();
+            $table->json('error_details')->nullable();
+            $table->string('endpoint');
+            $table->string('http_method');
             $table->timestamps();
         });
     }

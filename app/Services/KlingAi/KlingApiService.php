@@ -7,6 +7,7 @@ use App\Models\ApiLog;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Exception;
+use Illuminate\Support\Facades\Cache;
 
 class KlingApiService
 {
@@ -14,7 +15,6 @@ class KlingApiService
     private string $accessKey;
     private string $secretKey;
     private ?string $jwtToken = null;
-    private int $jwtExpiresAt = 0;
 
     public function __construct()
     {
@@ -29,11 +29,12 @@ class KlingApiService
 
     private function generateJwtToken(): string
     {
-        if ($this->jwtToken && time() < $this->jwtExpiresAt) {
+        $this->jwtToken = Cache::get('klingai.jwt_token');
+        if ($this->jwtToken) {
             return $this->jwtToken;
         }
 
-        $expiresAt = time() + 1800; // 30 minutos
+        $expiresAt = time() + 1800;
 
         $payload = [
             "iss" => $this->accessKey,
@@ -42,13 +43,8 @@ class KlingApiService
         ];
 
         $this->jwtToken = JWT::encode($payload, $this->secretKey, 'HS256');
-        $this->jwtExpiresAt = $expiresAt;
 
-        Log::debug('JWT Token generado', [
-            'expires_at' => date('Y-m-d H:i:s', $this->jwtExpiresAt),
-            'iss' => $this->accessKey
-        ]);
-
+        Cache::put('klingai.jwt_token', $this->jwtToken, now()->addMinutes(30));
         return $this->jwtToken;
     }
 
@@ -60,7 +56,8 @@ class KlingApiService
         ];
     }
 
-    private function post(string $path, array $data, string $type): array
+    // 🔥 MODIFICADO: Recibir rutas como parámetros separados
+    private function post(string $path, array $data, string $type, ?string $humanPath = null, ?string $clothPath = null): array
     {
         try {
             $response = Http::withHeaders($this->getHeaders())
@@ -74,11 +71,11 @@ class KlingApiService
                 throw new Exception("API Error: {$response->status()} - " . ($result['message'] ?? 'Unknown error'));
             }
 
-            $this->log($type, $data, $result, $path);
+            $this->log($type, $data, $result, $path, null, $humanPath, $clothPath);
             return $result;
 
         } catch (Exception $e) {
-            $this->log($type, $data, null, $path, $e->getMessage());
+            $this->log($type, $data, null, $path, $e->getMessage(), $humanPath, $clothPath);
             throw new Exception("KlingAI Error: " . $e->getMessage());
         }
     }
@@ -98,33 +95,38 @@ class KlingApiService
         return $result;
     }
 
-    private function log(string $type, array $data, ?array $result, string $path, ?string $error = null): void
+    // 🔥 LOG SIMPLIFICADO: Solo rutas específicas
+    private function log(string $type, array $data, ?array $result, string $path, ?string $error = null, ?string $humanPath = null, ?string $clothPath = null): void
     {
-        ApiLog::create([
+        $logData = [
             'operation_type' => $type,
             'task_id' => $result['data']['task_id'] ?? null,
             'model_name' => $data['model_name'] ?? null,
             'prompt' => $data['prompt'] ?? null,
             'status' => $error ? 'failed' : 'completed',
             'task_status' => $result['data']['task_status'] ?? null,
-            'request_data' => $data,
             'response_data' => $result,
             'error_details' => $error ? ['message' => $error] : null,
             'endpoint' => $this->baseUrl . $path,
             'http_method' => $error ? 'POST' : ($result ? 'POST' : 'GET'),
-        ]);
+        ];
+
+        // 🔥 LÓGICA CONDICIONAL SEGÚN TIPO
+        if ($type === 'virtual_model') {
+            // 🔥 VIRTUAL MODEL: Guardar todo el request_data (no hay imágenes base64)
+            $logData['request_data'] = $data;
+
+        } elseif ($type === 'virtual_try_on') {
+            // 🔥 VIRTUAL TRY-ON: Solo rutas, NO request_data (evitar base64)
+            $logData['human_image_path'] = $humanPath;
+            $logData['cloth_image_path'] = $clothPath;
+            // NO guardar request_data porque contiene base64
+        }
+
+        ApiLog::create($logData);
     }
 
-    /**
-     * Limpiar token manualmente (útil para testing o errores de auth)
-     */
-    public function clearToken(): void
-    {
-        $this->jwtToken = null;
-        $this->jwtExpiresAt = 0;
-    }
-
-    // Virtual Model
+    // 🔥 Virtual Model (solo prompt, sin rutas de imágenes)
     public function createImageGenerationTask(array $data): array
     {
         return $this->post('/v1/images/generations', $data, 'virtual_model');
@@ -135,10 +137,10 @@ class KlingApiService
         return $this->get('/v1/images/generations/' . $taskId);
     }
 
-    // Virtual Try-On
-    public function createVirtualTryOn(array $data): array
+    // 🔥 Virtual Try-On (con rutas de imágenes)
+    public function createVirtualTryOn(array $data, ?string $humanPath = null, ?string $clothPath = null): array
     {
-        return $this->post('/v1/images/kolors-virtual-try-on', $data, 'virtual_try_on');
+        return $this->post('/v1/images/kolors-virtual-try-on', $data, 'virtual_try_on', $humanPath, $clothPath);
     }
 
     public function getVirtualTryOnResult(string $taskId): array

@@ -34,17 +34,21 @@ class VirtualModelController extends Controller
             'aspect_ratio' => 'required|in:1:1,9:16,2:3,3:4',
             'output_count' => 'required|integer|min:1|max:4',
             'prompt' => 'nullable|string|max:2500',
-            'hints' => 'nullable|string'
         ]);
 
         try {
             $prompt = $this->buildPrompt($request);
 
+            // 🔥 AGREGAR METADATOS AL REQUEST DATA PARA EL LOG
             $response = $this->api->createImageGenerationTask([
                 'model_name' => 'kling-v1-5',
                 'prompt' => $prompt,
                 'aspect_ratio' => $request->aspect_ratio,
                 'n' => $request->output_count,
+                // 🔥 METADATOS ADICIONALES PARA EL LOG
+                'gender' => $request->gender,
+                'age_group' => $request->age_group,
+                'skin_tone' => $request->skin_tone,
             ]);
 
             if ($taskId = $response['data']['task_id'] ?? null) {
@@ -55,7 +59,6 @@ class VirtualModelController extends Controller
                     'gender' => $request->gender,
                     'age_group' => $request->age_group,
                     'skin_tone' => $request->skin_tone,
-                    'hints' => $request->hints,
                     'aspect_ratio' => $request->aspect_ratio,
                     'output_count' => $request->output_count,
                     'status' => 'processing',
@@ -107,20 +110,10 @@ class VirtualModelController extends Controller
 
     private function buildPrompt(Request $request): string
     {
-        // Si viene prompt personalizado, usarlo
         if ($request->filled('prompt')) {
             return trim($request->prompt);
         }
 
-        // Si viene hint, usar prompt predefinido
-        if ($request->filled('hints')) {
-            $hintPrompt = $this->hints->getPromptForHint($request->hints);
-            if ($hintPrompt) {
-                return $this->addPhysicalTraits($hintPrompt, $request);
-            }
-        }
-
-        // Prompt base simple
         return $this->buildBasePrompt($request);
     }
 
@@ -131,15 +124,6 @@ class VirtualModelController extends Controller
         $skinTone = $this->mapSkinTone($request->skin_tone);
 
         return "Crear un modelo de cuerpo completo, con rasgos colombianos, fondo sencillo, sin imperfecciones, sin irregularidades, de genero {$gender}, edad {$age}, tono de piel {$skinTone}.";
-    }
-
-    private function addPhysicalTraits(string $basePrompt, Request $request): string
-    {
-        $gender = $request->gender === 'male' ? 'man' : 'woman';
-        $age = $this->mapAgeEnglish($request->age_group);
-        $skinTone = $this->mapSkinToneEnglish($request->skin_tone);
-
-        return "{$age} {$gender} with {$skinTone} skin tone, {$basePrompt}";
     }
 
     private function mapAge(string $age): string
@@ -160,27 +144,6 @@ class VirtualModelController extends Controller
             'dark' => 'oscuro',
             'olive' => 'oliva',
             default => 'medio'
-        };
-    }
-
-    private function mapAgeEnglish(string $age): string
-    {
-        return match($age) {
-            'children' => 'young',
-            'youth' => 'young adult',
-            'elderly' => 'mature',
-            default => 'adult'
-        };
-    }
-
-    private function mapSkinToneEnglish(string $tone): string
-    {
-        return match($tone) {
-            'light' => 'light',
-            'medium' => 'medium',
-            'dark' => 'dark',
-            'olive' => 'olive',
-            default => 'medium'
         };
     }
 }

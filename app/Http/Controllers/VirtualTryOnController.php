@@ -59,20 +59,25 @@ class VirtualTryOnController extends Controller
         ]);
 
         try {
+            // 🔥 OBTENER RUTAS PRIMERO (antes de la API call)
+            $humanImagePath = $this->getHumanPath($request);
+            $garmentImagePath = $this->getGarmentPath($request);
+
+            // 🔥 PASAR RUTAS AL API SERVICE
             $response = $this->api->createVirtualTryOn([
                 'model_name' => 'kolors-virtual-try-on-v1-5',
                 'human_image' => $this->getHumanImage($request),
                 'cloth_image' => $this->getGarmentImage($request),
-            ]);
+            ], $humanImagePath, $garmentImagePath);
 
             if ($taskId = $response['data']['task_id'] ?? null) {
                 VirtualTryOn::create([
                     'task_id' => $taskId,
                     'model_name' => 'kolors-virtual-try-on-v1-5',
                     'model_type' => $request->model_source,
-                    'human_image_path' => $this->getHumanPath($request),
+                    'human_image_path' => $humanImagePath,
                     'garments_type' => $request->garment_type,
-                    'cloth_image_path' => $this->getGarmentPath($request),
+                    'cloth_image_path' => $garmentImagePath,
                     'output_count' => $request->output_count,
                     'status' => 'processing',
                 ]);
@@ -148,7 +153,7 @@ class VirtualTryOnController extends Controller
             return $this->images->saveImage($request->file('human_image'), 'klingai/tryon_inputs/human', 'human_');
         }
         if ($request->model_source === 'default') {
-            return 'default_models/' . $request->selected_default_model;
+            return 'klingai/default_models/' . $request->selected_default_model; // 🔥 RUTA COMPLETA
         }
         if ($request->model_source === 'virtual') {
             $model = VirtualModel::find($request->selected_virtual_model);

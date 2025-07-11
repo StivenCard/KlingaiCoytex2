@@ -5,15 +5,15 @@ namespace App\Services;
 class HintsService
 {
     private array $hints = [
-        'elegant' => 'Standing elegantly, with feet naturally together, right hand holding a black handbag, left hand hanging naturally, chin slightly raised, short hair slightly curled, delicate pink woolen short jacket with metal buckle decoration, white inner wear, black skirt, black stockings, black patent leather loafers, light green ground background, simple studio shot',
+        'elegante' => 'De pie elegantemente, con los pies naturalmente juntos, la mano derecha sosteniendo un bolso negro, la mano izquierda colgando naturalmente, la barbilla ligeramente levantada, cabello corto ligeramente rizado, delicada chaqueta corta de lana rosa con decoración de hebilla de metal, ropa interior blanca, falda negra, medias negras, mocasines de charol negro, fondo de tierra verde claro, simple toma de estudio',
 
-        'urban' => 'Relaxed standing pose, legs naturally crossed, one hand gently touching hair, reddish-brown medium-short hair, white loose hoodie, black shorts, sidewalk scene, green tree background, iron fence, natural light, casual everyday style',
+        'urbano' => 'Pose relajada de pie, piernas cruzadas naturalmente, una mano tocando suavemente el cabello, cabello castaño rojizo medio corto, sudadera blanca suelta, pantalones cortos negros, escena de acera, fondo de árbol verde, cerca de hierro, luz natural, estilo casual cotidiano.',
 
-        'energetic' => 'Dynamic athletic pose, one leg slightly forward, arms positioned naturally showing energy, bright sportswear, modern fitness attire, gym or outdoor sports setting, vibrant colors, confident expression',
+        'energetico' => 'Pose atlética dinámica, una pierna ligeramente hacia adelante, brazos posicionados naturalmente mostrando energía, ropa deportiva brillante, atuendo moderno de fitness, gimnasio o entorno deportivo al aire libre, colores vibrantes, expresión confiada.',
 
-        'sweet' => 'Gentle pose with soft smile, flowing hair, wearing pastel colored dress, delicate jewelry, soft natural lighting, floral or garden background, feminine and graceful appearance',
+        'dulce' => 'Pose suave con una sonrisa delicada, cabello fluido, vestido de color pastel, joyería delicada, iluminación natural suave, fondo floral o de jardín, apariencia femenina y graciosa.',
 
-        'intellectual' => 'Professional confident pose, business attire, clean modern look, holding books or documents, office or library setting, sophisticated styling, neutral background, smart casual appearance'
+        'intelectual' => 'Pose profesional y segura, atuendo de negocios, aspecto moderno y limpio, sosteniendo libros o documentos, entorno de oficina o biblioteca, estilo sofisticado, fondo neutro, apariencia inteligente y casual.'
     ];
 
     public function getAllHints(): array

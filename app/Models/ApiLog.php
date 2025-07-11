@@ -14,11 +14,12 @@ class ApiLog extends Model
         'task_id',
         'model_name',
         'prompt',
-        'hints_used',
         'status',
         'task_status',
         'task_status_msg',
-        'request_data',
+        'request_data', // 🔥 Para virtual_model (metadatos)
+        'human_image_path', // 🔥 Para virtual_try_on
+        'cloth_image_path', // 🔥 Para virtual_try_on
         'response_data',
         'error_details',
         'endpoint',
