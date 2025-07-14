@@ -731,6 +731,7 @@ const renderResultsHistory = () => {
             html += `<div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--txt-2);">
                 <div class="spinner-border text-primary" role="status"></div>
                 <p style="margin-top: 16px;">Processing...</p>
+                <small>⏳ Tiempo estimado: 5–20 segundos.</small>
             </div>`;
         } else {
             html += `<div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--txt-2);">
