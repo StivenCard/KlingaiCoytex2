@@ -4,6 +4,11 @@ namespace App\Services;
 
 class HintsService
 {
+    /**
+     * Palabras clave y descripciones para los hints.
+     *
+     *
+     */
     private array $hints = [
         'elegante' => 'De pie elegantemente, con los pies naturalmente juntos, la mano derecha sosteniendo un bolso negro, la mano izquierda colgando naturalmente, la barbilla ligeramente levantada, cabello corto ligeramente rizado, delicada chaqueta corta de lana rosa con decoración de hebilla de metal, ropa interior blanca, falda negra, medias negras, mocasines de charol negro, fondo de tierra verde claro, simple toma de estudio',
 
@@ -16,6 +21,14 @@ class HintsService
         'intelectual' => 'Pose profesional y segura, atuendo de negocios, aspecto moderno y limpio, sosteniendo libros o documentos, entorno de oficina o biblioteca, estilo sofisticado, fondo neutro, apariencia inteligente y casual.'
     ];
 
+    /**
+     * Retorna todos los hints disponibles.
+     *
+     * @return array[] Lista con:
+     *   - key: identificador interno
+     *   - name: nombre capitalizado (para mostrar)
+     *   - prompt: texto completo que se inserta en el textarea
+     */
     public function getAllHints(): array
     {
         return array_map(fn($key) => [
@@ -25,6 +38,12 @@ class HintsService
         ], array_keys($this->hints));
     }
 
+    /**
+     * Retorna el prompt completo de un hint específico.
+     *
+     * @param string $hint
+     * @return string
+     */
     public function getPromptForHint(string $hint): string
     {
         return $this->hints[$hint] ?? '';

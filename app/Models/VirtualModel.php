@@ -11,44 +11,53 @@ class VirtualModel extends Model
     use HasFactory;
 
     protected $fillable = [
-        'task_id',
-        'model_name',
-        'prompt',
-        'gender',
-        'age_group',
-        'skin_tone',
-        'aspect_ratio',
-        'output_count',
-        'result_image_paths',
-        'status',
+        'task_id',              // ID de la tarea en KlingAI
+        'model_name',           // Nombre del modelo (v1, etc.)
+        'prompt',               // Prompt utilizado
+        'gender',               // Género del modelo (opcional)
+        'age_group',            // Grupo de edad (opcional)
+        'skin_tone',            // Tono de piel (opcional)
+        'aspect_ratio',         // Relación de aspecto solicitada
+        'output_count',         // Cantidad de imágenes generadas
+        'result_image_paths',   // Rutas relativas de imágenes generadas
+        'status',               // Estado: processing, completed, failed
     ];
-
     protected $casts = [
         'result_image_paths' => 'array',
     ];
 
-    // 🔥 ACCESSORS PARA FRONTEND (SIN CAMBIOS)
-    public function getPreviewUrlAttribute(): ?string
+    /**
+     * Devuelve un array de todas las URLs públicas de las imágenes generadas.
+     * Ideal para mostrar una galería completa del modelo.
+     *
+     * @return string[] Lista de URLs públicas
+     */
+    public function getAllPreviewUrlsAttribute(): array
     {
-        if (empty($this->result_image_paths)) {
-            return null;
-        }
-
-        return Storage::url($this->result_image_paths[0]);
+        return collect($this->result_image_paths)
+            ->map(fn($path) => Storage::url($path))
+            ->toArray();
     }
 
+    /**
+     * Nombre amigable para mostrar en listas o vistas.
+     * Ej: "Virtual Model #5"
+     *
+     * @return string
+     */
     public function getDisplayNameAttribute(): string
     {
         return "Virtual Model #{$this->id}";
     }
 
+    /**
+     * Fecha de creación formateada.
+     * Ej: "2025-07-14 18:32"
+     *
+     * @return string
+     */
     public function getFormattedDateAttribute(): string
     {
         return $this->created_at->format('Y-m-d H:i');
-    }
-
-    public function getPreviewPathAttribute(): ?string
-    {
-        return $this->result_image_paths[0] ?? null;
     }
 }

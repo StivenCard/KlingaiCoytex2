@@ -5,9 +5,8 @@ namespace App\Services\KlingAi;
 use Firebase\JWT\JWT;
 use App\Models\ApiLog;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
-use Exception;
 use Illuminate\Support\Facades\Cache;
+use Exception;
 
 class KlingApiService
 {
@@ -16,6 +15,11 @@ class KlingApiService
     private string $secretKey;
     private ?string $jwtToken = null;
 
+    /**
+     * Inicializa el servicio con los datos de configuración desde el archivo `config/services.php`.
+     *
+     * @throws Exception Si falta alguna clave de configuración.
+     */
     public function __construct()
     {
         $this->baseUrl = config('services.kling.api_url');
@@ -27,36 +31,50 @@ class KlingApiService
         }
     }
 
+    /**
+     * Genera o recupera un token JWT válido desde la caché.
+     *
+     * @return string Token JWT generado.
+     */
     private function generateJwtToken(): string
     {
-        $this->jwtToken = Cache::get('klingai.jwt_token');
-        if ($this->jwtToken) {
-            return $this->jwtToken;
-        }
+       $this->jwtToken = Cache::remember('klingai_token', now()->addMinutes(30), function () {
+            $payload = [
+                'iss' => $this->accessKey,
+                'exp' => time() + 1800,
+                'nbf' => time() - 5
+            ];
+            return JWT::encode($payload, $this->secretKey, 'HS256');
+        });
 
-        $expiresAt = time() + 1800;
-
-        $payload = [
-            "iss" => $this->accessKey,
-            "exp" => $expiresAt,
-            "nbf" => time() - 5
-        ];
-
-        $this->jwtToken = JWT::encode($payload, $this->secretKey, 'HS256');
-
-        Cache::put('klingai.jwt_token', $this->jwtToken, now()->addMinutes(30));
         return $this->jwtToken;
     }
 
+    /**
+     * Genera los headers de autorización para todas las llamadas HTTP.
+     *
+     * @return array Headers HTTP necesarios.
+     */
     private function getHeaders(): array
     {
         return [
             'Authorization' => 'Bearer ' . $this->generateJwtToken(),
-            'Content-Type' => 'application/json'
+            'Content-Type'  => 'application/json'
         ];
     }
 
-    // 🔥 MODIFICADO: Recibir rutas como parámetros separados
+    /**
+     * Envía una solicitud POST a la API de Kling.
+     *
+     * @param string $path Ruta del endpoint.
+     * @param array $data Datos del cuerpo (payload).
+     * @param string $type Tipo de operación (virtual_model o virtual_try_on).
+     * @param string|null $humanPath Ruta a imagen humana (solo try-on).
+     * @param string|null $clothPath Ruta a imagen prenda (solo try-on).
+     * @return array Respuesta decodificada del JSON.
+     *
+     * @throws Exception Si ocurre un error de API.
+     */
     private function post(string $path, array $data, string $type, ?string $humanPath = null, ?string $clothPath = null): array
     {
         try {
@@ -71,80 +89,134 @@ class KlingApiService
                 throw new Exception("API Error: {$response->status()} - " . ($result['message'] ?? 'Unknown error'));
             }
 
-            $this->log($type, $data, $result, $path, null, $humanPath, $clothPath);
+            $this->log($type, $data, $result, $path, null, $humanPath, $clothPath, 'POST');
+
             return $result;
 
         } catch (Exception $e) {
-            $this->log($type, $data, null, $path, $e->getMessage(), $humanPath, $clothPath);
+            $this->log($type, $data, null, $path, $e->getMessage(), $humanPath, $clothPath, 'POST');
             throw new Exception("KlingAI Error: " . $e->getMessage());
         }
     }
 
-    private function get(string $path): array
+    /**
+     * Realiza una solicitud GET a la API de Kling.
+     *
+     * @param string $path Ruta del endpoint.
+     * @param string $type Tipo de operación.
+     * @param string|null $humanPath Ruta humana opcional (solo try-on).
+     * @param string|null $clothPath Ruta prenda opcional (solo try-on).
+     * @return array Respuesta decodificada.
+     *
+     * @throws Exception Si la API falla.
+     */
+    private function get(string $path, string $type, ?string $humanPath = null, ?string $clothPath = null): array
     {
-        $response = Http::withHeaders($this->getHeaders())
-            ->timeout(30)
-            ->get($this->baseUrl . $path);
+        try {
+            $response = Http::withHeaders($this->getHeaders())
+                ->timeout(30)
+                ->retry(2, 1000)
+                ->get($this->baseUrl . $path);
 
-        $result = $response->json();
+            $result = $response->json();
 
-        if ($response->failed()) {
-            throw new Exception("API Error: {$response->status()} - " . ($result['message'] ?? 'Unknown error'));
+            if ($response->failed()) {
+                throw new Exception("API Error: {$response->status()} - " . ($result['message'] ?? 'Unknown error'));
+            }
+
+            $this->log($type, [], $result, $path, null, $humanPath, $clothPath, 'GET');
+
+            return $result;
+
+        } catch (Exception $e) {
+            $this->log($type, [], null, $path, $e->getMessage(), $humanPath, $clothPath, 'GET');
+            throw new Exception("KlingAI Error: " . $e->getMessage());
         }
-
-        return $result;
     }
 
-    // 🔥 LOG SIMPLIFICADO: Solo rutas específicas
-    private function log(string $type, array $data, ?array $result, string $path, ?string $error = null, ?string $humanPath = null, ?string $clothPath = null): void
+    /**
+     * Registra trazabilidad técnica de cada solicitud en la tabla api_logs.
+     *
+     * @param string $type Tipo de operación.
+     * @param array $data Datos enviados.
+     * @param array|null $result Respuesta de la API.
+     * @param string $path Endpoint usado.
+     * @param string|null $error Mensaje de error (si ocurre).
+     * @param string|null $humanPath Ruta humana (solo try-on).
+     * @param string|null $clothPath Ruta prenda (solo try-on).
+     * @return void
+     */
+    private function log(string $type, array $data, ?array $result, string $path, ?string $error = null, ?string $humanPath = null, ?string $clothPath = null, string $httpMethod): void
     {
         $logData = [
             'operation_type' => $type,
-            'task_id' => $result['data']['task_id'] ?? null,
-            'model_name' => $data['model_name'] ?? null,
-            'prompt' => $data['prompt'] ?? null,
-            'status' => $error ? 'failed' : 'completed',
-            'task_status' => $result['data']['task_status'] ?? null,
-            'response_data' => $result,
-            'error_details' => $error ? ['message' => $error] : null,
-            'endpoint' => $this->baseUrl . $path,
-            'http_method' => $error ? 'POST' : ($result ? 'POST' : 'GET'),
+            'task_id'        => $result['data']['task_id'] ?? null,
+            'model_name'     => $data['model_name'] ?? null,
+            'prompt'         => $data['prompt'] ?? null,
+            'status'         => $error ? 'failed' : 'completed',
+            'task_status'    => $result['data']['task_status'] ?? null,
+            'task_status_msg' => $result['data']['task_status_msg'] ?? null,
+            'response_data'  => $result,
+            'error_details'  => $error ? ['message' => $error] : null,
+            'endpoint'       => $this->baseUrl . $path,
+            'http_method'    => $httpMethod,
         ];
 
-        // 🔥 LÓGICA CONDICIONAL SEGÚN TIPO
         if ($type === 'virtual_model') {
-            // 🔥 VIRTUAL MODEL: Guardar todo el request_data (no hay imágenes base64)
             $logData['request_data'] = $data;
-
         } elseif ($type === 'virtual_try_on') {
-            // 🔥 VIRTUAL TRY-ON: Solo rutas, NO request_data (evitar base64)
             $logData['human_image_path'] = $humanPath;
             $logData['cloth_image_path'] = $clothPath;
-            // NO guardar request_data porque contiene base64
         }
 
         ApiLog::create($logData);
     }
 
-    // 🔥 Virtual Model (solo prompt, sin rutas de imágenes)
+    /**
+     * Crea una tarea de generación de imagen (modelo virtual).
+     *
+     * @param array $data Payload con modelo_name, prompt, etc.
+     * @return array Respuesta de la API.
+     */
     public function createImageGenerationTask(array $data): array
     {
         return $this->post('/v1/images/generations', $data, 'virtual_model');
     }
 
+    /**
+     * Consulta el estado/resultados de una tarea de generación de imagen.
+     *
+     * @param string $taskId ID de la tarea.
+     * @return array Resultado del servidor.
+     */
     public function getImageGenerationResult(string $taskId): array
     {
-        return $this->get('/v1/images/generations/' . $taskId);
+        return $this->get('/v1/images/generations/' . $taskId, 'virtual_model');
     }
 
-    // 🔥 Virtual Try-On (con rutas de imágenes)
+    /**
+     * Crea una tarea de virtual try-on.
+     *
+     * @param array $data Payload incluyendo imágenes base64.
+     * @param string|null $humanPath Ruta humana para logs.
+     * @param string|null $clothPath Ruta prenda para logs.
+     * @return array Respuesta de la API.
+     */
     public function createVirtualTryOn(array $data, ?string $humanPath = null, ?string $clothPath = null): array
     {
         return $this->post('/v1/images/kolors-virtual-try-on', $data, 'virtual_try_on', $humanPath, $clothPath);
     }
 
-    public function getVirtualTryOnResult(string $taskId): array
+    /**
+     * Consulta resultados de una tarea de try-on.
+     *
+     * @param string $taskId ID de la tarea.
+     * @param string|null $humanPath Ruta humana para log.
+     * @param string|null $clothPath Ruta prenda para log.
+     * @return array Resultado del try-on.
+     */
+    public function getVirtualTryOnResult(string $taskId, ?string $humanPath = null, ?string $clothPath = null): array
     {
-        return $this->get('/v1/images/kolors-virtual-try-on/' . $taskId);
+        return $this->get('/v1/images/kolors-virtual-try-on/' . $taskId, 'virtual_try_on', $humanPath, $clothPath);
     }
 }

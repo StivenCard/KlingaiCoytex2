@@ -20,29 +20,38 @@
             <div class="tab-content d-none" data-content="virtual">
                 <div class="grid-3" id="virtualModelGrid">
                     @forelse($virtualModels as $model)
-                        <div class="item" data-model="{{ $model->id }}">
-                            <img src="{{ $model->preview_url }}" alt="{{ $model->display_name }}">
-                            <input type="radio" name="selected_virtual_model" value="{{ $model->id }}" class="d-none">
-                            <div class="overlay">
-                                <div class="badges">
-                                    <span class="badge {{ $model->gender }}">{{ ucfirst($model->gender) }}</span>
-                                    <span class="badge">{{ ucfirst($model->age_group) }}</span>
-                                    <span class="badge">{{ ucfirst($model->skin_tone) }}</span>
+                        @foreach($model->all_preview_urls as $index => $imageUrl)
+                            <div class="item" data-model="{{ $model->id }}" data-index="{{ $index }}">
+                                <img src="{{ $imageUrl }}" alt="Image {{ $index + 1 }} - {{ $model->display_name }}">
+
+                                {{-- Marcar con dos campos: modelo e índice --}}
+                                <input type="radio" name="selected_virtual_model" value="{{ $model->id }}" class="d-none">
+                                <input type="radio" name="selected_virtual_index" value="{{ $index }}" class="d-none">
+
+                                <div class="overlay">
+                                    <div class="badges">
+                                        <span class="badge {{ $model->gender }}">{{ ucfirst($model->gender) }}</span>
+                                        <span class="badge">{{ ucfirst($model->age_group) }}</span>
+                                        <span class="badge">{{ ucfirst($model->skin_tone) }}</span>
+                                    </div>
+                                    <div class="overlay-title">{{ $model->display_name }} - {{ $index + 1 }}</div>
+                                    <div class="overlay-date">{{ $model->formatted_date }}</div>
                                 </div>
-                                <div class="overlay-title">{{ $model->display_name }}</div>
-                                <div class="overlay-date">{{ $model->formatted_date }}</div>
                             </div>
-                        </div>
+                        @endforeach
                     @empty
                         <div class="no-images">
                             <i class="fas fa-user" style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;"></i>
                             <p>No virtual models available</p>
-                            <small><a href="{{ route('virtual-model') }}" style="color: var(--accent-2); text-decoration: none;">Generate virtual models first</a></small>
+                            <small>
+                                <a href="{{ route('virtual-model') }}" style="color: var(--accent-2); text-decoration: none;">
+                                    Generate virtual models first
+                                </a>
+                            </small>
                         </div>
                     @endforelse
                 </div>
             </div>
-
             <!-- DEFAULT MODELS -->
             <div class="tab-content" data-content="default">
                 <div class="grid-3" id="defaultModelGrid">
@@ -151,7 +160,7 @@
 
             <!-- GENERATE -->
             <button class="btn-generate" id="generateBtn">
-                <i class="fas fa-magic"></i> Generate
+                <i class="fas fa-magic"></i> Generar
             </button>
         </div>
     </div>
@@ -160,7 +169,7 @@
     <div class="right-panel">
         <div class="results-header">
             <i class="fas fa-images"></i>
-            <span>AI Outfit Results</span>
+            <span>Probador Virtual Resultados</span>
         </div>
         <div class="results-content">
             <div id="resultsContainer">
@@ -400,15 +409,30 @@ $(document).ready(function() {
     $(document).on('click', '.item', function() {
         $('.item').removeClass('selected');
         $(this).addClass('selected');
+
         const modelValue = $(this).data('model');
+        const modelIndex = $(this).data('index');
 
         if ($(this).find('input[name="selected_default_model"]').length) {
+            // Default model
             $(this).find('input[name="selected_default_model"]').prop('checked', true);
             $('#hiddenSelectedModel').val(modelValue);
             $('#hiddenSelectedVirtualModel').val('');
+            $('#hiddenSelectedVirtualIndex').remove(); // limpiar si existe
         } else {
+            // Virtual model
             $(this).find('input[name="selected_virtual_model"]').prop('checked', true);
+            $(this).find('input[name="selected_virtual_index"]').prop('checked', true);
+
             $('#hiddenSelectedVirtualModel').val(modelValue);
+
+            // Crear o actualizar el campo hidden del índice
+            if ($('#hiddenSelectedVirtualIndex').length === 0) {
+                $('#hiddenForm').append(`<input type="hidden" name="selected_virtual_index" id="hiddenSelectedVirtualIndex" value="${modelIndex}">`);
+            } else {
+                $('#hiddenSelectedVirtualIndex').val(modelIndex);
+            }
+
             $('#hiddenSelectedModel').val('');
         }
     });
@@ -560,7 +584,7 @@ const downloadImage = () => {
 
     const link = document.createElement('a');
     link.href = currentImageSrc;
-    link.download = `virtual-try-on-result-${Date.now()}.jpg`;
+    link.download = `virtual-try-on-result-${Date.now()}.png`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -685,9 +709,9 @@ const renderResultsHistory = () => {
             <div class="result-group">
                 <div class="result-header">
                     <div class="result-info">
-                        <div><strong>Task ${result.task_id || 'Pending'}</strong></div>
+                        <div><strong> ${'Modelos Virtual Try On Generados' || 'Generando...'}</strong></div>
                         <div>${date}</div>
-                        <div>Model: ${result.model_type} | Garments: ${result.garments_type}</div>
+                        <div>Modelo: ${result.model_type} | Prenda/s: ${result.garments_type}</div>
                     </div>
                     <div class="${statusClass}">${result.status.toUpperCase()}</div>
                 </div>
@@ -696,8 +720,8 @@ const renderResultsHistory = () => {
         if (result.result_image_paths?.length) {
             result.result_image_paths.forEach((path, imgIndex) => {
                 // 🔥 AGREGAR CLICK PARA ABRIR MODAL
-                html += `<div class="item" style="cursor: pointer; position: relative;" onclick="openImageModal('${path}', 'Result ${imgIndex + 1}')">
-                    <img src="${path}" alt="Result ${imgIndex + 1}">
+                html += `<div class="item" style="cursor: pointer; position: relative;" onclick="openImageModal('${path}', 'Resultado ${imgIndex + 1}')">
+                    <img src="${path}" alt="Resultado ${imgIndex + 1}">
                     <div class="image-overlay" style="position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.7); border-radius: 4px; padding: 4px 8px; opacity: 0; transition: opacity 0.3s;">
                         <i class="fas fa-search-plus" style="color: white; font-size: 12px;"></i>
                     </div>

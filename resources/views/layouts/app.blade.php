@@ -8,10 +8,10 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         :root {
-            --bg-1: #1a1a1a; --bg-2: #2d2d2d; --bg-3: #3a3a3a;
-            --txt-1: #ffffff; --txt-2: #b0b0b0;
-            --accent-1: #4ade80; --accent-2: #3b82f6;
-            --border: #404040;
+            --bg-1: #a0a0a0; --bg-2: #c5c5c5; --bg-3: #a0a0a0;
+            --txt-1: #222222; --txt-2: #0c0c0c;
+            --accent-1: #3b82f6; --accent-2: #3b82f6;
+            --border: #b6b6b6;
         }
 
         * { box-sizing: border-box; }
@@ -128,8 +128,8 @@
         .selector { background: var(--bg-3); border: 1px solid var(--border); color: var(--txt-1); border-radius: 6px; padding: 8px 12px; width: 100%; margin-bottom: 16px; }
 
         /* 🔥 BOTÓN GENERAR */
-        .btn-generate { width: 100%; padding: 12px; background: linear-gradient(135deg, var(--accent-1), #22c55e); border: none; border-radius: 8px; color: white; font-weight: 600; font-size: 14px; cursor: pointer; transition: all 0.3s; }
-        .btn-generate:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(74, 222, 128, 0.3); }
+        .btn-generate { width: 100%; padding: 12px; background: var(--accent-2); border: none; border-radius: 8px; color: white; font-weight: 600; font-size: 14px; cursor: pointer; transition: all 0.3s; }
+        .btn-generate:hover { background: #2c2fe7;}
         .btn-generate:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
 
         /* 🔥 RESULTADOS */
@@ -212,9 +212,7 @@
     <!-- 🔥 NAVBAR -->
     <nav class="navbar navbar-expand-lg navbar-custom">
         <div class="container-fluid px-4">
-            <a class="navbar-brand" href="/">
-                <i class="fas fa-magic"></i> Virtual Try-On Coytex
-            </a>
+                <h3><i class="fas fa-magic"></i> SIO PLM - Probador Virtual con IA</h3>
             <div class="navbar-nav ms-auto">
                 <a class="nav-link {{ request()->routeIs('virtual-model') ? 'active' : '' }}" href="{{ route('virtual-model') }}">
                     <i class="fas fa-user-plus"></i> Virtual Model

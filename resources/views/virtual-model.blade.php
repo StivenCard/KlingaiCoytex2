@@ -7,7 +7,7 @@
         <!-- TAB HEADER -->
         <div class="sub-tabs">
             <div class="sub-tab active" style="flex: 1; text-align: center; padding: 12px; background: var(--bg-3); color: var(--txt-1);">
-                <i class="fas fa-user-plus"></i> Generate Virtual Model
+                <i class="fas fa-user-plus"></i> Generar Modelo Virtual
             </div>
         </div>
 
@@ -15,40 +15,40 @@
         <div class="scroll-container">
             <!-- MODEL SETTINGS -->
             <div class="section">
-                <h6 class="title"><i class="fas fa-cog"></i> Model Settings</h6>
+                <h6 class="title"><i class="fas fa-cog"></i> Configuración del Modelo</h6>
 
                 <!-- GENDER -->
                 <div class="group">
-                    <label class="label">Gender</label>
+                    <label class="label">Género</label>
                     <div class="h-selector">
                         <button class="selector-btn active" data-gender="male">
-                            <i class="fas fa-mars"></i> Male
+                            <i class="fas fa-mars"></i> Masculino
                         </button>
                         <button class="selector-btn" data-gender="female">
-                            <i class="fas fa-venus"></i> Female
+                            <i class="fas fa-venus"></i> Femenino
                         </button>
                     </div>
                 </div>
 
                 <!-- AGE -->
                 <div class="group">
-                    <label class="label">Age</label>
+                    <label class="label">Edad</label>
                     <div class="h-selector">
-                        <button class="selector-btn active" data-age="children">
-                            <i class="fas fa-child"></i> Children
+                        <button class="selector-btn" data-age="children">
+                            <i class="fas fa-child"></i> Niños
                         </button>
-                        <button class="selector-btn" data-age="youth">
-                            <i class="fas fa-user"></i> Youth
+                        <button class="selector-btn active" data-age="youth">
+                            <i class="fas fa-user"></i> Jóvenes
                         </button>
                         <button class="selector-btn" data-age="elderly">
-                            <i class="fas fa-user-tie"></i> Elderly
+                            <i class="fas fa-user-tie"></i> Adultos
                         </button>
                     </div>
                 </div>
 
                 <!-- SKIN TONE -->
                 <div class="group">
-                    <label class="label">Skin Tone</label>
+                    <label class="label">Tono de Piel</label>
                     <div class="h-selector">
                         <button class="selector-btn color-btn active" data-skin="light" style="background: rgb(255, 241, 228);">
                             <span class="color-check"><i class="fas fa-check"></i></span>
@@ -68,15 +68,15 @@
 
             <!-- PROMPT SECTION -->
             <div class="section">
-                <h6 class="title"><i class="fas fa-edit"></i> Custom Prompt (Optional)</h6>
+                <h6 class="title"><i class="fas fa-edit"></i> Prompt Personalizado (Opcional)</h6>
 
                 <!-- HINTS -->
                 <div class="group">
-                    <label class="label">Quick Hints</label>
+                    <label class="label">Sugerencias Rápidas</label>
                     <div class="grid-hints">
                         @foreach($hints as $hint)
                             <button class="hint-btn" data-hint="{{ $hint['key'] }}" data-prompt="{{ $hint['prompt'] }}">
-                                <i class="fas fa-{{ $hint['key'] === 'elegant' ? 'gem' : ($hint['key'] === 'urban' ? 'city' : ($hint['key'] === 'energetic' ? 'bolt' : ($hint['key'] === 'sweet' ? 'heart' : 'glasses'))) }}"></i>
+                                <i class="fas fa-{{ $hint['key'] === 'elegante' ? 'gem' : ($hint['key'] === 'urbano' ? 'city' : ($hint['key'] === 'energetico' ? 'bolt' : ($hint['key'] === 'dulce' ? 'heart' : 'glasses'))) }}"></i>
                                 {{ $hint['name'] }}
                             </button>
                         @endforeach
@@ -86,11 +86,11 @@
                 <!-- TEXTAREA -->
                 <div class="group">
                     <div class="prompt-container">
-                        <textarea id="promptText" class="prompt-textarea" placeholder="Enter custom prompt or select a hint above..." maxlength="2500"></textarea>
+                        <textarea id="promptText" class="prompt-textarea" placeholder="Ingresa un prompt personalizado o selecciona una sugerencia arriba..." maxlength="2500"></textarea>
                         <div class="prompt-footer">
                             <span class="char-count">0/2500</span>
                             <button class="clear-btn" id="clearPrompt">
-                                <i class="fas fa-eraser"></i> Clear
+                                <i class="fas fa-eraser"></i> Limpiar
                             </button>
                         </div>
                     </div>
@@ -99,30 +99,30 @@
 
             <!-- OUTPUT SETTINGS -->
             <div class="section">
-                <h6 class="title"><i class="fas fa-cogs"></i> Output Settings</h6>
+                <h6 class="title"><i class="fas fa-cogs"></i> Configuración de Salida</h6>
 
                 <!-- ASPECT RATIO -->
                 <div class="group">
-                    <label class="label">Aspect Ratio</label>
+                    <label class="label">Relación de Aspecto</label>
                     <div class="h-selector">
-                        <button class="selector-btn" data-ratio="3:4">3:4</button>
+                        <button class="selector-btn active" data-ratio="3:4">3:4</button>
                         <button class="selector-btn" data-ratio="2:3">2:3</button>
-                        <button class="selector-btn active" data-ratio="9:16">9:16</button>
+                        <button class="selector-btn" data-ratio="9:16">9:16</button>
                         <button class="selector-btn" data-ratio="1:1">1:1</button>
                     </div>
                 </div>
 
                 <!-- 🔥 OUTPUT COUNT BLOQUEADO -->
                 <div class="group">
-                    <label class="label">Output Count</label>
+                    <label class="label">Cantidad de Imágenes</label>
                     <select class="selector" id="outputCount" disabled>
-                        <option value="1" selected>1 Output (Fixed)</option>
+                        <option value="1" selected>1 Resultado (Fijo)</option>
                     </select>
                 </div>
 
                 <!-- GENERATE -->
                 <button class="btn-generate" id="generateVirtualModel">
-                    <i class="fas fa-user-plus"></i> Generate Virtual Model
+                    <i class="fas fa-user-plus"></i> Generar Modelo Virtual
                 </button>
             </div>
         </div>
@@ -132,7 +132,7 @@
     <div class="right-panel">
         <div class="results-header">
             <i class="fas fa-users"></i>
-            <span>Generated Virtual Models</span>
+            <span>Modelos Virtuales Generados</span>
         </div>
         <div class="results-content">
             <div id="virtualModelResults">
@@ -148,7 +148,7 @@
         <div class="modal-content" style="background: var(--bg-2); border: 1px solid var(--border);">
             <div class="modal-header" style="border-bottom: 1px solid var(--border);">
                 <h5 class="modal-title" style="color: var(--txt-1);">
-                    <i class="fas fa-user"></i> Virtual Model Preview
+                    <i class="fas fa-user"></i> Vista Previa del Modelo Virtual
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" style="filter: invert(1);"></button>
             </div>
@@ -172,14 +172,14 @@
                                     <i class="fas fa-search-plus"></i>
                                 </button>
                                 <button class="btn btn-sm" style="background: var(--bg-2); border: 1px solid var(--border); color: var(--txt-1); margin-left: 10px;" onclick="resetZoom()">
-                                    <i class="fas fa-expand-arrows-alt"></i> Reset
+                                    <i class="fas fa-expand-arrows-alt"></i> Restablecer
                                 </button>
                             </div>
                         </div>
                         <div class="col-md-6 text-end">
                             <!-- DOWNLOAD BUTTON -->
                             <button class="btn" style="background: var(--accent-1); border: none; color: white; padding: 8px 16px;" onclick="downloadImage()">
-                                <i class="fas fa-download"></i> Download
+                                <i class="fas fa-download"></i> Descargar
                             </button>
                         </div>
                     </div>
@@ -189,19 +189,19 @@
     </div>
 </div>
 
-<!-- HIDDEN FORM -->
+<!-- HIDDEN FORM - 🔧 SIMPLIFICADO: Solo campos esenciales -->
 <form id="virtualModelForm" style="display: none;">
     @csrf
     <input type="hidden" name="gender" id="hiddenGender" value="male">
-    <input type="hidden" name="age_group" id="hiddenAge" value="children">
+    <input type="hidden" name="age_group" id="hiddenAge" value="youth">
     <input type="hidden" name="skin_tone" id="hiddenSkin" value="light">
-    <input type="hidden" name="aspect_ratio" id="hiddenRatio" value="9:16">
+    <input type="hidden" name="aspect_ratio" id="hiddenRatio" value="3:4">
     <input type="hidden" name="output_count" id="hiddenOutputCount" value="1">
     <input type="hidden" name="prompt" id="hiddenPrompt">
-    <input type="hidden" name="hints" id="hiddenHints">
 </form>
 
 <script>
+// 🔧 SIMPLIFICADO: Obtener datos desde backend
 window.existingModels = @json($existingModels);
 </script>
 @endsection
@@ -212,14 +212,27 @@ let modelHistory = [];
 let selectedHint = null;
 let isPromptManuallyEdited = false;
 
-// 🔥 VARIABLES PARA ZOOM
+// 🔥 VARIABLES PARA ZOOM - MANTENIDAS COMPLETAS
 let currentZoom = 1;
 let currentImageSrc = '';
 let isDragging = false;
 let startX, startY, translateX = 0, translateY = 0;
 
 $(document).ready(function() {
-    // INIT DATA
+    // 🔧 SIMPLIFICADO: Inicialización de datos
+    initializeExistingData();
+
+    // ✅ MANTENIDO: Todas las funcionalidades UI
+    initializeSelectors();
+    initializeHints();
+    initializePrompt();
+    initializeGeneration();
+
+    updateCharCount();
+});
+
+// 🔧 SIMPLIFICADO: Función de inicialización
+function initializeExistingData() {
     if (window.existingModels?.length) {
         modelHistory = window.existingModels.map(model => ({
             id: model.id,
@@ -229,7 +242,6 @@ $(document).ready(function() {
             skin_tone: model.skin_tone,
             aspect_ratio: model.aspect_ratio,
             prompt: model.prompt,
-            hints: model.hints,
             status: model.status,
             created_at: model.created_at,
             result_image_paths: model.result_image_paths || [],
@@ -241,8 +253,10 @@ $(document).ready(function() {
     } else {
         showEmptyState();
     }
+}
 
-    // SELECTORS
+// ✅ MANTENIDO COMPLETO: Selectores
+function initializeSelectors() {
     const selectors = {
         '[data-gender]': '#hiddenGender',
         '[data-age]': '#hiddenAge',
@@ -258,10 +272,11 @@ $(document).ready(function() {
         });
     });
 
-    // 🔥 OUTPUT COUNT FIJO EN 1
     $('#hiddenOutputCount').val('1');
+}
 
-    // HINTS
+// ✅ MANTENIDO COMPLETO: Hints
+function initializeHints() {
     $('.hint-btn').click(function() {
         const hint = $(this).data('hint');
         const hintPrompt = $(this).data('prompt');
@@ -269,7 +284,6 @@ $(document).ready(function() {
         if (selectedHint === hint) {
             $(this).removeClass('active');
             selectedHint = null;
-            $('#hiddenHints').val('');
             if (!isPromptManuallyEdited) {
                 $('#promptText').val('');
                 updateCharCount();
@@ -278,15 +292,16 @@ $(document).ready(function() {
             $('.hint-btn').removeClass('active');
             $(this).addClass('active');
             selectedHint = hint;
-            $('#hiddenHints').val(hint);
             if (!isPromptManuallyEdited) {
                 $('#promptText').val(hintPrompt);
                 updateCharCount();
             }
         }
     });
+}
 
-    // PROMPT
+// ✅ MANTENIDO COMPLETO: Prompt
+function initializePrompt() {
     $('#promptText').on('input', function() {
         const value = $(this).val().trim();
         updateCharCount();
@@ -294,77 +309,91 @@ $(document).ready(function() {
         $('#hiddenPrompt').val(value);
     });
 
-    // CLEAR
     $('#clearPrompt').click(function() {
         $('#promptText').val('');
-        $('#hiddenPrompt, #hiddenHints').val('');
+        $('#hiddenPrompt').val('');
         $('.hint-btn').removeClass('active');
         selectedHint = null;
         isPromptManuallyEdited = false;
         updateCharCount();
     });
+}
 
-    // GENERATE
+// ✅ MANTENIDO COMPLETO: Generación
+function initializeGeneration() {
     $('#generateVirtualModel').click(function() {
         const prompt = $('#promptText').val().trim();
         if (prompt.length > 0) $('#hiddenPrompt').val(prompt);
 
-        // PREPARE DATA
-        const formData = new FormData();
-        ['_token', 'gender', 'age_group', 'skin_tone', 'aspect_ratio', 'output_count', 'prompt', 'hints'].forEach(field => {
-            const value = field === '_token' ? $('input[name="_token"]').val() : $(`#hidden${field.replace('_', '').replace(/^\w/, c => c.toUpperCase())}`).val();
-            formData.append(field, value);
-        });
+        // 🔧 SIMPLIFICADO: Preparación de datos
+        const formData = prepareFormData();
 
-        // UI
-        $(this).prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Generating...');
+        // ✅ MANTENIDO: UI y AJAX
+        submitGeneration(formData);
+    });
+}
 
-        // TEMP RESULT
-        const tempResult = {
-            id: 'temp_' + Date.now(),
-            gender: $('#hiddenGender').val(),
-            age_group: $('#hiddenAge').val(),
-            skin_tone: $('#hiddenSkin').val(),
-            aspect_ratio: $('#hiddenRatio').val(),
-            prompt: $('#hiddenPrompt').val(),
-            hints: $('#hiddenHints').val(),
-            status: 'processing',
-            created_at: new Date().toISOString(),
-            task_id: null,
-            result_image_paths: []
-        };
-        addModelToHistory(tempResult);
+// 🔧 SIMPLIFICADO: Preparación de FormData
+function prepareFormData() {
+    const formData = new FormData();
+    const fields = ['_token', 'gender', 'age_group', 'skin_tone', 'aspect_ratio', 'output_count', 'prompt'];
 
-        // AJAX
-        $.ajax({
-            url: "{{ route('virtual-model.generate') }}",
-            type: 'POST',
-            data: formData,
-            processData: false,
-            contentType: false,
-            success: response => {
-                if (response.data?.task_id) {
-                    tempResult.task_id = response.data.task_id;
-                    updateModelInHistory(tempResult);
-                    checkModelStatus(response.data.task_id);
-                } else {
-                    tempResult.status = 'failed';
-                    updateModelInHistory(tempResult);
-                    resetGenerateButton();
-                }
-            },
-            error: () => {
+    fields.forEach(field => {
+        if (field === '_token') {
+            formData.append(field, $('input[name="_token"]').val());
+        } else {
+            const hiddenField = `#hidden${field.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase()).replace(/^\w/, c => c.toUpperCase())}`;
+            formData.append(field, $(hiddenField).val());
+        }
+    });
+
+    return formData;
+}
+
+// ✅ MANTENIDO COMPLETO: Envío y manejo
+function submitGeneration(formData) {
+    $('#generateVirtualModel').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Generando...');
+
+    const tempResult = {
+        id: 'temp_' + Date.now(),
+        gender: $('#hiddenGender').val(),
+        age_group: $('#hiddenAge').val(),
+        skin_tone: $('#hiddenSkin').val(),
+        aspect_ratio: $('#hiddenRatio').val(),
+        prompt: $('#hiddenPrompt').val(),
+        status: 'processing',
+        created_at: new Date().toISOString(),
+        task_id: null,
+        result_image_paths: []
+    };
+    addModelToHistory(tempResult);
+
+    $.ajax({
+        url: "{{ route('virtual-model.generate') }}",
+        type: 'POST',
+        data: formData,
+        processData: false,
+        contentType: false,
+        success: response => {
+            if (response.data?.task_id) {
+                tempResult.task_id = response.data.task_id;
+                updateModelInHistory(tempResult);
+                checkModelStatus(response.data.task_id);
+            } else {
                 tempResult.status = 'failed';
                 updateModelInHistory(tempResult);
                 resetGenerateButton();
             }
-        });
+        },
+        error: () => {
+            tempResult.status = 'failed';
+            updateModelInHistory(tempResult);
+            resetGenerateButton();
+        }
     });
+}
 
-    updateCharCount();
-});
-
-// 🔥 ABRIR MODAL
+// ✅ MANTENIDAS COMPLETAS: Todas las funciones de zoom/modal/UI
 const openImageModal = (imageSrc, title) => {
     currentImageSrc = imageSrc;
     currentZoom = 1;
@@ -372,21 +401,19 @@ const openImageModal = (imageSrc, title) => {
     translateY = 0;
 
     $('#modalImage').attr('src', imageSrc);
-    $('.modal-title').html(`<i class="fas fa-user"></i> ${title}`);
+    $('.modal-title').html(`<i class="fas fa-user"></i> ${title || 'Vista Previa del Modelo Virtual'}`);
     $('#zoomLevel').text('100%');
     updateImageTransform();
     $('#imageModal').modal('show');
 };
 
-// 🔥 ZOOM FUNCTION
 const zoomImage = (factor) => {
     currentZoom *= factor;
-    currentZoom = Math.max(0.5, Math.min(currentZoom, 5)); // Límites 50% - 500%
+    currentZoom = Math.max(0.5, Math.min(currentZoom, 5));
     updateImageTransform();
     $('#zoomLevel').text(Math.round(currentZoom * 100) + '%');
 };
 
-// 🔥 RESET ZOOM
 const resetZoom = () => {
     currentZoom = 1;
     translateX = 0;
@@ -395,12 +422,10 @@ const resetZoom = () => {
     $('#zoomLevel').text('100%');
 };
 
-// 🔥 UPDATE TRANSFORM
 const updateImageTransform = () => {
     $('#modalImage').css('transform', `translate(${translateX}px, ${translateY}px) scale(${currentZoom})`);
 };
 
-// 🔥 DOWNLOAD IMAGE
 const downloadImage = () => {
     if (!currentImageSrc) return;
 
@@ -412,7 +437,7 @@ const downloadImage = () => {
     document.body.removeChild(link);
 };
 
-// 🔥 DRAG FUNCTIONALITY
+// ✅ MANTENIDAS COMPLETAS: Funciones drag
 $('#modalImage').on('mousedown', function(e) {
     if (currentZoom <= 1) return;
     isDragging = true;
@@ -433,14 +458,13 @@ $(document).on('mouseup', function() {
     $('#modalImage').css('cursor', 'grab');
 });
 
-// 🔥 WHEEL ZOOM
 $('#modalImage').on('wheel', function(e) {
     e.preventDefault();
     const factor = e.originalEvent.deltaY > 0 ? 0.9 : 1.1;
     zoomImage(factor);
 });
 
-// UTILITIES
+// ✅ MANTENIDAS COMPLETAS: Utilidades
 const updateCharCount = () => {
     const length = $('#promptText').val().length;
     $('.char-count').text(length + '/2500');
@@ -466,15 +490,15 @@ const renderModelHistory = () => {
     let html = '';
     modelHistory.forEach(model => {
         const statusClass = `status ${model.status}`;
-        const date = model.formatted_date || new Date(model.created_at).toLocaleString();
+        const date = model.formatted_date || new Date(model.created_at).toLocaleString('es-ES');
 
         html += `
             <div class="result-group">
                 <div class="result-header">
                     <div class="result-info">
-                        <div><strong>${model.display_name || 'Virtual Model ' + (model.task_id || 'Pending')}</strong></div>
+                        <div><strong>${model.display_name || 'Modelo Virtual ' + (model.task_id || 'Pendiente')}</strong></div>
                         <div>${date}</div>
-                        <div>Gender: ${model.gender} | Age: ${model.age_group} | Skin: ${model.skin_tone}</div>
+                        <div>Género: ${model.gender} | Edad: ${model.age_group} | Piel: ${model.skin_tone}</div>
                         ${model.prompt ? `<div class="prompt-used"><strong>Prompt:</strong> ${model.prompt.substring(0, 100)}${model.prompt.length > 100 ? '...' : ''}</div>` : ''}
                     </div>
                     <div class="${statusClass}">${model.status.toUpperCase()}</div>
@@ -485,9 +509,8 @@ const renderModelHistory = () => {
             model.result_image_paths.forEach((path, imgIndex) => {
                 const imageSrc = (model.preview_url && imgIndex === 0) ? model.preview_url :
                     (path.startsWith('/storage/') ? path : `/storage/${path}`);
-                // 🔥 AGREGAR CLICK PARA ABRIR MODAL
-                html += `<div class="item" style="cursor: pointer; position: relative;" onclick="openImageModal('${imageSrc}', 'Virtual Model ${imgIndex + 1}')">
-                    <img src="${imageSrc}" alt="Model ${imgIndex + 1}">
+                html += `<div class="item" style="cursor: pointer; position: relative;" onclick="openImageModal('${imageSrc}', 'Modelo Virtual ${imgIndex + 1}')">
+                    <img src="${imageSrc}" alt="Modelo ${imgIndex + 1}">
                     <div class="image-overlay" style="position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.7); border-radius: 4px; padding: 4px 8px; opacity: 0; transition: opacity 0.3s;">
                         <i class="fas fa-search-plus" style="color: white; font-size: 12px;"></i>
                     </div>
@@ -496,12 +519,12 @@ const renderModelHistory = () => {
         } else if (model.status === 'processing') {
             html += `<div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--txt-2);">
                 <div class="spinner-border text-primary" role="status"></div>
-                <p style="margin-top: 16px;">Generating virtual model...</p>
+                <p style="margin-top: 16px;">Generando modelo virtual...</p>
             </div>`;
         } else {
             html += `<div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--txt-2);">
                 <i class="fas fa-exclamation-circle" style="font-size: 32px; margin-bottom: 16px; opacity: 0.5;"></i>
-                <p>Generation failed</p>
+                <p>Falló la generación</p>
             </div>`;
         }
 
@@ -510,7 +533,7 @@ const renderModelHistory = () => {
 
     container.html(html);
 
-    // 🔥 AGREGAR HOVER EFFECT PARA OVERLAY
+    // ✅ MANTENIDO: Hover effect para overlay
     $('.item').hover(
         function() { $(this).find('.image-overlay').css('opacity', '1'); },
         function() { $(this).find('.image-overlay').css('opacity', '0'); }
@@ -521,8 +544,8 @@ const showEmptyState = () => {
     $('#virtualModelResults').html(`
         <div class="text-center" style="padding: 60px 20px; color: var(--txt-2);">
             <i class="fas fa-user-plus" style="font-size: 48px; margin-bottom: 16px; opacity: 0.3;"></i>
-            <p>No virtual models yet</p>
-            <small>Configure settings and generate your first virtual model</small>
+            <p>Aún no hay modelos virtuales</p>
+            <small>Configura los ajustes y genera tu primer modelo virtual</small>
         </div>
     `);
 };
@@ -565,7 +588,7 @@ const checkModelStatus = taskId => {
 };
 
 const resetGenerateButton = () => {
-    $('#generateVirtualModel').prop('disabled', false).html('<i class="fas fa-user-plus"></i> Generate Virtual Model');
+    $('#generateVirtualModel').prop('disabled', false).html('<i class="fas fa-user-plus"></i> Generar Modelo Virtual');
 };
 </script>
 @endpush
