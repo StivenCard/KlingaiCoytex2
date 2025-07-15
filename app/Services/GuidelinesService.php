@@ -45,7 +45,7 @@ class GuidelinesService
     {
         return [
             'validModels'    => $this->getGuidelines('valid_model'),
-            'invalidModels'  => $this->getGuidelines('invalid_model'),
+            'invalidModels'  => $this->getGuidelines('invalid_model'),  
             'validGarments'  => $this->getGuidelines('valid_garment'),
             'invalidGarments'=> $this->getGuidelines('invalid_garment'),
         ];
