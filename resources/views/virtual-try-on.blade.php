@@ -40,10 +40,10 @@
                     @empty
                         <div class="no-images">
                             <i class="fas fa-user"></i>
-                            <p>No virtual models available</p>
+                            <p>No hay modelos virtuales disponibles</p>
                             <small>
                                 <a href="{{ route('virtual-model') }}" class="btn btn-link btn-sm">
-                                    Generate virtual models first
+                                    Genere primero modelos virtuales
                                 </a>
                             </small>
                         </div>
@@ -62,7 +62,7 @@
                     @empty
                         <div class="no-images">
                             <i class="fas fa-images"></i>
-                            <p>No hay modelos default disponibles</p>
+                            <p>No hay modelos por defecto disponibles</p>
                             <small>Coloca imágenes en public/klingai/default_models/</small>
                         </div>
                     @endforelse
@@ -73,7 +73,7 @@
             <div class="tab-content d-none" data-content="upload">
                 <div class="upload" id="humanUploadArea" onclick="triggerFileInput('humanImageInput')">
                     <div class="upload-icon"><i class="fas fa-cloud-upload-alt"></i></div>
-                    <div class="upload-text">Upload Human Model</div>
+                    <div class="upload-text">Subir Modelo Humano</div>
                     <input type="file" id="humanImageInput" name="human_image" accept=".jpg,.jpeg,.png" class="file-input">
                     <div class="preview" id="humanPreview">
                         <img src="" alt="Preview">
@@ -81,7 +81,7 @@
                             <i class="fas fa-times"></i>
                         </button>
                         <button class="btn btn-primary btn-sm reupload-btn" onclick="triggerFileInput('humanImageInput')">
-                            <i class="fas fa-upload"></i> Re-upload
+                            <i class="fas fa-upload"></i> Re-subir
                         </button>
                     </div>
                 </div>
@@ -93,10 +93,10 @@
             <div class="tabs-container">
                 <div class="btn-group btn-group-toggle tabs" data-toggle="buttons">
                     <label class="btn btn-outline-primary btn-sm active mr-1">
-                        <input type="radio" name="garment_type" id="single" autocomplete="off" checked data-garment="single"> Single Garment
+                        <input type="radio" name="garment_type" id="single" autocomplete="off" checked data-garment="single"> Prenda Única
                     </label>
                     <label class="btn btn-outline-primary btn-sm">
-                        <input type="radio" name="garment_type" id="multiple" autocomplete="off" data-garment="multiple"> Multiple Garments
+                        <input type="radio" name="garment_type" id="multiple" autocomplete="off" data-garment="multiple"> Múltiples Prendas
                     </label>
                 </div>
                 <button class="btn btn-outline-info btn-sm info-btn" id="garmentInfoBtn" title="Guía de Prendas">
@@ -108,7 +108,7 @@
             <div class="garment-content" data-garment-content="single">
                 <div class="upload" id="singleUploadArea" onclick="triggerFileInput('singleGarmentInput')">
                     <div class="upload-icon"><i class="fas fa-tshirt"></i></div>
-                    <div class="upload-text">Upload Single Garment</div>
+                    <div class="upload-text">Subir prenda única</div>
                     <input type="file" id="singleGarmentInput" name="single_garment" accept=".jpg,.jpeg,.png" class="file-input">
                     <div class="preview" id="singlePreview">
                         <img src="" alt="Preview">
@@ -116,7 +116,7 @@
                             <i class="fas fa-times"></i>
                         </button>
                         <button class="btn btn-primary btn-sm reupload-btn" onclick="triggerFileInput('singleGarmentInput')">
-                            <i class="fas fa-upload"></i> Re-upload
+                            <i class="fas fa-upload"></i> Re-subir
                         </button>
                     </div>
                 </div>
@@ -126,7 +126,7 @@
             <div class="garment-content d-none" data-garment-content="multiple">
                 <div class="upload" id="topUploadArea" onclick="triggerFileInput('topGarmentInput')">
                     <div class="upload-icon"><i class="fas fa-tshirt"></i></div>
-                    <div class="upload-text">Upload Top Garment</div>
+                    <div class="upload-text">Subir prenda superior</div>
                     <input type="file" id="topGarmentInput" name="top_garment" accept=".jpg,.jpeg,.png" class="file-input">
                     <div class="preview" id="topPreview">
                         <img src="" alt="Preview">
@@ -134,14 +134,14 @@
                             <i class="fas fa-times"></i>
                         </button>
                         <button class="btn btn-primary btn-sm reupload-btn" onclick="triggerFileInput('topGarmentInput')">
-                            <i class="fas fa-upload"></i> Re-upload
+                            <i class="fas fa-upload"></i> Re-subir
                         </button>
                     </div>
                 </div>
 
                 <div class="upload" id="bottomUploadArea" onclick="triggerFileInput('bottomGarmentInput')">
                     <div class="upload-icon"><i class="fas fa-tshirt"></i></div>
-                    <div class="upload-text">Upload Bottom Garment</div>
+                    <div class="upload-text">Subir prenda inferior</div>
                     <input type="file" id="bottomGarmentInput" name="bottom_garment" accept=".jpg,.jpeg,.png" class="file-input">
                     <div class="preview" id="bottomPreview">
                         <img src="" alt="Preview">
@@ -149,14 +149,14 @@
                             <i class="fas fa-times"></i>
                         </button>
                         <button class="btn btn-primary btn-sm reupload-btn" onclick="triggerFileInput('bottomGarmentInput')">
-                            <i class="fas fa-upload"></i> Re-upload
+                            <i class="fas fa-upload"></i> Re-subir
                         </button>
                     </div>
                 </div>
             </div>
 
             <select class="form-control selector" name="output_count" disabled>
-                <option value="1" selected>1 Output (Fixed)</option>
+                <option value="1" selected>1 Salida (Fijo)</option>
             </select>
 
             <button class="btn btn-success btn-lg btn-block btn-generate mt-4" id="generateBtn">
@@ -182,14 +182,14 @@
 <!-- TOOLTIP MODELO - DISEÑO TIPO CARDS -->
 <div class="tooltip model-guidelines" id="modelTooltip">
     <div class="tooltip-header">
-        <h6><i class="fas fa-user"></i> Model Guidelines</h6>
+        <h6><i class="fas fa-user"></i> Pautas de Modelos</h6>
         <button class="tooltip-close" onclick="hideTooltip('modelTooltip')">
             <i class="fas fa-times"></i>
         </button>
     </div>
     <div class="tooltip-content">
-        <p><strong>Please follow these guidelines for uploading model images to achieve the best Try-On results.</strong></p>
-        <p class="mb-3">Images up to 50MB, with short side ≥ 512px, long side ≤ 4096px and formats JPG/PNG.</p>
+        <p><strong>Por favor sigue estas pautas para subir imágenes de modelos y lograr los mejores resultados de Try-On.</strong></p>
+        <p class="mb-3">Imágenes de hasta 50MB, con lado corto ≥ 512px, lado largo ≤ 4096px y formatos JPG/PNG.</p>
 
         @if(count($validModels) > 0)
             <div class="row">
@@ -197,27 +197,23 @@
                     <div class="col-6 col-sm-4 col-md-3 col-lg-2 mb-3">
                         <div class="card">
                             <img src="{{ $model['url'] }}" class="card-img-top" alt="{{ $model['description'] }}">
+                            <span class="badge badge-success"><i class="fas fa-check"></i></span>
                             <div class="card-body">
                                 <p class="mb-1">{{ $model['description'] }}</p>
-                                <span class="badge badge-success"><i class="fas fa-check"></i></span>
                             </div>
                         </div>
                     </div>
                 @endforeach
             </div>
-
-            <hr class="my-4">
-
-            <p><strong>Avoid the bad examples, as they may reduce the quality of the Try-On results.</strong></p>
-
+            <p><strong>Evite los malos ejemplos, ya que pueden reducir la calidad de los resultados de Try-On.</strong></p>
             <div class="row">
                 @foreach ($invalidModels as $model)
                     <div class="col-6 col-sm-4 col-md-3 col-lg-2 mb-3">
                         <div class="card">
                             <img src="{{ $model['url'] }}" class="card-img-top" alt="{{ $model['description'] }}">
+                            <span class="badge badge-danger"><i class="fas fa-times"></i></span>
                             <div class="card-body">
                                 <p class="mb-1">{{ $model['description'] }}</p>
-                                <span class="badge badge-danger"><i class="fas fa-times"></i></span>
                             </div>
                         </div>
                     </div>
@@ -226,7 +222,7 @@
         @else
             <div class="text-center py-5">
                 <i class="fas fa-info-circle fa-3x mb-3" style="color: #666;"></i>
-                <p>No guidelines available. Please add example images to the guidelines folders.</p>
+                <p>No hay directrices disponibles. Añada imágenes de ejemplo a las carpetas de directrices.</p>
             </div>
         @endif
     </div>
@@ -235,24 +231,24 @@
 <!-- TOOLTIP PRENDA - DISEÑO TIPO GRID -->
 <div class="tooltip garment-guidelines" id="garmentTooltip">
     <div class="tooltip-header">
-        <h6><i class="fas fa-tshirt"></i> Garment Guidelines</h6>
+        <h6><i class="fas fa-tshirt"></i> Pautas de prendas</h6>
         <button class="tooltip-close" onclick="hideTooltip('garmentTooltip')">
             <i class="fas fa-times"></i>
         </button>
     </div>
     <div class="tooltip-content">
         <div class="tooltip-specs">
-            <p><strong>Requirements:</strong></p>
+            <p><strong>Requisitos:</strong></p>
             <ul>
-                <li>Size: Up to 50MB</li>
-                <li>Resolution: Short side ≥512px, Long side ≤4096px</li>
-                <li>Formats: JPG/PNG</li>
+                <li>Tamaño: Hasta 50MB</li>
+                <li>Resolución: Lado corto ≥512px, Lado largo ≤4096px</li>
+                <li>Formatos: JPG/PNG</li>
             </ul>
         </div>
 
         @if(count($validGarments) > 0)
             <div class="guidelines-section">
-                <h6 class="section-title valid">✓ Follow these guidelines</h6>
+                <h6 class="section-title valid">✓ Siga estas pautas</h6>
                 <div class="grid-6">
                     @foreach($validGarments as $garment)
                         <div class="guideline-item">
@@ -266,7 +262,7 @@
             </div>
 
             <div class="guidelines-section">
-                <h6 class="section-title invalid">✗ Avoid these examples</h6>
+                <h6 class="section-title invalid">✗ Evite estos ejemplos</h6>
                 <div class="grid-6">
                     @foreach($invalidGarments as $garment)
                         <div class="guideline-item">
@@ -281,7 +277,7 @@
         @else
             <div class="text-center py-5">
                 <i class="fas fa-info-circle fa-3x mb-3" style="color: #666;"></i>
-                <p>No garment guidelines available. Please add example images to the guidelines folders.</p>
+                <p>No hay directrices de prendas disponibles. Por favor, añada imágenes de ejemplo a las carpetas de directrices.</p>
             </div>
         @endif
     </div>
@@ -293,7 +289,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">
-                    <i class="fas fa-images"></i> Result Preview
+                    <i class="fas fa-images"></i> Vista previa de resultados
                 </h5>
                 <button type="button" class="btn btn-outline-danger btn-sm" data-dismiss="modal" aria-label="Close">
                     <i class="fas fa-times"></i>
@@ -315,13 +311,13 @@
                                     <i class="fas fa-search-plus"></i>
                                 </button>
                                 <button class="btn btn-outline-primary btn-sm ml-2" onclick="resetZoom()">
-                                    <i class="fas fa-expand-arrows-alt"></i> Reset
+                                    <i class="fas fa-expand-arrows-alt"></i> Reiniciar
                                 </button>
                             </div>
                         </div>
                         <div class="col-md-6 text-right">
                             <button class="btn btn-success" onclick="downloadImage()">
-                                <i class="fas fa-download"></i> Download
+                                <i class="fas fa-download"></i> Descargar
                             </button>
                         </div>
                     </div>
@@ -698,8 +694,8 @@ const showEmptyState = () => {
     $('#resultsContainer').html(`
         <div class="text-center">
             <i class="fas fa-tshirt fa-3x text-muted mb-3"></i>
-            <h5 class="text-muted">No results yet</h5>
-            <p class="text-muted">Complete the form to generate your first try-on</p>
+            <h5 class="text-muted">Aún no hay resultados</h5>
+            <p class="text-muted">Complete el formulario para generar su primer probador</p>
         </div>
     `);
 };
@@ -726,13 +722,34 @@ const renderResultsHistory = () => {
         const statusClass = `status ${result.status}`;
         const date = new Date(result.created_at).toLocaleString();
 
+        if (result.model_type === 'default') {
+            result.model_type = 'Predeterminado';
+        } else if (result.model_type === 'virtual') {
+            result.model_type = 'Virtual';
+        } else if (result.model_type === 'upload') {
+            result.model_type = 'Subido';
+        }
+
+        if (result.status === 'processing') {
+            result.status = 'En Proceso';
+        } else if (result.status === 'completed') {
+            result.status = 'Completado';
+        } else {
+            result.status = 'Fallido';
+        }
+
+        if (result.garments_type === 'single') {
+            result.garments_type = 'Prenda Única';
+        } else if (result.garments_type === 'multiple') {
+            result.garments_type = 'Múltiples Prendas';
+        }
         html += `
             <div class="result-group">
                 <div class="result-header">
                     <div class="result-info">
-                        <div><strong>Probador Virtual Try-On - Resultado ${index + 1}</strong></div>
-                        <div>${date}</div>
-                        <div>Modelo: ${result.model_type} | Prenda/s: ${result.garments_type}</div>
+                        <div><h6>Probador Virtual Try-On - Resultados </h6></div>
+                        <div> <b>Fecha y hora de creación: </b>${date}</div>
+                        <div> <b>Modelo: </b>${result.model_type} | <b>Prenda/s: </b>${result.garments_type}</div>
                     </div>
                     <div class="${statusClass}">${result.status.toUpperCase()}</div>
                 </div>
