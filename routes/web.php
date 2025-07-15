@@ -1,8 +1,9 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\VirtualTryOnController;
+use App\Services\KlingAi\KlingApiService;
 use App\Http\Controllers\VirtualModelController;
+use App\Http\Controllers\VirtualTryOnController;
 
 Route::get('/', function () {
     return redirect()->route('virtual-try-on');
@@ -17,3 +18,4 @@ Route::get('/virtual-try-on/status/{taskId}', [VirtualTryOnController::class, 't
 Route::get('/virtual-model', [VirtualModelController::class, 'show'])->name('virtual-model');
 Route::post('/virtual-model/generate', [VirtualModelController::class, 'generate'])->name('virtual-model.generate');
 Route::get('/virtual-model/status/{taskId}', [VirtualModelController::class, 'taskStatus'])->name('virtual-model.status');
+

@@ -179,41 +179,63 @@
     </div>
 </div>
 
-<!-- TOOLTIP MODELO - DISEÑO TIPO CARDS -->
+<!-- TOOLTIP MODELO - OPTIMIZADO CON BOOTSTRAP 4 -->
 <div class="tooltip model-guidelines" id="modelTooltip">
-    <div class="tooltip-header">
-        <h6><i class="fas fa-user"></i> Pautas de Modelos</h6>
-        <button class="btn btn-outline-danger" onclick="hideTooltip('modelTooltip')">
-            x
+    <div class="tooltip-header bg-light border-bottom-dark d-flex justify-content-between align-items-center p-3">
+        <h6 class="mb-0 text-dark d-flex align-items-center">
+            <i class="fas fa-user mr-2"></i> Pautas de Modelos
+        </h6>
+        <button class="btn btn-outline-danger btn-sm" onclick="hideTooltip('modelTooltip')">
+            <i class="fas fa-times"></i>
         </button>
     </div>
-    <div class="tooltip-content">
-        <p><strong>Por favor sigue estas pautas para subir imágenes de modelos y lograr los mejores resultados de Try-On.</strong></p>
-        <p class="mb-3">Imágenes de hasta 50MB, con lado corto ≥ 512px, lado largo ≤ 4096px y formatos JPG/PNG.</p>
+    <div class="tooltip-content p-3" style="max-height: 60vh; overflow-y: auto;">
+        <p class="text-dark mb-3">
+            <strong>Por favor siga estas pautas para subir imágenes de modelos y lograr los mejores resultados de Try-On.</strong>
+        </p>
+        <div class="alert alert-info py-2 px-3 mb-4">
+            <strong>Imágenes de hasta 50MB, con lado corto ≥ 512px, lado largo ≤ 4096px y formatos JPG/PNG.</strong>
+        </div>
 
         @if(count($validModels) > 0)
             <div class="row">
                 @foreach ($validModels as $model)
                     <div class="col-6 col-sm-4 col-md-3 col-lg-2 mb-3">
-                        <div class="card">
-                            <img src="{{ $model['url'] }}" class="card-img-top" alt="{{ $model['description'] }}">
-                            <span class="badge badge-success"><i class="fas fa-check"></i></span>
-                            <div class="card-body">
-                                <p class="mb-1">{{ $model['description'] }}</p>
+                        <div class="card border-dark shadow-sm h-100">
+                            <div class="position-relative">
+                                <img src="{{ $model['url'] }}" class="card-img-top" alt="{{ $model['description'] }}" style="height: 120px; object-fit: cover;">
+                                <span class="badge badge-success position-absolute" style="top: 5px; right: 5px;">
+                                    <i class="fas fa-check"></i>
+                                </span>
+                            </div>
+                            <div class="card-body p-2 bg-secondary">
+                                <p class="card-text text-light mb-0" style="font-size: 11px; line-height: 1.3;">
+                                    {{ $model['description'] }}
+                                </p>
                             </div>
                         </div>
                     </div>
                 @endforeach
             </div>
-            <p><strong>Evite los malos ejemplos, ya que pueden reducir la calidad de los resultados de Try-On.</strong></p>
+
+            <div class="alert alert-warning py-2 px-3 mb-3">
+                <strong>Evite los malos ejemplos, ya que pueden reducir la calidad de los resultados de Try-On.</strong>
+            </div>
+
             <div class="row">
                 @foreach ($invalidModels as $model)
                     <div class="col-6 col-sm-4 col-md-3 col-lg-2 mb-3">
-                        <div class="card">
-                            <img src="{{ $model['url'] }}" class="card-img-top" alt="{{ $model['description'] }}">
-                            <span class="badge badge-danger"><i class="fas fa-times"></i></span>
-                            <div class="card-body">
-                                <p class="mb-1">{{ $model['description'] }}</p>
+                        <div class="card border-dark shadow-sm h-100">
+                            <div class="position-relative">
+                                <img src="{{ $model['url'] }}" class="card-img-top" alt="{{ $model['description'] }}" style="height: 120px; object-fit: cover;">
+                                <span class="badge badge-danger position-absolute" style="top: 5px; right: 5px;">
+                                    <i class="fas fa-times"></i>
+                                </span>
+                            </div>
+                            <div class="card-body p-2 bg-secondary">
+                                <p class="card-text text-light mb-0" style="font-size: 11px; line-height: 1.3;">
+                                    {{ $model['description'] }}
+                                </p>
                             </div>
                         </div>
                     </div>
@@ -221,63 +243,79 @@
             </div>
         @else
             <div class="text-center py-5">
-                <i class="fas fa-info-circle fa-3x mb-3" style="color: #666;"></i>
-                <p>No hay directrices disponibles. Añada imágenes de ejemplo a las carpetas de directrices.</p>
+                <i class="fas fa-info-circle fa-3x mb-3 text-muted"></i>
+                <p class="text-muted">No hay directrices disponibles. Añada imágenes de ejemplo a las carpetas de directrices.</p>
             </div>
         @endif
     </div>
 </div>
 
-<!-- TOOLTIP PRENDA - DISEÑO TIPO GRID -->
-<div class="tooltip garment-guidelines" id="garmentTooltip">
-    <div class="tooltip-header">
-        <h6><i class="fas fa-tshirt"></i> Pautas de prendas</h6>
-        <button class="tooltip-close" onclick="hideTooltip('garmentTooltip')">
+<!-- TOOLTIP PRENDA - OPTIMIZADO CON BOOTSTRAP 4 -->
+<div class="tooltip model-guidelines" id="garmentTooltip">
+    <div class="tooltip-header bg-light border-bottom-dark d-flex justify-content-between align-items-center p-3">
+        <h6 class="mb-0 text-dark d-flex align-items-center">
+            <i class="fas fa-tshirt mr-2"></i> Pautas de prendas
+        </h6>
+        <button class="btn btn-outline-danger btn-sm" onclick="hideTooltip('garmentTooltip')">
             <i class="fas fa-times"></i>
         </button>
     </div>
-    <div class="tooltip-content">
-        <div class="tooltip-specs">
-            <p><strong>Requisitos:</strong></p>
-            <ul>
-                <li>Tamaño: Hasta 50MB</li>
-                <li>Resolución: Lado corto ≥512px, Lado largo ≤4096px</li>
-                <li>Formatos: JPG/PNG</li>
-            </ul>
+    <div class="tooltip-content p-3" style="max-height: 60vh; overflow-y: auto;">
+        <p class="text-dark mb-3">
+            <strong>Siga estas pautas para subir imágenes de prendas y lograr los mejores resultados de Try-On.</strong>
+        </p>
+        <div class="alert alert-info py-2 px-3 mb-4">
+            <strong>Imágenes de hasta 50MB, con lado corto ≥ 512px, lado largo ≤ 4096px y formatos JPG/PNG.</strong>
         </div>
 
         @if(count($validGarments) > 0)
-            <div class="guidelines-section">
-                <h6 class="section-title valid">✓ Siga estas pautas</h6>
-                <div class="grid-6">
-                    @foreach($validGarments as $garment)
-                        <div class="guideline-item">
-                            <div class="guideline-image">
-                                <img src="{{ $garment['url'] }}" alt="{{ $garment['description'] }}">
+            <div class="row">
+                @foreach ($validGarments as $garment)
+                    <div class="col-6 col-sm-4 col-md-3 col-lg-2 mb-3">
+                        <div class="card border-dark shadow-sm h-100">
+                            <div class="position-relative">
+                                <img src="{{ $garment['url'] }}" class="card-img-top" alt="{{ $garment['description'] }}" style="height: 120px; object-fit: cover;">
+                                <span class="badge badge-success position-absolute" style="top: 5px; right: 5px;">
+                                    <i class="fas fa-check"></i>
+                                </span>
                             </div>
-                            <div class="guideline-label valid">{{ $garment['description'] }}</div>
+                            <div class="card-body p-2 bg-secondary">
+                                <p class="card-text text-light mb-0" style="font-size: 11px; line-height: 1.3;">
+                                    {{ $garment['description'] }}
+                                </p>
+                            </div>
                         </div>
-                    @endforeach
-                </div>
+                    </div>
+                @endforeach
             </div>
 
-            <div class="guidelines-section">
-                <h6 class="section-title invalid">✗ Evite estos ejemplos</h6>
-                <div class="grid-6">
-                    @foreach($invalidGarments as $garment)
-                        <div class="guideline-item">
-                            <div class="guideline-image">
-                                <img src="{{ $garment['url'] }}" alt="{{ $garment['description'] }}">
+            <div class="alert alert-warning py-2 px-3 mb-3">
+                <strong>Evite los malos ejemplos, ya que pueden reducir la calidad de los resultados de Try-On.</strong>
+            </div>
+
+            <div class="row">
+                @foreach ($invalidGarments as $garment)
+                    <div class="col-6 col-sm-4 col-md-3 col-lg-2 mb-3">
+                        <div class="card border-dark shadow-sm h-100">
+                            <div class="position-relative">
+                                <img src="{{ $garment['url'] }}" class="card-img-top" alt="{{ $garment['description'] }}" style="height: 120px; object-fit: cover;">
+                                <span class="badge badge-danger position-absolute" style="top: 5px; right: 5px;">
+                                    <i class="fas fa-times"></i>
+                                </span>
                             </div>
-                            <div class="guideline-label invalid">{{ $garment['description'] }}</div>
+                            <div class="card-body p-2 bg-secondary">
+                                <p class="card-text text-light mb-0" style="font-size: 11px; line-height: 1.3;">
+                                    {{ $garment['description'] }}
+                                </p>
+                            </div>
                         </div>
-                    @endforeach
-                </div>
+                    </div>
+                @endforeach
             </div>
         @else
             <div class="text-center py-5">
-                <i class="fas fa-info-circle fa-3x mb-3" style="color: #666;"></i>
-                <p>No hay directrices de prendas disponibles. Por favor, añada imágenes de ejemplo a las carpetas de directrices.</p>
+                <i class="fas fa-info-circle fa-3x mb-3 text-muted"></i>
+                <p class="text-muted">No hay directrices de prendas disponibles. Por favor, añada imágenes de ejemplo a las carpetas de directrices.</p>
             </div>
         @endif
     </div>
@@ -298,25 +336,37 @@
             <div class="modal-body p-0">
                 <div class="image-viewer-container">
                     <img id="modalImage" src="" alt="Result Image">
+
+                    <!-- 🔍 INDICADOR DE ZOOM -->
+                    <div class="zoom-indicator">
+                        <i class="fas fa-search-plus"></i> <span id="zoomIndicator">100%</span>
+                    </div>
+
+                    <!-- 🔍 AYUDA VISUAL -->
+                    <div class="zoom-help">
+                        <div><i class="fas fa-mouse"></i> Scroll: Zoom</div>
+                        <div><i class="fas fa-hand-rock"></i> Click+Drag: Mover</div>
+                        <div><i class="fas fa-mouse"></i> Doble click: Zoom/Reset</div>
+                    </div>
                 </div>
                 <div class="image-controls">
                     <div class="row align-items-center">
                         <div class="col-md-6">
                             <div class="zoom-controls">
-                                <button class="btn btn-primary btn-sm" onclick="zoomImage(0.9)">
+                                <button class="btn btn-primary btn-sm" onclick="zoomImage(0.8)" title="Zoom Out">
                                     <i class="fas fa-search-minus"></i>
                                 </button>
                                 <span id="zoomLevel" class="mx-2 badge badge-secondary">100%</span>
-                                <button class="btn btn-primary btn-sm" onclick="zoomImage(1.1)">
+                                <button class="btn btn-primary btn-sm" onclick="zoomImage(1.25)" title="Zoom In">
                                     <i class="fas fa-search-plus"></i>
                                 </button>
-                                <button class="btn btn-outline-primary btn-sm ml-2" onclick="resetZoom()">
-                                    <i class="fas fa-expand-arrows-alt"></i> Reiniciar
+                                <button class="btn btn-outline-primary btn-sm ml-2" onclick="resetZoom()" title="Ajustar a pantalla">
+                                    <i class="fas fa-expand-arrows-alt"></i> Ajustar
                                 </button>
                             </div>
                         </div>
                         <div class="col-md-6 text-right">
-                            <button class="btn btn-success" onclick="downloadImage()">
+                            <button class="btn btn-success" onclick="downloadImage()" title="Descargar imagen">
                                 <i class="fas fa-download"></i> Descargar
                             </button>
                         </div>
@@ -326,7 +376,6 @@
         </div>
     </div>
 </div>
-
 <!-- HIDDEN FORM -->
 <form id="hiddenForm" enctype="multipart/form-data">
     @csrf
@@ -453,26 +502,60 @@ $(document).ready(function() {
         });
     });
 
-    // GENERATE
+    // 🧹 GENERATE SIMPLIFICADO (SOLO ERRORES CRÍTICOS)
     $('#generateBtn').click(function() {
         const modelSource = $('#hiddenModelSource').val() || 'default';
         const garmentType = $('#hiddenGarmentType').val();
 
-        // 🌐 VALIDACIONES TRADUCIDAS AL ESPAÑOL
-        const validations = {
-            default: () => !$('#hiddenSelectedModel').val() && alert('Por favor seleccione un modelo predeterminado'),
-            virtual: () => !$('#hiddenSelectedVirtualModel').val() && alert('Por favor seleccione un modelo virtual'),
-            upload: () => !$('#humanImageInput')[0].files.length && alert('Por favor suba una imagen de modelo humano')
-        };
+        // 🛑 VALIDACIONES CRÍTICAS CON SWEETALERT2
+        if (modelSource === 'default' && !$('#hiddenSelectedModel').val()) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Modelo requerido',
+                text: 'Por favor seleccione un modelo predeterminado',
+                confirmButtonText: 'Entendido'
+            });
+            return;
+        }
 
-        if (validations[modelSource]?.()) return;
+        if (modelSource === 'virtual' && !$('#hiddenSelectedVirtualModel').val()) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Modelo requerido',
+                text: 'Por favor seleccione un modelo virtual',
+                confirmButtonText: 'Entendido'
+            });
+            return;
+        }
+
+        if (modelSource === 'upload' && !$('#humanImageInput')[0].files.length) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Imagen requerida',
+                text: 'Por favor suba una imagen de modelo humano',
+                confirmButtonText: 'Entendido'
+            });
+            return;
+        }
 
         if (garmentType === 'single' && !$('#singleGarmentInput')[0].files.length) {
-            return alert('Por favor suba una prenda');
+            Swal.fire({
+                icon: 'warning',
+                title: 'Prenda requerida',
+                text: 'Por favor suba una prenda',
+                confirmButtonText: 'Entendido'
+            });
+            return;
         }
 
         if (garmentType === 'multiple' && (!$('#topGarmentInput')[0].files.length || !$('#bottomGarmentInput')[0].files.length)) {
-            return alert('Por favor suba tanto la prenda superior como la inferior');
+            Swal.fire({
+                icon: 'warning',
+                title: 'Prendas requeridas',
+                text: 'Por favor suba tanto la prenda superior como la inferior',
+                confirmButtonText: 'Entendido'
+            });
+            return;
         }
 
         const formData = new FormData();
@@ -495,7 +578,6 @@ $(document).ready(function() {
             formData.append('bottom_garment', $('#bottomGarmentInput')[0].files[0]);
         }
 
-        // 🔄 MANTENER BOTÓN IGUAL - NO CAMBIAR A "Generating..."
         $(this).prop('disabled', true);
 
         const tempResult = {
@@ -526,10 +608,28 @@ $(document).ready(function() {
                     resetGenerateButton();
                 }
             },
-            error: () => {
+            error: (xhr) => {
+                Swal.close();
                 tempResult.status = 'failed';
                 updateResultInHistory(tempResult);
                 resetGenerateButton();
+
+                // 🍯 ERROR DETALLADO CON SWEETALERT2
+                let errorMessage = 'Error desconocido';
+                if (xhr.responseJSON?.message) {
+                    errorMessage = xhr.responseJSON.message;
+                } else if (xhr.responseJSON?.error) {
+                    errorMessage = xhr.responseJSON.error;
+                } else if (xhr.responseText) {
+                    errorMessage = 'Error del servidor';
+                }
+
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error de generación',
+                    text: errorMessage,
+                    confirmButtonText: 'Reintentar',
+                });
             }
         });
     });
@@ -548,7 +648,6 @@ const toggleTooltip = (tooltipId, targetElement) => {
     } else {
         tooltip.style.display = 'block';
 
-        // Posicionamiento inteligente
         let left = rect.left - 450;
         if (left < 10) left = 10;
         if (left + 1000 > viewportWidth) left = viewportWidth - 1010;
@@ -560,7 +659,6 @@ const toggleTooltip = (tooltipId, targetElement) => {
         tooltip.style.left = left + 'px';
         tooltip.style.top = top + 'px';
 
-        // Animación suave
         tooltip.style.opacity = '0';
         tooltip.style.transform = 'scale(0.95)';
 
@@ -598,9 +696,35 @@ const openImageModal = (imageSrc, title) => {
     $('#imageModal').modal('show');
 };
 
+// 🔍 ZOOM CENTRADO EN EL CURSOR
 const zoomImage = (factor) => {
     currentZoom *= factor;
     currentZoom = Math.max(0.5, Math.min(currentZoom, 5));
+    updateImageTransform();
+    $('#zoomLevel').text(Math.round(currentZoom * 100) + '%');
+};
+
+// 🔍 ZOOM CENTRADO EN EL CURSOR CON POSICIÓN DEL MOUSE
+const zoomImageAtCursor = (factor, mouseX, mouseY) => {
+    const oldZoom = currentZoom;
+    currentZoom *= factor;
+    currentZoom = Math.max(0.5, Math.min(currentZoom, 5));
+
+    // Calcular el centro del contenedor de imagen
+    const container = $('.image-viewer-container');
+    const containerRect = container[0].getBoundingClientRect();
+    const containerCenterX = containerRect.width / 2;
+    const containerCenterY = containerRect.height / 2;
+
+    // Calcular la posición del mouse relativa al centro del contenedor
+    const mouseRelativeX = mouseX - containerRect.left - containerCenterX;
+    const mouseRelativeY = mouseY - containerRect.top - containerCenterY;
+
+    // Calcular el nuevo desplazamiento para mantener el zoom centrado en el cursor
+    const zoomRatio = currentZoom / oldZoom;
+    translateX = mouseRelativeX - (mouseRelativeX - translateX) * zoomRatio;
+    translateY = mouseRelativeY - (mouseRelativeY - translateY) * zoomRatio;
+
     updateImageTransform();
     $('#zoomLevel').text(Math.round(currentZoom * 100) + '%');
 };
@@ -617,12 +741,13 @@ const updateImageTransform = () => {
     const image = $('#modalImage');
     image.css({
         transform: `translate(${translateX}px, ${translateY}px) scale(${currentZoom})`,
-        transition: 'transform 0.1s ease-out',
+        transition: isDragging ? 'none' : 'transform 0.1s ease-out'
     });
 };
 
 const downloadImage = () => {
     if (!currentImageSrc) return;
+
     const link = document.createElement('a');
     link.href = currentImageSrc;
     link.download = `virtual-try-on-result-${Date.now()}.png`;
@@ -633,29 +758,131 @@ const downloadImage = () => {
 
 // EVENTOS DE DRAG Y ZOOM
 $('#modalImage').on('mousedown', function(e) {
+    e.preventDefault();
+
+    // Solo permitir drag si hay zoom
     if (currentZoom <= 1) return;
+
     isDragging = true;
     startX = e.clientX - translateX;
     startY = e.clientY - translateY;
-    $(this).css('cursor', 'grabbing');
+
+    // Cambiar cursor y deshabilitar selección
+    $(this).css({
+        'cursor': 'grabbing',
+        'user-select': 'none',
+        '-webkit-user-select': 'none',
+        '-moz-user-select': 'none',
+        '-ms-user-select': 'none'
+    });
+
+    // Prevenir comportamiento por defecto
+    $('.image-viewer-container').addClass('dragging');
+
+    // Prevenir selección de texto durante el drag
+    $('body').css('user-select', 'none');
 });
 
 $(document).on('mousemove', function(e) {
     if (!isDragging) return;
-    translateX = e.clientX - startX;
-    translateY = e.clientY - startY;
+
+    e.preventDefault();
+
+    // Calcular nueva posición
+    const newTranslateX = e.clientX - startX;
+    const newTranslateY = e.clientY - startY;
+
+    // Aplicar límites opcionales para evitar que se salga demasiado
+    const container = $('.image-viewer-container');
+    const containerWidth = container.width();
+    const containerHeight = container.height();
+
+    // Límites suaves (opcional)
+    const maxTranslateX = containerWidth * 0.5;
+    const maxTranslateY = containerHeight * 0.5;
+
+    translateX = Math.max(-maxTranslateX, Math.min(maxTranslateX, newTranslateX));
+    translateY = Math.max(-maxTranslateY, Math.min(maxTranslateY, newTranslateY));
+
     updateImageTransform();
 });
 
-$(document).on('mouseup', function() {
+$(document).on('mouseup', function(e) {
+    if (!isDragging) return;
+
     isDragging = false;
-    $('#modalImage').css('cursor', 'grab');
+
+    // Restaurar cursor normal
+    $('#modalImage').css({
+        'cursor': currentZoom > 1 ? 'grab' : 'default',
+        'user-select': 'auto',
+        '-webkit-user-select': 'auto',
+        '-moz-user-select': 'auto',
+        '-ms-user-select': 'auto'
+    });
+
+    $('.image-viewer-container').removeClass('dragging');
+    $('body').css('user-select', 'auto');
 });
 
+// 🔍 ZOOM CON SCROLL DEL MOUSE - CENTRADO EN CURSOR
 $('#modalImage').on('wheel', function(e) {
     e.preventDefault();
-    const factor = e.originalEvent.deltaY > 0 ? 0.9 : 1.1;
-    zoomImage(factor);
+
+    // Determinar dirección del scroll
+    const delta = e.originalEvent.deltaY;
+    const factor = delta > 0 ? 0.9 : 1.1;
+
+    // Obtener posición del mouse
+    const mouseX = e.clientX;
+    const mouseY = e.clientY;
+
+    // Aplicar zoom centrado en el cursor
+    zoomImageAtCursor(factor, mouseX, mouseY);
+});
+
+// 🔍 ZOOM CON BOTONES - CENTRADO EN LA IMAGEN
+window.zoomImage = (factor) => {
+    // Para botones, usar el centro de la imagen
+    const container = $('.image-viewer-container');
+    const containerRect = container[0].getBoundingClientRect();
+    const centerX = containerRect.left + containerRect.width / 2;
+    const centerY = containerRect.top + containerRect.height / 2;
+
+    zoomImageAtCursor(factor, centerX, centerY);
+};
+
+// 🖱️ PREVENIR COMPORTAMIENTOS NO DESEADOS
+$('#modalImage').on('contextmenu', function(e) {
+    e.preventDefault(); // Prevenir menú contextual
+});
+
+$('#modalImage').on('dragstart', function(e) {
+    e.preventDefault(); // Prevenir drag nativo de la imagen
+});
+
+// 🔍 INDICADOR VISUAL DE ZOOM
+$('#modalImage').on('mouseenter', function() {
+    if (currentZoom > 1) {
+        $(this).css('cursor', 'grab');
+    } else {
+        $(this).css('cursor', 'default');
+    }
+});
+
+// 🔍 DOBLE CLICK PARA ZOOM FIT/RESET
+$('#modalImage').on('dblclick', function(e) {
+    e.preventDefault();
+
+    if (currentZoom === 1) {
+        // Zoom in al 200% centrado en el cursor
+        const mouseX = e.clientX;
+        const mouseY = e.clientY;
+        zoomImageAtCursor(2, mouseX, mouseY);
+    } else {
+        // Reset zoom
+        resetZoom();
+    }
 });
 
 // FUNCIONES DE ARCHIVOS
@@ -680,6 +907,7 @@ const showImagePreview = (file, previewId, uploadAreaId) => {
 
 const clearFileInput = (inputId, uploadAreaId, previewId) => {
     event.stopPropagation();
+
     const input = document.getElementById(inputId);
     const uploadArea = document.getElementById(uploadAreaId);
     const preview = document.getElementById(previewId);
@@ -723,7 +951,6 @@ const renderResultsHistory = () => {
         const statusClass = `status ${result.status}`;
         const date = new Date(result.created_at).toLocaleString();
 
-        // Traducir tipos de modelo
         let modelTypeText = result.model_type;
         if (result.model_type === 'default') {
             modelTypeText = 'Predeterminado';
@@ -733,7 +960,6 @@ const renderResultsHistory = () => {
             modelTypeText = 'Subido';
         }
 
-        // Traducir tipos de prenda
         let garmentTypeText = result.garments_type;
         if (result.garments_type === 'single') {
             garmentTypeText = 'Prenda Única';
@@ -741,7 +967,6 @@ const renderResultsHistory = () => {
             garmentTypeText = 'Múltiples Prendas';
         }
 
-        // Traducir estado
         let statusText = result.status;
         if (result.status === 'processing') {
             statusText = 'En Proceso';
@@ -773,7 +998,6 @@ const renderResultsHistory = () => {
                 </div>`;
             });
         } else if (result.status === 'processing') {
-            // 🔄 ESTADO DE PROCESAMIENTO RESTAURADO
             html += `<div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--txt-2);">
                 <div class="spinner-border text-primary" role="status"></div>
                 <p style="margin-top: 16px;">Procesando...</p>

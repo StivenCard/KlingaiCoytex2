@@ -6,6 +6,8 @@
     <title>{{ config('app.name', 'AI Virtual Try-On') }}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- 🍯 SWEETALERT2 CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         :root {
             --bg-1: #FFFFF0; --bg-2: #D3D3D3   ; --bg-3: #FFFFF0;
@@ -25,7 +27,7 @@
         .navbar-brand { color: var(--txt-1) !important; font-weight: 600; font-size: 1.25rem; }
         .navbar-brand:hover { color: var(--accent-2) !important; }
         .nav-link { color: var(--txt-2) !important; font-weight: 500; padding: 8px 16px !important; border-radius: 6px; transition: all 0.3s; }
-        .nav-link:hover { color: var(--txt-1) !important; background: var(--bg-3); }
+        .nav-link:hover { color: #D3D3D3 !important; background: #545b62; }
         .nav-link.active { color: var(--txt-1) !important; background: var(--accent-2); }
 
         /* 🔥 LAYOUT */
@@ -149,7 +151,7 @@
         .result-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
         .result-info { font-size: 12px; color: var(--txt-2); }
         .status { padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
-        .status.completed { background: rgba(74, 222, 128, 0.2); color: var(--accent-1); }
+        .status.completed { background: rgb(128, 236, 168); color: var(--accent-1); }
         .status.processing { background: rgba(251, 191, 36, 0.2); color: #fbbf24; }
         .status.failed { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
         .prompt-used { color: var(--txt-2); font-size: 11px; margin-top: 4px; font-style: italic; }
@@ -214,8 +216,6 @@
             max-height: 60vh;
         }
 
-
-
         .tooltip-content p {
             color: #ff0000;
             font-size: 14px;
@@ -226,156 +226,6 @@
             color: rgb(0, 0, 0);
         }
 
-        /* Guidelines específicos para modelos */
-        .model-guidelines .card {
-            background: #1a1a1a;
-            border: 1px solid #444;
-            border-radius: 8px;
-            overflow: hidden;
-            transition: all 0.3s;
-        }
-
-
-        .model-guidelines .card-img-top {
-            width: 100%;
-            height: 120px;
-            object-fit: cover;
-        }
-
-        .model-guidelines .card-body {
-            background: #313131;
-            padding: 8px;
-            border-top: 1px solid #444;
-        }
-
-        .model-guidelines .card-body p {
-            color: #ccc;
-            font-size: 11px;
-            margin: 0;
-            line-height: 1.3;
-        }
-
-
-
-        /* Guidelines específicos para prendas */
-        .garment-guidelines .tooltip-specs {
-            background: var(--bg-2);
-            padding: 12px 16px;
-            border-radius: 6px;
-            margin-bottom: 20px;
-            text-align: center;
-        }
-
-        .garment-guidelines .tooltip-specs p {
-            color: white;
-            font-size: 14px;
-            font-weight: 600;
-            margin: 0;
-        }
-
-        .garment-guidelines .tooltip-specs ul {
-            margin: 8px 0 0 0;
-            padding: 0;
-            list-style: none;
-            display: flex;
-            justify-content: center;
-            flex-wrap: wrap;
-            gap: 20px;
-            color: #ccc;
-            font-size: 12px;
-        }
-
-        .guidelines-section {
-            margin-bottom: 30px;
-        }
-
-        .guidelines-section:last-child {
-            margin-bottom: 0;
-        }
-
-        .section-title {
-            color: white;
-            font-size: 16px;
-            font-weight: 600;
-            margin-bottom: 16px;
-            text-align: center;
-            padding: 12px 0;
-            border-radius: 6px;
-        }
-
-        .section-title.valid {
-            color: #4ade80;
-            background: rgba(74, 222, 128, 0.1);
-        }
-
-        .section-title.invalid {
-            color: #f87171;
-            background: rgba(248, 113, 113, 0.1);
-        }
-
-        .guideline-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            text-align: center;
-        }
-
-        .guideline-image {
-            aspect-ratio: 3/4;
-            width: 100%;
-            height: 140px;
-            background: #1a1a1a;
-            border-radius: 8px;
-            overflow: hidden;
-            border: 1px solid #444;
-            margin-bottom: 8px;
-            position: relative;
-        }
-
-        .guideline-image img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        .guideline-label {
-            color: #ccc;
-            font-size: 11px;
-            line-height: 1.3;
-            max-width: 100%;
-            word-wrap: break-word;
-            height: 40px;
-            overflow: hidden;
-            display: flex;
-            align-items: flex-start;
-            gap: 4px;
-            justify-content: center;
-        }
-
-        .guideline-label.valid::before {
-            content: "✓";
-            color: #4ade80;
-            font-weight: bold;
-            font-size: 12px;
-            flex-shrink: 0;
-        }
-
-        .guideline-label.invalid::before {
-            content: "✗";
-            color: #f87171;
-            font-weight: bold;
-            font-size: 12px;
-            flex-shrink: 0;
-        }
-
-        .no-images {
-            grid-column: 1 / -1;
-            text-align: center;
-            color: #ccc;
-            font-size: 14px;
-            padding: 40px 20px;
-        }
-
         /* 🔥 MODAL */
         .modal-content { background: var(--bg-2); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow-heavy); }
         .modal-header { background: var(--bg-3); border-bottom: 1px solid var(--border); padding: 16px 20px; border-radius: 12px 12px 0 0; }
@@ -383,10 +233,91 @@
         .close { color: var(--txt-2); font-size: 24px; opacity: 0.8; filter: invert(1); }
         .close:hover { color: var(--txt-1); opacity: 1; }
 
-        .image-viewer-container { position: relative; display: flex; align-items: center; justify-content: center; height: 70vh; overflow: hidden; background: #1a1a1a; cursor: grab; user-select: none; }
-        .image-viewer-container.dragging { cursor: grabbing; }
+        .image-viewer-container {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 70vh;
+            overflow: hidden;
+            background: #1a1a1a;
+            cursor: default;
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+        }
+        .image-viewer-container.dragging {cursor: grabbing !important;}
 
-        #modalImage { max-width: 90%; max-height: 90%; object-fit: contain; cursor: grab; transition: transform 0.1s ease-out; user-select: none; border-radius: 4px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5); }
+        #modalImage {
+            max-width: 90%;
+            max-height: 90%;
+            object-fit: contain;
+            cursor: default;
+            transition: transform 0.1s ease-out;
+            user-select: none;
+            border-radius: 4px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+        }
+
+        .zoom-indicator {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .zoom-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .zoom-controls button {
+            min-width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #zoomLevel {
+            min-width: 60px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        /* 🔍 AYUDA VISUAL */
+        .zoom-help {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 11px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+        }
+
+        .image-viewer-container:hover .zoom-help {
+            opacity: 1;
+        }
+
+        .image-viewer-container:hover .zoom-indicator {opacity: 1;}
+
         .vm-modal-image { width: 100%; height: 100%; object-fit: contain; cursor: grab; transition: transform 0.3s; }
 
         .image-controls { background: var(--bg-3); padding: 15px; border-top: 1px solid var(--border); border-radius: 0 0 12px 12px; }
@@ -423,6 +354,26 @@
         .d-none { display: none !important; }
         .file-input { position: absolute; opacity: 0; pointer-events: none; }
         .text-right { text-align: right; }
+
+        /* 🍯 SWEETALERT2 CUSTOMIZACIÓN */
+        .swal2-popup {
+            font-family: 'Segoe UI', sans-serif !important;
+            border-radius: 12px !important;
+        }
+        .swal2-title {
+            color: var(--txt-1) !important;
+        }
+        .swal2-content {
+            color: var(--txt-2) !important;
+        }
+        .swal2-confirm {
+            background-color: var(--accent-2) !important;
+            border: none !important;
+        }
+        .swal2-cancel {
+            background-color: #dc3545 !important;
+            border: none !important;
+        }
     </style>
 </head>
 <body>
@@ -440,51 +391,13 @@
         </div>
     </nav>
 
-    @if(session('success'))
-        <div class="container-fluid px-4 mt-3">
-            <div class="alert alert-success alert-dismissible fade show">
-                <i class="fas fa-check-circle"></i> {{ session('success') }}
-                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-        </div>
-    @endif
-
-    @if(session('error'))
-        <div class="container-fluid px-4 mt-3">
-            <div class="alert alert-danger alert-dismissible fade show">
-                <i class="fas fa-exclamation-circle"></i> {{ session('error') }}
-                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-        </div>
-    @endif
-
-    @if($errors->any())
-        <div class="container-fluid px-4 mt-3">
-            <div class="alert alert-warning alert-dismissible fade show">
-                <i class="fas fa-exclamation-triangle"></i>
-                <strong>Errores de validación:</strong>
-                <ul class="mb-0 mt-2">
-                    @foreach($errors->all() as $error)
-                        <li>{{ $error }}</li>
-                    @endforeach
-                </ul>
-                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-        </div>
-    @endif
-
     <div class="main-content">
         @yield('content')
     </div>
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
+    {{-- Eliminado bloque de SweetAlert2 por sesión, ya que todo se maneja por AJAX --}}
     @stack('scripts')
 </body>
 </html>
