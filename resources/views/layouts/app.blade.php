@@ -160,18 +160,18 @@
             width: 1000px;
             height: auto;
             max-height: 70vh;
-            background: #2a2a2a;
+            background: var(--bg-1);
             border: 1px solid #444;
             border-radius: 12px;
             box-shadow: var(--shadow-heavy);
             z-index: 1050;
             display: none;
             overflow: hidden;
-            color: white;
+            color: rgb(0, 0, 0);
         }
 
         .tooltip-header {
-            background: #1a1a1a;
+            background: var(--bg-2);
             padding: 16px 20px;
             border-bottom: 1px solid #444;
             display: flex;
@@ -180,7 +180,7 @@
         }
 
         .tooltip-header h6 {
-            color: white;
+            color: rgb(0, 0, 0);
             font-size: 16px;
             font-weight: 600;
             margin: 0;
@@ -192,7 +192,7 @@
         .tooltip-close {
             background: none;
             border: none;
-            color: #ccc;
+            color: #9b0d0d;
             cursor: pointer;
             font-size: 18px;
             width: 28px;
@@ -212,31 +212,18 @@
             padding: 20px;
             overflow-y: auto;
             max-height: 60vh;
-            scrollbar-width: thin;
-            scrollbar-color: #444 #2a2a2a;
         }
 
-        .tooltip-content::-webkit-scrollbar {
-            width: 8px;
-        }
 
-        .tooltip-content::-webkit-scrollbar-track {
-            background: #2a2a2a;
-        }
-
-        .tooltip-content::-webkit-scrollbar-thumb {
-            background: #444;
-            border-radius: 4px;
-        }
 
         .tooltip-content p {
-            color: #ccc;
+            color: #ff0000;
             font-size: 14px;
             line-height: 1.5;
         }
 
         .tooltip-content p strong {
-            color: white;
+            color: rgb(0, 0, 0);
         }
 
         /* Guidelines específicos para modelos */
@@ -248,10 +235,6 @@
             transition: all 0.3s;
         }
 
-        .model-guidelines .card:hover {
-            border-color: #4ade80;
-            transform: translateY(-2px);
-        }
 
         .model-guidelines .card-img-top {
             width: 100%;
@@ -260,7 +243,7 @@
         }
 
         .model-guidelines .card-body {
-            background: #1a1a1a;
+            background: #313131;
             padding: 8px;
             border-top: 1px solid #444;
         }
@@ -272,19 +255,11 @@
             line-height: 1.3;
         }
 
-        .model-guidelines .badge-success {
-            background: #4ade80;
-            color: #1a1a1a;
-        }
 
-        .model-guidelines .badge-danger {
-            background: #f87171;
-            color: white;
-        }
 
         /* Guidelines específicos para prendas */
         .garment-guidelines .tooltip-specs {
-            background: #1a1a1a;
+            background: var(--bg-2);
             padding: 12px 16px;
             border-radius: 6px;
             margin-bottom: 20px;

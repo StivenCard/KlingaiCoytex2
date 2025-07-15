@@ -39,10 +39,10 @@
                         @endforeach
                     @empty
                         <div class="no-images">
-                            <i class="fas fa-user"></i>
-                            <p>No hay modelos virtuales disponibles</p>
+                            <i class="fas fa-user" style="color: #141414;"></i>
+                            <p style="color: #141414;">No hay modelos virtuales disponibles</p>
                             <small>
-                                <a href="{{ route('virtual-model') }}" class="btn btn-link btn-sm">
+                                <a href="{{ route('virtual-model') }}" class="btn btn-outline-primary">
                                     Genere primero modelos virtuales
                                 </a>
                             </small>
@@ -183,8 +183,8 @@
 <div class="tooltip model-guidelines" id="modelTooltip">
     <div class="tooltip-header">
         <h6><i class="fas fa-user"></i> Pautas de Modelos</h6>
-        <button class="tooltip-close" onclick="hideTooltip('modelTooltip')">
-            <i class="fas fa-times"></i>
+        <button class="btn btn-outline-danger" onclick="hideTooltip('modelTooltip')">
+            x
         </button>
     </div>
     <div class="tooltip-content">
@@ -458,20 +458,21 @@ $(document).ready(function() {
         const modelSource = $('#hiddenModelSource').val() || 'default';
         const garmentType = $('#hiddenGarmentType').val();
 
+        // 🌐 VALIDACIONES TRADUCIDAS AL ESPAÑOL
         const validations = {
-            default: () => !$('#hiddenSelectedModel').val() && alert('Please select a default model'),
-            virtual: () => !$('#hiddenSelectedVirtualModel').val() && alert('Please select a virtual model'),
-            upload: () => !$('#humanImageInput')[0].files.length && alert('Please upload a human model image')
+            default: () => !$('#hiddenSelectedModel').val() && alert('Por favor seleccione un modelo predeterminado'),
+            virtual: () => !$('#hiddenSelectedVirtualModel').val() && alert('Por favor seleccione un modelo virtual'),
+            upload: () => !$('#humanImageInput')[0].files.length && alert('Por favor suba una imagen de modelo humano')
         };
 
         if (validations[modelSource]?.()) return;
 
         if (garmentType === 'single' && !$('#singleGarmentInput')[0].files.length) {
-            return alert('Please upload a garment');
+            return alert('Por favor suba una prenda');
         }
 
         if (garmentType === 'multiple' && (!$('#topGarmentInput')[0].files.length || !$('#bottomGarmentInput')[0].files.length)) {
-            return alert('Please upload both top and bottom garments');
+            return alert('Por favor suba tanto la prenda superior como la inferior');
         }
 
         const formData = new FormData();
@@ -494,7 +495,8 @@ $(document).ready(function() {
             formData.append('bottom_garment', $('#bottomGarmentInput')[0].files[0]);
         }
 
-        $(this).prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Generating...');
+        // 🔄 MANTENER BOTÓN IGUAL - NO CAMBIAR A "Generating..."
+        $(this).prop('disabled', true);
 
         const tempResult = {
             id: 'temp_' + Date.now(),
@@ -531,7 +533,6 @@ $(document).ready(function() {
             }
         });
     });
-
     $('#hiddenModelSource').val('default');
 });
 
@@ -722,36 +723,43 @@ const renderResultsHistory = () => {
         const statusClass = `status ${result.status}`;
         const date = new Date(result.created_at).toLocaleString();
 
+        // Traducir tipos de modelo
+        let modelTypeText = result.model_type;
         if (result.model_type === 'default') {
-            result.model_type = 'Predeterminado';
+            modelTypeText = 'Predeterminado';
         } else if (result.model_type === 'virtual') {
-            result.model_type = 'Virtual';
+            modelTypeText = 'Virtual';
         } else if (result.model_type === 'upload') {
-            result.model_type = 'Subido';
+            modelTypeText = 'Subido';
         }
 
-        if (result.status === 'processing') {
-            result.status = 'En Proceso';
-        } else if (result.status === 'completed') {
-            result.status = 'Completado';
-        } else {
-            result.status = 'Fallido';
-        }
-
+        // Traducir tipos de prenda
+        let garmentTypeText = result.garments_type;
         if (result.garments_type === 'single') {
-            result.garments_type = 'Prenda Única';
+            garmentTypeText = 'Prenda Única';
         } else if (result.garments_type === 'multiple') {
-            result.garments_type = 'Múltiples Prendas';
+            garmentTypeText = 'Múltiples Prendas';
         }
+
+        // Traducir estado
+        let statusText = result.status;
+        if (result.status === 'processing') {
+            statusText = 'En Proceso';
+        } else if (result.status === 'completed') {
+            statusText = 'Completado';
+        } else if (result.status === 'failed') {
+            statusText = 'Fallido';
+        }
+
         html += `
             <div class="result-group">
                 <div class="result-header">
                     <div class="result-info">
-                        <div><h6>Probador Virtual Try-On - Resultados </h6></div>
-                        <div> <b>Fecha y hora de creación: </b>${date}</div>
-                        <div> <b>Modelo: </b>${result.model_type} | <b>Prenda/s: </b>${result.garments_type}</div>
+                        <div><h6>Probador Virtual Try-On - Resultados</h6></div>
+                        <div><b>Fecha y hora de creación: </b>${date}</div>
+                        <div><b>Modelo: </b>${modelTypeText} | <b>Prenda/s: </b>${garmentTypeText}</div>
                     </div>
-                    <div class="${statusClass}">${result.status.toUpperCase()}</div>
+                    <div class="${statusClass}">${statusText.toUpperCase()}</div>
                 </div>
                 <div class="grid-4">`;
 
@@ -765,15 +773,16 @@ const renderResultsHistory = () => {
                 </div>`;
             });
         } else if (result.status === 'processing') {
+            // 🔄 ESTADO DE PROCESAMIENTO RESTAURADO
             html += `<div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--txt-2);">
                 <div class="spinner-border text-primary" role="status"></div>
-                <p style="margin-top: 16px;">Processing...</p>
+                <p style="margin-top: 16px;">Procesando...</p>
                 <small>⏳ Tiempo estimado: 5–20 segundos.</small>
             </div>`;
         } else {
             html += `<div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--txt-2);">
                 <i class="fas fa-exclamation-circle" style="font-size: 32px; margin-bottom: 16px; opacity: 0.5;"></i>
-                <p>No results available</p>
+                <p>No hay resultados disponibles</p>
             </div>`;
         }
 
@@ -827,7 +836,7 @@ const checkTaskStatus = taskId => {
 };
 
 const resetGenerateButton = () => {
-    $('#generateBtn').prop('disabled', false).html('<i class="fas fa-magic"></i> Generar');
+    $('#generateBtn').prop('disabled', false);
 };
 </script>
 @endpush
