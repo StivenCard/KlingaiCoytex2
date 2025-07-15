@@ -155,7 +155,6 @@ class KlingApiService
             'prompt'         => $data['prompt'] ?? null,
             'status'         => $error ? 'failed' : 'completed',
             'task_status'    => $result['data']['task_status'] ?? null,
-            'task_status_msg' => $result['data']['task_status_msg'] ?? null,
             'response_data'  => $result,
             'error_details'  => $error ? ['message' => $error] : null,
             'endpoint'       => $this->baseUrl . $path,

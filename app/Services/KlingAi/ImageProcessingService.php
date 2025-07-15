@@ -161,100 +161,48 @@ class ImageProcessingService
      */
     private function addHighQualityLogo($image): InterventionImage
     {
-
         $logoPath = public_path('images/logo_sio.png');
 
-        if (file_exists($logoPath)) {
-            try {
-                // Cargar logo original
-                $logo = Image::make($logoPath);
+        try {
+            $logo = Image::make($logoPath);
 
-                // Calcular tamaño MEJORADO (más grande)
-                $sizeFactor = 0.12; // 12% en vez de 8%
-                $logoWidth = max(150, $image->width() * $sizeFactor); // Mínimo 150px
+            // Tamaño dinámico del logo (12% del ancho o mínimo 150px)
+            $sizeFactor = 0.12;
+            $logoWidth = max(150, $image->width() * $sizeFactor);
 
-                // Redimensionar manteniendo calidad
-                $logo->resize($logoWidth, null, function ($constraint) {
-                    $constraint->aspectRatio();
-                    $constraint->upsize();
-                });
+            $logo->resize($logoWidth, null, function ($constraint) {
+                $constraint->aspectRatio();
+                $constraint->upsize();
+            });
 
-                $logoHeight = $logo->height();
-                $margin = 25;
+            $margin = 25;
+            $logoHeight = $logo->height();
 
-                // Posición del logo
-                $logoX = $margin;
-                $logoY = $image->height() - $logoHeight - $margin;
+            // Coordenadas del logo
+            $logoX = $image->width() - $logo->width() - $margin;
+            $logoY = $image->height() - $logo->height() - $margin;
 
-                // Crear fondo MEJORADO para el logo
-                if (true) {
-                    $bgColor = 'rgba(255, 255, 255, 0.9)';
-                    $padding = 10;
+            // Insertar logo sin fondo, en la esquina inferior derecha
+            $image->insert($logo, 'bottom-right', $margin, $margin);
 
-                    $image->rectangle(
-                        $logoX - $padding,
-                        $logoY - $padding,
-                        $logoX + $logoWidth + $padding,
-                        $logoY + $logoHeight + $padding,
-                        function ($draw) use ($bgColor) {
-                            $draw->background($bgColor);
-                        }
-                    );
-                }
+            // Agregar texto "Generado por" justo arriba del logo
+            $text = 'Generado por';
+            $fontSize = $this->calculateImprovedFontSize($image) - 6; // Puedes ajustar este valor
 
-                // Insertar logo
-                $image->insert($logo, 'bottom-left', $margin, $margin);
+            $textX = $logoX + $logo->width() / 2;
+            $textY = $logoY - 10; // Espacio entre texto y logo
 
-            } catch (\Exception $e) {
-                Log::warning('Error al aplicar logo de marca de agua: ' . $e->getMessage());
+            $image->text($text, $textX, $textY, function ($font) use ($fontSize) {
+                $font->file(public_path('fonts/OpenSans-Regular.ttf')); // Asegúrate de tener una fuente válida
+                $font->size($fontSize);
+                $font->color('#ffffff');
+                $font->align('center');
+                $font->valign('bottom');
+            });
 
-                // Si falla el logo, crear uno básico
-                $image = $this->addFallbackLogo($image);
-            }
-        } else {
-            // Si no existe el archivo, crear logo básico
-            $image = $this->addFallbackLogo($image);
+        } catch (\Exception $e) {
+            Log::warning('Error al aplicar logo de marca de agua: ' . $e->getMessage());
         }
-
-        return $image;
-    }
-
-    /**
-     * 🔥 NUEVO: Crea logo básico programáticamente si no existe archivo
-     */
-    private function addFallbackLogo($image): InterventionImage
-    {
-        $logoWidth = max(120, $image->width() * 0.1);
-        $logoHeight = 40;
-        $margin = 25;
-
-        // Crear logo básico con gradiente
-        $logo = Image::canvas($logoWidth, $logoHeight, '#3b82f6');
-
-        // Agregar gradiente simple
-        $logo->fill('#1e40af', 0, 0);
-
-        // Texto "SIO" centrado
-        $logo->text('SIO', $logoWidth / 2, $logoHeight / 2, function($font) {
-            $font->size(24);
-            $font->color('#ffffff');
-            $font->align('center');
-            $font->valign('middle');
-        });
-
-        // Fondo para el logo
-        $image->rectangle(
-            $margin - 10,
-            $image->height() - $logoHeight - $margin - 10,
-            $margin + $logoWidth + 10,
-            $image->height() - $margin + 10,
-            function ($draw) {
-                $draw->background('rgba(255, 255, 255, 0.9)');
-            }
-        );
-
-        // Insertar logo
-        $image->insert($logo, 'bottom-left', $margin, $margin);
 
         return $image;
     }
@@ -267,25 +215,11 @@ class ImageProcessingService
         $text =  'Generado por SIO';
         $fontSize = $this->calculateImprovedFontSize($image);
         $margin = 25;
-        $color =  '#ffffff';
-        $shadowColor = '#000000';
+        $color =  '#000000';
 
         // Posición del texto
         $textX = $image->width() - $margin;
         $textY = $image->height() - $margin;
-
-        // Crear fondo MEJORADO para el texto
-        if (true) {
-            $this->addTextBackground($image, $text, $textX, $textY, $fontSize);
-        }
-
-        // Aplicar sombra FUERTE para contraste
-        $image->text($text, $textX + 2, $textY + 2, function($font) use ($fontSize, $shadowColor) {
-            $font->size($fontSize);
-            $font->color($shadowColor);
-            $font->align('right');
-            $font->valign('bottom');
-        });
 
         // Aplicar texto principal
         $image->text($text, $textX, $textY, function($font) use ($fontSize, $color) {
@@ -326,54 +260,6 @@ class ImageProcessingService
         }
 
         return max($minSize, min($maxSize, (int)$calculatedSize));
-    }
-
-    /**
-     * 🔥 NUEVO: Agrega fondo MEJORADO al texto
-     */
-    private function addTextBackground($image, $text, $x, $y, $fontSize): void
-    {
-        $bgColor = 'rgba(0, 0, 0, 0.7)';
-
-        // Calcular dimensiones más precisas
-        $textWidth = strlen($text) * ($fontSize * 0.65);
-        $textHeight = $fontSize + 12;
-        $padding = 8;
-
-        // Coordenadas del rectángulo
-        $bgX1 = $x - $textWidth - $padding;
-        $bgY1 = $y - $textHeight - $padding;
-        $bgX2 = $x + $padding;
-        $bgY2 = $y + $padding;
-
-        // Crear fondo con esquinas redondeadas (simulado)
-        $image->rectangle($bgX1, $bgY1, $bgX2, $bgY2, function ($draw) use ($bgColor) {
-            $draw->background($bgColor);
-        });
-    }
-
-    /**
-     * 🔥 VERSIÓN ANTERIOR: Mantener compatibilidad
-     */
-    private function addWatermark($image): InterventionImage
-    {
-        return $this->addWatermarkWithConfig($image);
-    }
-
-    /**
-     * 🔥 VERSIÓN ANTERIOR: Mantener compatibilidad
-     */
-    private function addLogoWatermark($image): InterventionImage
-    {
-        return $this->addHighQualityLogo($image);
-    }
-
-    /**
-     * 🔥 VERSIÓN ANTERIOR: Mantener compatibilidad
-     */
-    private function calculateFontSize($image): int
-    {
-        return $this->calculateImprovedFontSize($image);
     }
 
     /**

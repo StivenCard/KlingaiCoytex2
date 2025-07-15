@@ -16,7 +16,6 @@ return new class extends Migration
             $table->text('prompt')->nullable(); // Solo para virtual_model
             $table->enum('status', ['submitted', 'processing', 'completed', 'failed']);
             $table->string('task_status')->nullable();
-            $table->text('task_status_msg')->nullable();
 
             // 🔥 MANTENER request_data PARA virtual_model (metadatos)
             $table->json('request_data')->nullable();

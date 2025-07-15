@@ -16,7 +16,6 @@ class ApiLog extends Model
         'prompt',               // Prompt utilizado (si aplica)
         'status',               // Estado general del registro ('completed', 'failed')
         'task_status',          // Estado específico de la tarea en Kling ('succeed', 'pending', etc.)
-        'task_status_msg',      // Mensaje detallado (si lo provee la API)
         'request_data',         // Array con payload enviado (solo en virtual_model)
         'human_image_path',     // Ruta de imagen humana (solo en virtual_try_on)
         'cloth_image_path',     // Ruta de imagen de prenda (solo en virtual_try_on)
