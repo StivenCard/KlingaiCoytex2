@@ -507,56 +507,7 @@ $(document).ready(function() {
         const modelSource = $('#hiddenModelSource').val() || 'default';
         const garmentType = $('#hiddenGarmentType').val();
 
-        // 🛑 VALIDACIONES CRÍTICAS CON SWEETALERT2
-        if (modelSource === 'default' && !$('#hiddenSelectedModel').val()) {
-            Swal.fire({
-                icon: 'warning',
-                title: 'Modelo requerido',
-                text: 'Por favor seleccione un modelo predeterminado',
-                confirmButtonText: 'Entendido'
-            });
-            return;
-        }
 
-        if (modelSource === 'virtual' && !$('#hiddenSelectedVirtualModel').val()) {
-            Swal.fire({
-                icon: 'warning',
-                title: 'Modelo requerido',
-                text: 'Por favor seleccione un modelo virtual',
-                confirmButtonText: 'Entendido'
-            });
-            return;
-        }
-
-        if (modelSource === 'upload' && !$('#humanImageInput')[0].files.length) {
-            Swal.fire({
-                icon: 'warning',
-                title: 'Imagen requerida',
-                text: 'Por favor suba una imagen de modelo humano',
-                confirmButtonText: 'Entendido'
-            });
-            return;
-        }
-
-        if (garmentType === 'single' && !$('#singleGarmentInput')[0].files.length) {
-            Swal.fire({
-                icon: 'warning',
-                title: 'Prenda requerida',
-                text: 'Por favor suba una prenda',
-                confirmButtonText: 'Entendido'
-            });
-            return;
-        }
-
-        if (garmentType === 'multiple' && (!$('#topGarmentInput')[0].files.length || !$('#bottomGarmentInput')[0].files.length)) {
-            Swal.fire({
-                icon: 'warning',
-                title: 'Prendas requeridas',
-                text: 'Por favor suba tanto la prenda superior como la inferior',
-                confirmButtonText: 'Entendido'
-            });
-            return;
-        }
 
         const formData = new FormData();
         formData.append('_token', $('input[name="_token"]').val());
@@ -625,8 +576,8 @@ $(document).ready(function() {
                 }
 
                 Swal.fire({
-                    icon: 'error',
-                    title: 'Error de generación',
+                    icon: 'warning',
+                    title: 'Resolución errónea',
                     text: errorMessage,
                     confirmButtonText: 'Reintentar',
                 });
@@ -1028,6 +979,8 @@ const checkTaskStatus = taskId => {
             .done(response => {
                 if (response.data) {
                     const status = response.data.task_status;
+                    const errorMsg = response.data.task_status_msg;
+
                     if (status === 'succeed') {
                         const result = resultsHistory.find(r => r.task_id === taskId);
                         if (result) {
@@ -1038,23 +991,55 @@ const checkTaskStatus = taskId => {
                         resetGenerateButton();
                     } else if (status === 'processing' || status === 'submitted') {
                         setTimeout(poll, 3000);
-                    } else {
-                        const result = resultsHistory.find(r => r.task_id === taskId);
-                        if (result) {
-                            result.status = 'failed';
-                            updateResultInHistory(result);
-                        }
+                    } else if (status === 'failed') {
+                        // Eliminar el resultado fallido del historial
+                        resultsHistory = resultsHistory.filter(r => r.task_id !== taskId);
+                        renderResultsHistory();
                         resetGenerateButton();
+
+                        // Traducir mensajes de error
+                        let translatedError = 'Error desconocido';
+                        if (errorMsg) {
+                            switch (errorMsg.toLowerCase()) {
+                                case 'the two pieces of clothing must be a top and a bottom':
+                                    translatedError = 'Debes cargar una prenda superior y una prenda inferior';
+                                    break;
+                                case 'cloth image number is invalid':
+                                    translatedError = 'Prenda no válida. Por favor, sube una imagen de prenda válida';
+                                    break;
+                                default:
+                                    translatedError = errorMsg;
+                            }
+                        }
+
+                        // Mostrar SweetAlert con el error traducido
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error de prenda seleccionada',
+                            text: translatedError,
+                            confirmButtonText: 'Entendido',
+                            customClass: {
+                                confirmButton: 'btn btn-primary'
+                            }
+                        });
                     }
                 }
             })
             .fail(() => {
-                const result = resultsHistory.find(r => r.task_id === taskId);
-                if (result) {
-                    result.status = 'failed';
-                    updateResultInHistory(result);
-                }
+                // Eliminar el resultado fallido del historial
+                resultsHistory = resultsHistory.filter(r => r.task_id !== taskId);
+                renderResultsHistory();
                 resetGenerateButton();
+
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error de conexión',
+                    text: 'No se pudo verificar el estado del proceso',
+                    confirmButtonText: 'Reintentar',
+                    customClass: {
+                        confirmButton: 'btn btn-primary'
+                    }
+                });
             });
     }, 2000);
 };

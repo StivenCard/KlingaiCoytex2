@@ -150,9 +150,6 @@ class ImageProcessingService
         // Aplicar logo primero
         $image = $this->addHighQualityLogo($image);
 
-        // Aplicar texto mejorado
-        $image = $this->addHighQualityText($image);
-
         return $image;
     }
 
@@ -166,8 +163,8 @@ class ImageProcessingService
         try {
             $logo = Image::make($logoPath);
 
-            // Tamaño dinámico del logo (12% del ancho o mínimo 150px)
-            $sizeFactor = 0.12;
+            // Tamaño dinámico del logo (20% del ancho o mínimo 150px)
+            $sizeFactor = 0.2;
             $logoWidth = max(150, $image->width() * $sizeFactor);
 
             $logo->resize($logoWidth, null, function ($constraint) {
@@ -176,7 +173,6 @@ class ImageProcessingService
             });
 
             $margin = 25;
-            $logoHeight = $logo->height();
 
             // Coordenadas del logo
             $logoX = $image->width() - $logo->width() - $margin;
@@ -185,17 +181,21 @@ class ImageProcessingService
             // Insertar logo sin fondo, en la esquina inferior derecha
             $image->insert($logo, 'bottom-right', $margin, $margin);
 
-            // Agregar texto "Generado por" justo arriba del logo
-            $text = 'Generado por';
-            $fontSize = $this->calculateImprovedFontSize($image) - 6; // Puedes ajustar este valor
+            // Calcular un tamaño de fuente más grande para "Generado por"
+            $fontSize = min($logo->width() * 0.12, 32); // 12% del ancho del logo, máximo 32px
 
-            $textX = $logoX + $logo->width() / 2;
+            // Texto "Generado por" con mejoras
+            $text = 'Generado por';
+
+            // Posicionar el texto centrado arriba del logo
+            $textX = $logoX + ($logo->width() / 2);
             $textY = $logoY - 10; // Espacio entre texto y logo
 
+            // Luego agregar el texto principal en blanco
             $image->text($text, $textX, $textY, function ($font) use ($fontSize) {
-                $font->file(public_path('fonts/OpenSans-Regular.ttf')); // Asegúrate de tener una fuente válida
+                $font->file(public_path('fonts/Verdana.ttf')); // Usar una fuente en negrita
                 $font->size($fontSize);
-                $font->color('#ffffff');
+                $font->color('#000000');
                 $font->align('center');
                 $font->valign('bottom');
             });
@@ -205,61 +205,6 @@ class ImageProcessingService
         }
 
         return $image;
-    }
-
-    /**
-     * 🔥 NUEVO: Aplica texto de ALTA CALIDAD y LEGIBLE
-     */
-    private function addHighQualityText($image): InterventionImage
-    {
-        $text =  'Generado por SIO';
-        $fontSize = $this->calculateImprovedFontSize($image);
-        $margin = 25;
-        $color =  '#000000';
-
-        // Posición del texto
-        $textX = $image->width() - $margin;
-        $textY = $image->height() - $margin;
-
-        // Aplicar texto principal
-        $image->text($text, $textX, $textY, function($font) use ($fontSize, $color) {
-            $font->size($fontSize);
-            $font->color($color);
-            $font->align('right');
-            $font->valign('bottom');
-        });
-
-        return $image;
-    }
-
-    /**
-     * 🔥 NUEVO: Calcula tamaño de fuente MEJORADO (más grande y legible)
-     */
-    private function calculateImprovedFontSize($image): int
-    {
-        $width = $image->width();
-        $height = $image->height();
-
-        // Usar configuración más agresiva para mayor legibilidad
-        $factor = 0.025; // 2.5% en vez de 2%
-        $minSize = 16; // Mínimo 16px
-        $maxSize = 36; // Máximo 36px
-
-        $calculatedSize = $width * $factor;
-
-        // Usar área para cálculo más preciso
-        $area = $width * $height;
-        if ($area > 2000000) {
-            $calculatedSize = 32;
-        } elseif ($area > 1000000) {
-            $calculatedSize = 28;
-        } elseif ($area > 500000) {
-            $calculatedSize = 24;
-        } else {
-            $calculatedSize = 20;
-        }
-
-        return max($minSize, min($maxSize, (int)$calculatedSize));
     }
 
     /**

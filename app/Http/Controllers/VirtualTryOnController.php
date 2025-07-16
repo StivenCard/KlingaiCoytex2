@@ -44,7 +44,12 @@ class VirtualTryOnController extends Controller
             ->take(20)
             ->get();
 
-        $existingTryOns = VirtualTryOn::latest()->take(20)->get();
+        // Excluir los Try-Ons fallidos
+        $existingTryOns = VirtualTryOn::where('status', '!=', 'failed')
+            ->latest()
+            ->take(20)
+            ->get();
+
         $guidelines = $this->guidelines->getAllGuidelines();
 
         return view('virtual-try-on', [
@@ -93,6 +98,7 @@ class VirtualTryOnController extends Controller
                 'cloth_image' => $this->getGarmentImage($request),
             ], $humanImagePath, $garmentImagePath);
 
+
             if ($taskId = $response['data']['task_id'] ?? null) {
                 VirtualTryOn::create([
                     'task_id' => $taskId,
@@ -130,7 +136,15 @@ class VirtualTryOnController extends Controller
             }
 
             $status = $response['data']['task_status'];
-            $tryOn->update(['status' => $status === 'succeed' ? 'completed' : 'processing']);
+            if ($status === 'succeed'){
+                $tryOn->update(['status' => 'completed']);
+            } else if ($status === 'failed') {
+                $tryOn->update(['status' => 'failed']);
+            } else {
+                $tryOn->update(['status' => 'processing']);
+            }
+
+            /* $tryOn->update(['status' => $status === 'succeed' ? 'completed' : 'processing']); */
 
             if ($status === 'succeed') {
                 $results = [];
