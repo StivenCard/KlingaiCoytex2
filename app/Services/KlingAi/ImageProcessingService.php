@@ -182,14 +182,14 @@ class ImageProcessingService
             $image->insert($logo, 'bottom-right', $margin, $margin);
 
             // Calcular un tamaño de fuente más grande para "Generado por"
-            $fontSize = min($logo->width() * 0.12, 32); // 12% del ancho del logo, máximo 32px
+            $fontSize = min($logo->width() * 0.08, 32); // 12% del ancho del logo, máximo 32px
 
             // Texto "Generado por" con mejoras
             $text = 'Generado por';
 
             // Posicionar el texto centrado arriba del logo
             $textX = $logoX + ($logo->width() / 2);
-            $textY = $logoY - 10; // Espacio entre texto y logo
+            $textY = $logoY - 1; // Espacio entre texto y logo
 
             // Luego agregar el texto principal en blanco
             $image->text($text, $textX, $textY, function ($font) use ($fontSize) {
