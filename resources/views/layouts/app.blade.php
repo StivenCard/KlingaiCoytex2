@@ -191,40 +191,19 @@
             gap: 8px;
         }
 
-        .tooltip-close {
-            background: none;
-            border: none;
-            color: #9b0d0d;
-            cursor: pointer;
-            font-size: 18px;
-            width: 28px;
-            height: 28px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .tooltip-close:hover {
-            background: #444;
-            color: white;
-        }
-
-        .tooltip-content {
-            padding: 20px;
-            overflow-y: auto;
-            max-height: 60vh;
-        }
-
-        .tooltip-content p {
-            color: #ff0000;
-            font-size: 14px;
-            line-height: 1.5;
-        }
 
         .tooltip-content p strong {
             color: rgb(0, 0, 0);
         }
+
+        .card-img-top {
+            height: 125px !important; /* Aumentamos la altura */
+            object-fit: contain !important; /* Cambiamos a contain para mostrar imagen completa */
+            background-color: #fff; /* Fondo blanco para mejor visualización */
+            padding: 3px; /* Añadimos padding para que no toque los bordes */
+        }
+
+
 
         /* 🔥 MODAL */
         .modal-content { background: var(--bg-2); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow-heavy); }

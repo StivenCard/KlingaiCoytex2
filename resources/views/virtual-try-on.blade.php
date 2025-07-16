@@ -507,7 +507,71 @@ $(document).ready(function() {
         const modelSource = $('#hiddenModelSource').val() || 'default';
         const garmentType = $('#hiddenGarmentType').val();
 
+        // Validaciones antes de procesar
+        if (modelSource === 'default' && !$('#hiddenSelectedModel').val()) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Modelo requerido',
+                text: 'Por favor seleccione un modelo predeterminado',
+                confirmButtonText: 'Entendido'
+            });
+            return;
+        }
 
+        if (modelSource === 'virtual' && !$('#hiddenSelectedVirtualModel').val()) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Modelo requerido',
+                text: 'Por favor seleccione un modelo virtual',
+                confirmButtonText: 'Entendido'
+            });
+            return;
+        }
+
+        if (modelSource === 'upload' && !$('#humanImageInput')[0].files.length) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Imagen requerida',
+                text: 'Por favor suba una imagen de modelo humano',
+                confirmButtonText: 'Entendido'
+            });
+            return;
+        }
+
+        if (garmentType === 'single' && !$('#singleGarmentInput')[0].files.length) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Prenda requerida',
+                text: 'Por favor suba una prenda',
+                confirmButtonText: 'Entendido'
+            });
+            return;
+        }
+
+        if (garmentType === 'multiple' && (!$('#topGarmentInput')[0].files.length || !$('#bottomGarmentInput')[0].files.length)) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Prendas requeridas',
+                text: 'Por favor suba tanto la prenda superior como la inferior',
+                confirmButtonText: 'Entendido'
+            });
+            return;
+        }
+
+        // Si pasa todas las validaciones, proceder con la petición
+        $(this).prop('disabled', true);
+
+        // Crear y mostrar resultado temporal inmediatamente
+        const tempResult = {
+            id: 'temp_' + Date.now(),
+            model_type: modelSource,
+            garments_type: garmentType,
+            status: 'processing',
+            created_at: new Date().toISOString(),
+            task_id: null,
+            result_image_paths: []
+        };
+        addResultToHistory(tempResult);
 
         const formData = new FormData();
         formData.append('_token', $('input[name="_token"]').val());
@@ -529,20 +593,7 @@ $(document).ready(function() {
             formData.append('bottom_garment', $('#bottomGarmentInput')[0].files[0]);
         }
 
-        $(this).prop('disabled', true);
-
-        const tempResult = {
-            id: 'temp_' + Date.now(),
-            model_type: modelSource,
-            garments_type: garmentType,
-            status: 'processing',
-            created_at: new Date().toISOString(),
-            task_id: null,
-            result_image_paths: []
-        };
-        addResultToHistory(tempResult);
-
-        $.ajax({
+         $.ajax({
             url: "{{ route('virtual-try-on.generate') }}",
             type: 'POST',
             data: formData,
@@ -550,22 +601,30 @@ $(document).ready(function() {
             contentType: false,
             success: response => {
                 if (response.data?.task_id) {
+                    // Actualizar el task_id del resultado temporal
                     tempResult.task_id = response.data.task_id;
                     updateResultInHistory(tempResult);
                     checkTaskStatus(response.data.task_id);
                 } else {
-                    tempResult.status = 'failed';
-                    updateResultInHistory(tempResult);
+                    // Si no hay task_id, eliminar el resultado temporal
+                    resultsHistory = resultsHistory.filter(r => r.id !== tempResult.id);
+                    renderResultsHistory();
                     resetGenerateButton();
+
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error de generación',
+                        text: 'No se pudo iniciar el proceso',
+                        confirmButtonText: 'Entendido'
+                    });
                 }
             },
             error: (xhr) => {
-                Swal.close();
-                tempResult.status = 'failed';
-                updateResultInHistory(tempResult);
+                // En caso de error, eliminar el resultado temporal
+                resultsHistory = resultsHistory.filter(r => r.id !== tempResult.id);
+                renderResultsHistory();
                 resetGenerateButton();
 
-                // 🍯 ERROR DETALLADO CON SWEETALERT2
                 let errorMessage = 'Error desconocido';
                 if (xhr.responseJSON?.message) {
                     errorMessage = xhr.responseJSON.message;
@@ -579,12 +638,11 @@ $(document).ready(function() {
                     icon: 'warning',
                     title: 'Resolución errónea',
                     text: errorMessage,
-                    confirmButtonText: 'Reintentar',
+                    confirmButtonText: 'Entendido'
                 });
             }
         });
     });
-    $('#hiddenModelSource').val('default');
 });
 
 // FUNCIONES TOOLTIP MEJORADAS
