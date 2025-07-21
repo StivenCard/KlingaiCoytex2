@@ -178,140 +178,52 @@
     </div>
 </div>
 
-<!-- TOOLTIP CONFIGURACIÓN - TAMAÑO REDUCIDO -->
-{{-- <div class="tooltip model-guidelines compact-tooltip" id="settingsTooltip">
-    <div class="tooltip-header bg-light border-bottom-dark d-flex justify-content-between align-items-center p-2">
-        <h6 class="mb-0 text-dark d-flex align-items-center">
-            <i class="fas fa-cog mr-2"></i> Configuración
-        </h6>
-        <button class="btn btn-outline-danger btn-sm" onclick="hideTooltip('settingsTooltip')">
-            <i class="fas fa-times"></i>
-        </button>
-    </div>
-    <div class="tooltip-content p-2" style="max-height: 50vh; overflow-y: auto;">
-        <div class="alert alert-info py-1 px-2 mb-3">
-            <small><strong>Configura las características básicas</strong></small>
-        </div>
-
-        <div class="mb-3">
-            <h6 class="text-primary mb-1"><i class="fas fa-mars-and-venus"></i> Género</h6>
-            <small class="text-muted">Masculino o Femenino</small>
-        </div>
-
-        <div class="mb-3">
-            <h6 class="text-success mb-1"><i class="fas fa-birthday-cake"></i> Edad</h6>
-            <small class="text-muted">Niños (8-12) | Jóvenes (18-30) | Adultos (30+)</small>
-        </div>
-
-        <div class="mb-3">
-            <h6 class="text-warning mb-1"><i class="fas fa-palette"></i> Tono de Piel</h6>
-            <div class="d-flex justify-content-between">
-                <div class="text-center">
-                    <div class="color-btn-mini mb-1" style="background: rgb(255, 241, 228);"></div>
-                    <small>Claro</small>
-                </div>
-                <div class="text-center">
-                    <div class="color-btn-mini mb-1" style="background: rgb(250, 201, 145);"></div>
-                    <small>Medio</small>
-                </div>
-                <div class="text-center">
-                    <div class="color-btn-mini mb-1" style="background: rgb(143, 81, 40);"></div>
-                    <small>Oscuro</small>
-                </div>
-                <div class="text-center">
-                    <div class="color-btn-mini mb-1" style="background: rgb(195, 151, 112);"></div>
-                    <small>Oliva</small>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- TOOLTIP PROMPTS - TAMAÑO REDUCIDO -->
-<div class="tooltip model-guidelines compact-tooltip" id="promptTooltip">
-    <div class="tooltip-header bg-light border-bottom-dark d-flex justify-content-between align-items-center p-2">
-        <h6 class="mb-0 text-dark d-flex align-items-center">
-            <i class="fas fa-edit mr-2"></i> Prompts
-        </h6>
-        <button class="btn btn-outline-danger btn-sm" onclick="hideTooltip('promptTooltip')">
-            <i class="fas fa-times"></i>
-        </button>
-    </div>
-    <div class="tooltip-content p-2" style="max-height: 50vh; overflow-y: auto;">
-        <div class="alert alert-info py-1 px-2 mb-3">
-            <small><strong>Personaliza la apariencia del modelo</strong></small>
-        </div>
-
-        <div class="mb-3">
-            <h6 class="text-primary mb-1"><i class="fas fa-lightbulb"></i> Sugerencias</h6>
-            <small class="text-muted">Usa los botones predefinidos o combínalos</small>
-        </div>
-
-        <div class="mb-3">
-            <h6 class="text-success mb-1"><i class="fas fa-pen-fancy"></i> Personalizado</h6>
-            <small class="text-muted">Describe: expresiones, cabello, accesorios, ropa, poses</small>
-        </div>
-
-        <div class="alert alert-warning py-1 px-2">
-            <small><strong>Tip:</strong> Combina sugerencias con descripciones personalizadas</small>
-        </div>
-    </div>
-</div> --}}
-
-<!-- MODAL MEJORADO CON ZOOM -->
+<!-- MODAL DE IMAGEN CON ZOOM -->
 <div class="modal fade" id="imageModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-xl">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">
-                    <i class="fas fa-user"></i> Vista Previa del Modelo Virtual
-                </h5>
-                <button type="button" class="btn btn-outline-danger btn-sm" data-dismiss="modal" aria-label="Close">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="modal-body p-0">
-                <div class="image-viewer-container">
-                    <img id="modalImage" src="" alt="Virtual Model">
-
-                    <!-- INDICADOR DE ZOOM -->
-                    <div class="zoom-indicator">
-                        <i class="fas fa-search-plus"></i> <span id="zoomIndicator">100%</span>
-                    </div>
-
-                    <!-- AYUDA VISUAL -->
-                    <div class="zoom-help">
-                        <div><i class="fas fa-mouse"></i> Scroll: Zoom</div>
-                        <div><i class="fas fa-hand-rock"></i> Click+Drag: Mover</div>
-                        <div><i class="fas fa-mouse"></i> Doble click: Zoom/Reset</div>
-                    </div>
-                </div>
-                <div class="image-controls">
-                    <div class="row align-items-center">
-                        <div class="col-md-6">
-                            <div class="zoom-controls">
-                                <button class="btn btn-primary btn-sm" onclick="zoomImage(0.8)" title="Zoom Out">
-                                    <i class="fas fa-search-minus"></i>
-                                </button>
-                                <span id="zoomLevel" class="mx-2 badge badge-secondary">100%</span>
-                                <button class="btn btn-primary btn-sm" onclick="zoomImage(1.25)" title="Zoom In">
-                                    <i class="fas fa-search-plus"></i>
-                                </button>
-                                <button class="btn btn-outline-primary btn-sm ml-2" onclick="resetZoom()" title="Ajustar a pantalla">
-                                    <i class="fas fa-expand-arrows-alt"></i> Ajustar
-                                </button>
-                            </div>
-                        </div>
-                        <div class="col-md-6 text-right">
-                            <button class="btn btn-success" onclick="downloadImage()" title="Descargar imagen">
-                                <i class="fas fa-download"></i> Descargar
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
+  <div class="modal-dialog modal-xl">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="fas fa-eye"></i> Vista Previa</h5>
+        <button type="button" class="btn btn-outline-danger btn-sm" data-dismiss="modal">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="modal-body p-0">
+        <div class="image-viewer-container">
+          <img id="modalImage" src="" alt="Vista previa">
+          <div class="zoom-indicator"><i class="fas fa-search-plus"></i> <span id="zoomIndicator">100%</span></div>
+          <div class="zoom-help">
+            <div><i class="fas fa-mouse"></i> Scroll: Zoom</div>
+            <div><i class="fas fa-hand-rock"></i> Click+Drag: Mover</div>
+            <div><i class="fas fa-mouse"></i> Doble click: Zoom/Reset</div>
+          </div>
         </div>
+        <div class="image-controls">
+          <div class="row align-items-center">
+            <div class="col-md-6">
+              <div class="zoom-controls">
+                <button class="btn btn-primary btn-sm" onclick="zoomImage(0.8)">
+                  <i class="fas fa-search-minus"></i>
+                </button>
+                <span id="zoomLevel" class="mx-2 badge badge-secondary">100%</span>
+                <button class="btn btn-primary btn-sm" onclick="zoomImage(1.25)">
+                  <i class="fas fa-search-plus"></i>
+                </button>
+                <button class="btn btn-outline-primary btn-sm ml-2" onclick="resetZoom()">
+                  <i class="fas fa-expand-arrows-alt"></i> Ajustar
+                </button>
+              </div>
+            </div>
+            <div class="col-md-6 text-right">
+              <button class="btn btn-success" onclick="downloadImage()">
+                <i class="fas fa-download"></i> Descargar
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
+  </div>
 </div>
 
 <!-- HIDDEN FORM -->
@@ -354,7 +266,6 @@ $(document).ready(function() {
     initializeHints();
     initializePrompt();
     initializeGeneration();
-    initializeTooltips();
     initializeAutoTextarea();
     loadRandomHints();
     updateCharCount();
@@ -381,30 +292,6 @@ function initializeExistingData() {
     } else {
         showEmptyState();
     }
-}
-
-// TOOLTIPS MEJORADOS
-function initializeTooltips() {
-    $('#settingsInfoBtn').click(e => {
-        e.stopPropagation();
-        hideTooltip('promptTooltip');
-        toggleTooltip('settingsTooltip', e.target);
-    });
-
-    $('#promptInfoBtn').click(e => {
-        e.stopPropagation();
-        hideTooltip('settingsTooltip');
-        toggleTooltip('promptTooltip', e.target);
-    });
-
-    $(document).click(() => {
-        hideTooltip('settingsTooltip');
-        hideTooltip('promptTooltip');
-    });
-
-    $('.tooltip').click(e => {
-        e.stopPropagation();
-    });
 }
 
 // SELECTORES CON BOOTSTRAP
@@ -634,7 +521,7 @@ function submitGeneration(formData) {
 
             Swal.fire({
                 icon: 'error',
-                title: 'Error de generación',
+                title: 'Error en la generación',
                 text: errorMessage
             });
         }
@@ -642,202 +529,106 @@ function submitGeneration(formData) {
 }
 
 // FUNCIONES DE ZOOM MEJORADAS (IGUALES AL TRY-ON)
-const openImageModal = (imageSrc, title) => {
+function openImageModal(imageSrc, title = 'Vista Previa') {
     currentImageSrc = imageSrc;
     currentZoom = 1;
     translateX = 0;
     translateY = 0;
+
     $('#modalImage').attr('src', imageSrc);
-    $('.modal-title').html(`<i class="fas fa-user"></i> ${title}`);
-    $('#zoomLevel').text('100%');
-    $('#zoomIndicator').text('100%');
+    $('.modal-title').html(`<i class="fas fa-eye"></i> ${title}`);
+    $('#zoomLevel, #zoomIndicator').text('100%');
     updateImageTransform();
     $('#imageModal').modal('show');
-};
+}
 
-const zoomImageAtCursor = (factor, mouseX, mouseY) => {
+function zoomImageAtCursor(factor, mouseX, mouseY) {
     const oldZoom = currentZoom;
     currentZoom *= factor;
     currentZoom = Math.max(0.5, Math.min(currentZoom, 5));
 
-    const container = $('.image-viewer-container');
-    const containerRect = container[0].getBoundingClientRect();
-    const containerCenterX = containerRect.width / 2;
-    const containerCenterY = containerRect.height / 2;
-
-    const mouseRelativeX = mouseX - containerRect.left - containerCenterX;
-    const mouseRelativeY = mouseY - containerRect.top - containerCenterY;
+    const container = $('.image-viewer-container')[0].getBoundingClientRect();
+    const mouseRelX = mouseX - container.left - container.width / 2;
+    const mouseRelY = mouseY - container.top - container.height / 2;
 
     const zoomRatio = currentZoom / oldZoom;
-    translateX = mouseRelativeX - (mouseRelativeX - translateX) * zoomRatio;
-    translateY = mouseRelativeY - (mouseRelativeY - translateY) * zoomRatio;
+    translateX = mouseRelX - (mouseRelX - translateX) * zoomRatio;
+    translateY = mouseRelY - (mouseRelY - translateY) * zoomRatio;
 
     updateImageTransform();
-    $('#zoomLevel').text(Math.round(currentZoom * 100) + '%');
-    $('#zoomIndicator').text(Math.round(currentZoom * 100) + '%');
-};
+    $('#zoomLevel, #zoomIndicator').text(Math.round(currentZoom * 100) + '%');
+}
 
-const resetZoom = () => {
+function resetZoom() {
     currentZoom = 1;
     translateX = 0;
     translateY = 0;
     updateImageTransform();
-    $('#zoomLevel').text('100%');
-    $('#zoomIndicator').text('100%');
-};
+    $('#zoomLevel, #zoomIndicator').text('100%');
+}
 
-const updateImageTransform = () => {
-    const image = $('#modalImage');
-    image.css({
+function updateImageTransform() {
+    $('#modalImage').css({
         transform: `translate(${translateX}px, ${translateY}px) scale(${currentZoom})`,
         transition: isDragging ? 'none' : 'transform 0.1s ease-out'
     });
-};
+}
 
-const downloadImage = () => {
+function downloadImage() {
     if (!currentImageSrc) return;
-
     const link = document.createElement('a');
     link.href = currentImageSrc;
-    link.download = `virtual-model-${Date.now()}.jpg`;
+    link.download = `imagen-${Date.now()}.jpg`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-};
+}
 
 // EVENTOS DE DRAG Y ZOOM MEJORADOS
 $('#modalImage').on('mousedown', function(e) {
-    e.preventDefault();
     if (currentZoom <= 1) return;
-
     isDragging = true;
     startX = e.clientX - translateX;
     startY = e.clientY - translateY;
-
-    $(this).css({
-        'cursor': 'grabbing',
-        'user-select': 'none'
-    });
-
-    $('.image-viewer-container').addClass('dragging');
+    $(this).css('cursor', 'grabbing');
     $('body').css('user-select', 'none');
 });
 
 $(document).on('mousemove', function(e) {
     if (!isDragging) return;
-
-    e.preventDefault();
-
-    const container = $('.image-viewer-container');
-    const containerWidth = container.width();
-    const containerHeight = container.height();
-
-    const maxTranslateX = containerWidth * 0.5;
-    const maxTranslateY = containerHeight * 0.5;
-
-    const newTranslateX = e.clientX - startX;
-    const newTranslateY = e.clientY - startY;
-
-    translateX = Math.max(-maxTranslateX, Math.min(maxTranslateX, newTranslateX));
-    translateY = Math.max(-maxTranslateY, Math.min(maxTranslateY, newTranslateY));
-
+    translateX = e.clientX - startX;
+    translateY = e.clientY - startY;
     updateImageTransform();
 });
 
-$(document).on('mouseup', function(e) {
-    if (!isDragging) return;
-
+$(document).on('mouseup', function() {
     isDragging = false;
-
-    $('#modalImage').css({
-        'cursor': currentZoom > 1 ? 'grab' : 'default',
-        'user-select': 'auto'
-    });
-
-    $('.image-viewer-container').removeClass('dragging');
+    $('#modalImage').css('cursor', currentZoom > 1 ? 'grab' : 'default');
     $('body').css('user-select', 'auto');
 });
 
 $('#modalImage').on('wheel', function(e) {
     e.preventDefault();
-
-    const delta = e.originalEvent.deltaY;
-    const factor = delta > 0 ? 0.9 : 1.1;
-
-    const mouseX = e.clientX;
-    const mouseY = e.clientY;
-
-    zoomImageAtCursor(factor, mouseX, mouseY);
+    const factor = e.originalEvent.deltaY > 0 ? 0.9 : 1.1;
+    zoomImageAtCursor(factor, e.clientX, e.clientY);
 });
 
-window.zoomImage = (factor) => {
-    const container = $('.image-viewer-container');
-    const containerRect = container[0].getBoundingClientRect();
-    const centerX = containerRect.left + containerRect.width / 2;
-    const centerY = containerRect.top + containerRect.height / 2;
-
+function zoomImage(factor) {
+    const container = $('.image-viewer-container')[0].getBoundingClientRect();
+    const centerX = container.left + container.width / 2;
+    const centerY = container.top + container.height / 2;
     zoomImageAtCursor(factor, centerX, centerY);
-};
+}
 
 $('#modalImage').on('dblclick', function(e) {
-    e.preventDefault();
-
     if (currentZoom === 1) {
-        const mouseX = e.clientX;
-        const mouseY = e.clientY;
-        zoomImageAtCursor(2, mouseX, mouseY);
+        zoomImageAtCursor(2, e.clientX, e.clientY);
     } else {
         resetZoom();
     }
 });
 
-// FUNCIONES TOOLTIP
-const toggleTooltip = (tooltipId, targetElement) => {
-    const tooltip = document.getElementById(tooltipId);
-    const rect = targetElement.getBoundingClientRect();
-    const viewportWidth = window.innerWidth;
-    const viewportHeight = window.innerHeight;
 
-    if (tooltip.style.display === 'block') {
-        hideTooltip(tooltipId);
-    } else {
-        tooltip.style.display = 'block';
-
-        // Tamaño reducido para tooltips compactos
-        let left = rect.left - 300;
-        if (left < 10) left = 10;
-        if (left + 600 > viewportWidth) left = viewportWidth - 610;
-
-        let top = rect.bottom + 10;
-        if (top + 300 > viewportHeight) top = rect.top - 310;
-        if (top < 10) top = 10;
-
-        tooltip.style.left = left + 'px';
-        tooltip.style.top = top + 'px';
-
-        tooltip.style.opacity = '0';
-        tooltip.style.transform = 'scale(0.95)';
-
-        setTimeout(() => {
-            tooltip.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
-            tooltip.style.opacity = '1';
-            tooltip.style.transform = 'scale(1)';
-        }, 10);
-    }
-};
-
-const hideTooltip = tooltipId => {
-    const tooltip = document.getElementById(tooltipId);
-    if (tooltip) {
-        tooltip.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
-        tooltip.style.opacity = '0';
-        tooltip.style.transform = 'scale(0.95)';
-
-        setTimeout(() => {
-            tooltip.style.display = 'none';
-        }, 200);
-    }
-};
 
 // UTILIDADES
 const updateCharCount = () => {
