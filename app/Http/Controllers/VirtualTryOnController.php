@@ -78,11 +78,11 @@ class VirtualTryOnController extends Controller
             'selected_default_model' => 'required_if:model_source,default',
             'selected_virtual_model' => 'required_if:model_source,virtual|exists:virtual_models,id',
             'selected_virtual_index' => 'nullable|integer|min:0|max:3',
-            'human_image' => 'required_if:model_source,upload|file|image|max:51200',
+            'human_image' => 'required_if:model_source,upload|file|image|mimes:jpg,jpeg,png|max:51200',
             'garment_type' => 'required|in:single,multiple',
-            'single_garment' => 'required_if:garment_type,single|file|image|max:51200',
-            'top_garment' => 'required_if:garment_type,multiple|file|image|max:51200',
-            'bottom_garment' => 'required_if:garment_type,multiple|file|image|max:51200',
+            'single_garment' => 'required_if:garment_type,single|file|image|mimes:jpg,jpeg,png|max:51200',
+            'top_garment' => 'required_if:garment_type,multiple|file|image|mimes:jpg,jpeg,png|max:51200',
+            'bottom_garment' => 'required_if:garment_type,multiple|file|image|mimes:jpg,jpeg,png|max:51200',
             'output_count' => 'required|integer|min:1|max:4',
         ]);
 
@@ -136,13 +136,13 @@ class VirtualTryOnController extends Controller
             }
 
             $status = $response['data']['task_status'];
-            if ($status === 'succeed'){
-                $tryOn->update(['status' => 'completed']);
-            } else if ($status === 'failed') {
-                $tryOn->update(['status' => 'failed']);
-            } else {
-                $tryOn->update(['status' => 'processing']);
-            }
+            $tryOn->update([
+                'status' => match($status) {
+                    'succeed' => 'completed',
+                    'failed' => 'failed',
+                    default => 'processing',
+                }
+            ]);
 
             /* $tryOn->update(['status' => $status === 'succeed' ? 'completed' : 'processing']); */
 

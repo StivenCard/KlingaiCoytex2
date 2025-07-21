@@ -4,82 +4,47 @@
 <div class="main-container d-flex flex-wrap flex-row">
     <!-- LEFT PANEL -->
 
-    <div class="col-12 col-lg-4 d-flex flex-column overflow-hidden px-2" style="align-items:stretch">
+    <div class="col-12 col-lg-4 d-flex flex-column overflow-hidden px-2 h-100" style="align-items:stretch">
         <div class="card">
             <div class="card-header">
-                <span class="d-block"><b>Selecciona un Modelo</b></span>
+                <b>Configuración de Imagen a Video</b>
             </div>
             <div class="card-body">
-                <!-- TABS -->
-                <div class="sub-tabs">
-                    <button class="btn btn-outline-secondary btn-sm sub-tab" data-tab="virtual">Virtual</button>
-                    <button class="btn btn-secondary btn-sm sub-tab active" data-tab="default">Predeterminado</button>
+                <!-- TABS: MODELO -->
+                <div class="sub-tabs mb-3">
+                    <button class="btn btn-outline-secondary btn-sm sub-tab" data-tab="virtual">Modelo del Probador</button>
                     <button class="btn btn-outline-secondary btn-sm sub-tab mr-2" data-tab="upload">Subir</button>
-                    <button class="btn btn-outline-info btn-sm info-btn" id="modelInfoBtn" title="Guía de Modelos">
-                        <i class="fas fa-info-circle"></i>
-                    </button>
                 </div>
 
-                <div class="scroll-container" style="max-height: 23rem">
+                <div class="scroll-container mb-4" style="max-height: 23rem">
                     <!-- VIRTUAL MODELS -->
                     <div class="tab-content d-none" data-content="virtual">
                         <div class="virtualModelGrid grid-3" id="virtualModelGrid">
-                            @forelse($virtualModels as $model)
+                            @forelse($virtualTryOns as $model)
                                 @foreach($model->all_preview_urls as $index => $imageUrl)
                                     <div class="item" data-model="{{ $model->id }}" data-index="{{ $index }}">
-                                        <img src="{{ $imageUrl }}" alt="Image {{ $index + 1 }} - {{ $model->display_name }}">
+                                        <img src="{{ $imageUrl }}" alt="Imagen {{ $index + 1 }}">
                                         <input type="radio" name="selected_virtual_model" value="{{ $model->id }}" class="d-none">
                                         <input type="radio" name="selected_virtual_index" value="{{ $index }}" class="d-none">
                                         <div class="overlay">
-                                            <div class="badges">
-                                                <span class="badge badge-primary {{ $model->gender }}">{{ ucfirst($model->gender) }}</span>
-                                                <span class="badge badge-secondary">{{ ucfirst($model->age_group) }}</span>
-                                                <span class="badge badge-info">{{ ucfirst($model->skin_tone) }}</span>
-                                            </div>
-                                            <div class="overlay-title">{{ $model->display_name }} - {{ $index + 1 }}</div>
-                                            <div class="overlay-date">{{ $model->formatted_date }}</div>
+                                            <div class="overlay-title">Modelo Try-On #{{ $model->id }} - Imagen {{ $index + 1 }}</div>
+                                            <div class="overlay-date">{{ $model->created_at->format('d/m/Y H:i') }}</div>
                                         </div>
                                     </div>
                                 @endforeach
                             @empty
                                 <div class="no-images d-flex flex-column align-items-center justify-content-center w-100 py-5 text-center">
                                     <i class="fas fa-user fa-2x mb-3" style="color: #141414;"></i>
-                                    <p class="mb-3" style="color: #141414;">No hay modelos virtuales disponibles</p>
-                                    {{-- @can("plm.diseno.probador-virtual-ia.virtual-model") --}}
-                                    <small>
-                                        <a href="{{ route('virtual-model') }}" class="btn btn-outline-primary">
-                                            Genere primero modelos virtuales
-                                        </a>
-                                    </small>
-                                    {{-- @endcan --}}
+                                    <p class="mb-3" style="color: #141414;">No hay modelos Try-On generados aún</p>
                                 </div>
                             @endforelse
                         </div>
                     </div>
-
-                    <!-- DEFAULT MODELS -->
-                    <div class="tab-content" data-content="default">
-                        <div class="grid-3" id="defaultModelGrid">
-                            @forelse($defaultModels as $model)
-                                <div class="item" data-model="{{ $model['filename'] }}">
-                                    <img src="{{ $model['url'] }}" alt="{{ $model['name'] }}">
-                                    <input type="radio" name="selected_default_model" value="{{ $model['filename'] }}" class="d-none">
-                                </div>
-                            @empty
-                                <div class="no-images d-flex flex-column align-items-center justify-content-center w-100 py-5 text-center">
-                                    <i class="fas fa-images fa-2x mb-3" style="color: #141414;"></i>
-                                    <p class="mb-3" style="color: #141414;">No hay modelos por defecto disponibles</p>
-                                    <small>Coloca imágenes en public/klingai/default_models/</small>
-                                </div>
-                            @endforelse
-                        </div>
-                    </div>
-
                     <!-- UPLOAD -->
                     <div class="tab-content d-none" data-content="upload">
                         <div class="upload" id="humanUploadArea" onclick="triggerFileInput('humanImageInput')">
                             <div class="upload-icon"><i class="fas fa-cloud-upload-alt"></i></div>
-                            <div class="upload-text">Subir Modelo Humano</div>
+                            <div class="upload-text">Subir Imagen Inicial</div>
                             <input type="file" id="humanImageInput" name="human_image" accept=".jpg,.jpeg,.png" class="file-input">
                             <div class="preview" id="humanPreview">
                                 <img src="" alt="Preview">
@@ -93,81 +58,66 @@
                         </div>
                     </div>
                 </div>
-                <hr>
 
-                <!-- GARMENT SECTION -->
+                <!-- PROMPT PERSONALIZADO -->
                 <div class="section">
-                    <div class="tabs-container">
-                        <div class="btn-group btn-group-toggle tabs" data-toggle="buttons">
-                            <label class="btn btn-outline-info btn-sm active mr-1">
-                                <input type="radio" name="garment_type" id="single" autocomplete="off" checked data-garment="single"> Prenda Única
-                            </label>
-                            <label class="btn btn-outline-info btn-sm">
-                                <input type="radio" name="garment_type" id="multiple" autocomplete="off" data-garment="multiple"> Múltiples Prendas
-                            </label>
-                        </div>
-                        <button class="btn btn-outline-info btn-sm info-btn" id="garmentInfoBtn" title="Guía de Prendas">
-                            <i class="fas fa-info-circle"></i>
-                        </button>
+                    <div class="title d-flex align-items-center">
+                        <i class="fas fa-edit mr-2"></i>
+                        <span>Prompt Personalizado</span>
+                    </div>
+                    <div class="group">
+                        <label class="label">Descripción</label>
+                        <textarea id="promptText" class="form-control auto-textarea" rows="3" placeholder="Describe la escena o fondo para el video..." maxlength="2500"></textarea>
+                        <small class="text-muted">Ej: "Ella desfila en la pasarela de la Semana de la Moda de París, con luces y música de fondo."</small>
+                    </div>
+                    <div class="group mt-3">
+                        <label class="label">Indicación Negativa (Opcional)</label>
+                        <textarea id="negativePrompt" class="form-control auto-textarea" rows="2" placeholder="Ej: animación, desenfoque, distorsión..."></textarea>
+                    </div>
+                </div>
+
+                <!-- OUTPUT CONFIG -->
+                <div class="section">
+                    <div class="title d-flex align-items-center">
+                        <i class="fas fa-cogs mr-2"></i>
+                        <span>Configuración de Salida</span>
                     </div>
 
-                    <!-- SINGLE GARMENT -->
-                    <div class="garment-content" data-garment-content="single">
-                        <div class="upload" id="singleUploadArea" onclick="triggerFileInput('singleGarmentInput')">
-                            <div class="upload-icon"><i class="fas fa-tshirt"></i></div>
-                            <div class="upload-text">Subir prenda única</div>
-                            <input type="file" id="singleGarmentInput" name="single_garment" accept=".jpg,.jpeg,.png" class="file-input">
-                            <div class="preview" id="singlePreview">
-                                <img src="" alt="Preview">
-                                <button class="btn btn-danger btn-sm remove-btn" onclick="clearFileInput('singleGarmentInput', 'singleUploadArea', 'singlePreview')">
-                                    <i class="fas fa-times"></i>
-                                </button>
-                                <button class="btn btn-primary btn-sm reupload-btn" onclick="triggerFileInput('singleGarmentInput')">
-                                    <i class="fas fa-upload"></i> Re-subir
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- MULTIPLE GARMENTS -->
-                    <div class="garment-content d-none" data-garment-content="multiple">
-                        <div class="upload" id="topUploadArea" onclick="triggerFileInput('topGarmentInput')">
-                            <div class="upload-icon"><i class="fas fa-tshirt"></i></div>
-                            <div class="upload-text">Subir prenda superior</div>
-                            <input type="file" id="topGarmentInput" name="top_garment" accept=".jpg,.jpeg,.png" class="file-input">
-                            <div class="preview" id="topPreview">
-                                <img src="" alt="Preview">
-                                <button class="btn btn-danger btn-sm remove-btn" onclick="clearFileInput('topGarmentInput', 'topUploadArea', 'topPreview')">
-                                    <i class="fas fa-times"></i>
-                                </button>
-                                <button class="btn btn-primary btn-sm reupload-btn" onclick="triggerFileInput('topGarmentInput')">
-                                    <i class="fas fa-upload"></i> Re-subir
-                                </button>
-                            </div>
-                        </div>
-
-                        <div class="upload" id="bottomUploadArea" onclick="triggerFileInput('bottomGarmentInput')">
-                            <div class="upload-icon"><i class="fas fa-child" style="clip-path: inset(50% 0 0 0); transform: scale(2) translateY(-20%); display: inline-block;"></i></div>
-                            <div class="upload-text">Subir prenda inferior</div>
-                            <input type="file" id="bottomGarmentInput" name="bottom_garment" accept=".jpg,.jpeg,.png" class="file-input">
-                            <div class="preview" id="bottomPreview">
-                                <img src="" alt="Preview">
-                                <button class="btn btn-danger btn-sm remove-btn" onclick="clearFileInput('bottomGarmentInput', 'bottomUploadArea', 'bottomPreview')">
-                                    <i class="fas fa-times"></i>
-                                </button>
-                                <button class="btn btn-primary btn-sm reupload-btn" onclick="triggerFileInput('bottomGarmentInput')">
-                                    <i class="fas fa-upload"></i> Re-subir
-                                </button>
-                            </div>
+                    <div class="group mt-3">
+                        <label class="label">Creatividad / Relevancia</label>
+                        <input type="range" id="cfgScale" min="0" max="1" step="0.1" value="0.5" class="custom-range">
+                        <div class="d-flex justify-content-between">
+                            <small>Creatividad</small>
+                            <small>Relevancia</small>
                         </div>
                     </div>
 
-                    <select class="form-control selector" name="output_count" disabled>
-                        <option value="1" selected>1 Resultado</option>
-                    </select>
+                    <div class="group mt-3">
+                        <label class="label">Modo de Generación</label>
+                        <select id="videoMode" class="form-control">
+                            <option value="std">Estándar</option>
+                            <option value="pro" selected>Profesional</option>
+                        </select>
+                    </div>
 
-                    <button class="btn btn-success btn-block mt-4 w-1" id="generateBtn">
-                        <i class="fas fa-magic mr-2"></i> Generar
+                    <div class="group mt-3">
+                        <label class="label">Duración del Video</label>
+                        <select id="videoDuration" class="form-control">
+                            <option value="5">5 segundos</option>
+                            <option value="10">10 segundos</option>
+                        </select>
+                    </div>
+
+                    <div class="group">
+                        <label class="label">Cantidad de Videos</label>
+                        <select class="form-control selector" id="outputCount" disabled>
+                            <option value="1" selected>1 Resultado </option>
+                        </select>
+                    </div>
+
+                    <!-- GENERATE VIDEO -->
+                    <button class="btn btn-success btn-block mt-4 w-100" id="generateVideoBtn">
+                        <i class="fas fa-film"></i> Generar Video
                     </button>
                 </div>
             </div>
@@ -192,148 +142,6 @@
                 </div>
             </div>
         </div>
-    </div>
-</div>
-
-<!-- TOOLTIP MODELO - OPTIMIZADO CON BOOTSTRAP 4 -->
-<div class="tooltip model-guidelines" id="modelTooltip">
-    <div class="tooltip-header bg-light border-bottom-dark d-flex justify-content-between align-items-center p-3">
-        <h6 class="mb-0 text-dark d-flex align-items-center">
-            <i class="fas fa-user mr-2"></i> Pautas de Modelos
-        </h6>
-        <button class="btn btn-outline-danger btn-sm" onclick="hideTooltip('modelTooltip')">
-            <i class="fas fa-times"></i>
-        </button>
-    </div>
-    <div class="tooltip-content p-3">
-        <p class="text-dark mb-3">
-            <strong>Por favor siga estas pautas para subir imágenes de modelos y lograr los mejores resultados de Try-On.</strong>
-        </p>
-        <div class="alert alert-info py-2 px-3 mb-4">
-            <strong>Imágenes de hasta 50MB, con lado corto ≥ 512px, lado largo ≤ 4096px y formatos JPG/PNG.</strong>
-        </div>
-
-        @if(count($validModels) > 0)
-            <div class="d-flex flex-row flex-wrap justify-content-center">
-                @foreach ($validModels as $model)
-                    <div class="col-6 col-sm-4 col-md-3 col-lg-2 mb-3" style="width: 12rem">
-                        <div class="card border-dark shadow-sm h-100">
-                            <div class="position-relative">
-                                <img src="{{ $model['url'] }}" class="card-img-top" alt="{{ $model['description'] }}" style="height: 120px; object-fit: cover;">
-                                <span class="badge badge-success position-absolute" style="top: 5px; right: 5px;">
-                                    <i class="fas fa-check"></i>
-                                </span>
-                            </div>
-                            <div class="card-body p-2 bg-secondary text-center" style="flex:0 1 auto">
-                                <p class="card-text text-light text-nowrap mb-0" style="font-size: 11px; line-height: 1.3;">
-                                    {{ $model['description'] }}
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                @endforeach
-            </div>
-
-            <div class="alert alert-warning py-2 px-3 mb-3">
-                <strong>Evite los malos ejemplos, ya que pueden reducir la calidad de los resultados de Try-On.</strong>
-            </div>
-
-            <div class="d-flex flex-row flex-wrap justify-content-center">
-                @foreach ($invalidModels as $model)
-                    <div class="col-6 col-sm-4 col-md-3 col-lg-2 mb-3" style="width: 12rem">
-                        <div class="card border-dark shadow-sm h-100">
-                            <div class="position-relative">
-                                <img src="{{ $model['url'] }}" class="card-img-top" alt="{{ $model['description'] }}" style="height: 120px; object-fit: cover;">
-                                <span class="badge badge-danger position-absolute" style="top: 5px; right: 5px;">
-                                    <i class="fas fa-times"></i>
-                                </span>
-                            </div>
-                            <div class="card-body p-2 bg-secondary text-center" style="flex:0 1 auto">
-                                <p class="card-text text-light text-nowrap mb-0" style="font-size: 11px; line-height: 1.3;">
-                                    {{ $model['description'] }}
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                @endforeach
-            </div>
-        @else
-            <div class="text-center py-5">
-                <i class="fas fa-info-circle fa-3x mb-3 text-muted"></i>
-                <p class="text-muted">No hay directrices disponibles. Añada imágenes de ejemplo a las carpetas de directrices.</p>
-            </div>
-        @endif
-    </div>
-</div>
-
-<!-- TOOLTIP PRENDA - OPTIMIZADO CON BOOTSTRAP 4 -->
-<div class="tooltip model-guidelines" id="garmentTooltip">
-    <div class="tooltip-header bg-light border-bottom-dark d-flex justify-content-between align-items-center p-3">
-        <h6 class="mb-0 text-dark d-flex align-items-center">
-            <i class="fas fa-tshirt mr-2"></i> Pautas de prendas
-        </h6>
-        <button class="btn btn-outline-danger btn-sm" onclick="hideTooltip('garmentTooltip')">
-            <i class="fas fa-times"></i>
-        </button>
-    </div>
-    <div class="tooltip-content p-3">
-        <p class="text-dark mb-3">
-            <strong>Siga estas pautas para subir imágenes de prendas y lograr los mejores resultados de Try-On.</strong>
-        </p>
-        <div class="alert alert-info py-2 px-3 mb-4">
-            <strong>Imágenes de hasta 50MB, con lado corto ≥ 512px, lado largo ≤ 4096px y formatos JPG/PNG.</strong>
-        </div>
-
-        @if(count($validGarments) > 0)
-            <div class="d-flex flex-row flex-wrap justify-content-center">
-                @foreach ($validGarments as $garment)
-                    <div class="col-6 col-sm-4 col-md-3 col-lg-2 mb-3"  style="width: 12rem">
-                        <div class="card border-dark shadow-sm h-100">
-                            <div class="position-relative">
-                                <img src="{{ $garment['url'] }}" class="card-img-top" alt="{{ $garment['description'] }}" style="height: 120px; object-fit: cover;">
-                                <span class="badge badge-success position-absolute" style="top: 5px; right: 5px;">
-                                    <i class="fas fa-check"></i>
-                                </span>
-                            </div>
-                            <div class="card-body p-2 bg-secondary text-center" style="flex:0 1 auto">
-                                <p class="card-text text-light text-nowrap mb-0" style="font-size: 11px; line-height: 1.3;">
-                                    {{ $garment['description'] }}
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                @endforeach
-            </div>
-
-            <div class="alert alert-warning py-2 px-3 mb-3">
-                <strong>Evite los malos ejemplos, ya que pueden reducir la calidad de los resultados de Try-On.</strong>
-            </div>
-
-            <div class="d-flex flex-row flex-wrap justify-content-center">
-                @foreach ($invalidGarments as $garment)
-                    <div class="col-6 col-sm-4 col-md-3 col-lg-2 mb-3" style="width: 12rem">
-                        <div class="card border-dark shadow-sm h-100">
-                            <div class="position-relative">
-                                <img src="{{ $garment['url'] }}" class="card-img-top" alt="{{ $garment['description'] }}" style="height: 120px; object-fit: cover;">
-                                <span class="badge badge-danger position-absolute" style="top: 5px; right: 5px;">
-                                    <i class="fas fa-times"></i>
-                                </span>
-                            </div>
-                            <div class="card-body p-2 bg-secondary text-center" style="flex:0 1 auto;">
-                                <p class="card-text text-light text-nowrap mb-0" style="font-size: 11px; line-height: 1.3;">
-                                    {{ $garment['description'] }}
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                @endforeach
-            </div>
-        @else
-            <div class="text-center py-5">
-                <i class="fas fa-info-circle fa-3x mb-3 text-muted"></i>
-                <p class="text-muted">No hay directrices de prendas disponibles. Por favor, añada imágenes de ejemplo a las carpetas de directrices.</p>
-            </div>
-        @endif
     </div>
 </div>
 
@@ -403,7 +211,7 @@
 </form>
 
 <script>
-window.existingTryOns = @json($existingTryOns);
+window.existingVideos = @json($existingVideos);
 </script>
 @endsection
 

@@ -26,38 +26,11 @@ class VirtualModel extends Model
         'result_image_paths' => 'array',
     ];
 
-    /**
-     * Devuelve un array de todas las URLs públicas de las imágenes generadas.
-     * Ideal para mostrar una galería completa del modelo.
-     *
-     * @return string[] Lista de URLs públicas
-     */
     public function getAllPreviewUrlsAttribute(): array
     {
-        return collect($this->result_image_paths)
+        return collect($this->result_image_paths ?? [])
+            ->filter()
             ->map(fn($path) => Storage::url($path))
-            ->toArray();
-    }
-
-    /**
-     * Nombre amigable para mostrar en listas o vistas.
-     * Ej: "Virtual Model #5"
-     *
-     * @return string
-     */
-    public function getDisplayNameAttribute(): string
-    {
-        return "Virtual Model #{$this->id}";
-    }
-
-    /**
-     * Fecha de creación formateada.
-     * Ej: "2025-07-14 18:32"
-     *
-     * @return string
-     */
-    public function getFormattedDateAttribute(): string
-    {
-        return $this->created_at->format('Y-m-d H:i');
+            ->all();
     }
 }

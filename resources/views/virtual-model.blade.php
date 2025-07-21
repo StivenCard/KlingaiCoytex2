@@ -1,178 +1,185 @@
-@extends('layouts.app')
+@extends('layouts.probador-virtual-ia')
 
 @section('content')
 <div class="main-container">
     <!-- LEFT PANEL -->
-    <div class="left-panel">
-        <!-- TÍTULO -->
-        <span class="d-block m-2"><b>Configuración del Modelo Virtual</b></span>
-
-        <!-- SCROLL CONTAINER -->
-        <div class="scroll-container">
-            <!-- MODEL SETTINGS -->
-            <div class="section">
-                <div class="title d-flex align-items-center">
-                    <i class="fas fa-cog mr-2"></i>
-                    <span>Configuración del Modelo</span>
-                    <button class="btn btn-outline-info btn-sm info-btn ml-auto" id="settingsInfoBtn" title="Guía de Configuración">
-                        <i class="fas fa-info-circle"></i>
-                    </button>
-                </div>
-
-                <!-- GENDER -->
-                <div class="group">
-                    <label class="label">Género</label>
-                    <div class="btn-group btn-group-toggle w-100" data-toggle="buttons">
-                        <label class="btn btn-outline-primary active">
-                            <input type="radio" name="gender" id="male" autocomplete="off" checked data-gender="male">
-                            <i class="fas fa-mars"></i> Masculino
-                        </label>
-                        <label class="btn btn-outline-primary">
-                            <input type="radio" name="gender" id="female" autocomplete="off" data-gender="female">
-                            <i class="fas fa-venus"></i> Femenino
-                        </label>
-                    </div>
-                </div>
-
-                <!-- AGE -->
-                <div class="group">
-                    <label class="label">Edad</label>
-                    <div class="btn-group btn-group-toggle w-100" data-toggle="buttons">
-                        <label class="btn btn-outline-secondary">
-                            <input type="radio" name="age" id="children" autocomplete="off" data-age="children">
-                            <i class="fas fa-child"></i> Niños
-                        </label>
-                        <label class="btn btn-outline-secondary active">
-                            <input type="radio" name="age" id="youth" autocomplete="off" checked data-age="youth">
-                            <i class="fas fa-user"></i> Jóvenes
-                        </label>
-                        <label class="btn btn-outline-secondary">
-                            <input type="radio" name="age" id="elderly" autocomplete="off" data-age="elderly">
-                            <i class="fas fa-user-tie"></i> Adultos
-                        </label>
-                    </div>
-                </div>
-
-                <!-- SKIN TONE -->
-                <div class="group">
-                    <label class="label">Tono de Piel</label>
-                    <div class="d-flex justify-content-between">
-                        <div class="color-btn active" data-skin="light" style="background: rgb(255, 241, 228);">
-                            <input type="radio" name="skin_tone" id="light" checked data-skin="light" class="d-none">
-                            <span class="color-check"><i class="fas fa-check"></i></span>
-                        </div>
-                        <div class="color-btn" data-skin="medium" style="background: rgb(250, 201, 145);">
-                            <input type="radio" name="skin_tone" id="medium" data-skin="medium" class="d-none">
-                            <span class="color-check"><i class="fas fa-check"></i></span>
-                        </div>
-                        <div class="color-btn" data-skin="dark" style="background: rgb(143, 81, 40);">
-                            <input type="radio" name="skin_tone" id="dark" data-skin="dark" class="d-none">
-                            <span class="color-check"><i class="fas fa-check"></i></span>
-                        </div>
-                        <div class="color-btn" data-skin="olive" style="background: rgb(195, 151, 112);">
-                            <input type="radio" name="skin_tone" id="olive" data-skin="olive" class="d-none">
-                            <span class="color-check"><i class="fas fa-check"></i></span>
-                        </div>
-                    </div>
-                </div>
+    <div class="col-12 col-lg-4 d-flex flex-column overflow-hidden px-2 h-100" style="align-items:stretch">
+        <div class="card">
+            <div class="card-header">
+                <!-- TÍTULO -->
+                <b>Configuración del Modelo Virtual</b>
             </div>
+            <div class="card-body">
+                <!-- SCROLL CONTAINER -->
+                <div class="">
+                    <!-- MODEL SETTINGS -->
+                    <div class="section mt-0">
+                        <div class="title d-flex align-items-center">
+                            <i class="fas fa-cog mr-2"></i>
+                            <span>Configuración del Modelo</span>
+                            {{-- <button class="btn btn-outline-info btn-sm info-btn ml-auto" id="settingsInfoBtn" title="Guía de Configuración">
+                                <i class="fas fa-info-circle"></i>
+                            </button> --}}
+                        </div>
 
-            <!-- PROMPT SECTION -->
-            <div class="section">
-                <div class="title d-flex align-items-center">
-                    <i class="fas fa-edit mr-2"></i>
-                    <span>Prompt Personalizado</span>
-                    <button class="btn btn-outline-info btn-sm info-btn ml-auto" id="promptInfoBtn" title="Guía de Prompts">
-                        <i class="fas fa-info-circle"></i>
-                    </button>
-                </div>
+                        <!-- GENDER -->
+                        <div class="group">
+                            <label class="label">Género</label>
+                            <div class="btn-group btn-group-toggle w-100" data-toggle="buttons">
+                                <label class="btn btn-outline-primary active">
+                                    <input type="radio" name="gender" id="male" autocomplete="off" checked data-gender="male">
+                                    <i class="fas fa-mars"></i> Masculino
+                                </label>
+                                <label class="btn btn-outline-primary">
+                                    <input type="radio" name="gender" id="female" autocomplete="off" data-gender="female">
+                                    <i class="fas fa-venus"></i> Femenino
+                                </label>
+                            </div>
+                        </div>
 
-                <!-- HINTS MEJORADOS -->
-                <div class="group">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <label class="label mb-0">Sugerencias Rápidas</label>
-                        <button class="btn btn-outline-secondary btn-sm" id="refreshHints" title="Cargar nuevas sugerencias">
-                            <i class="fas fa-sync-alt"></i>
+                        <!-- AGE -->
+                        <div class="group">
+                            <label class="label">Edad</label>
+                            <div class="btn-group btn-group-toggle w-100" data-toggle="buttons">
+                                <label class="btn btn-outline-secondary">
+                                    <input type="radio" name="age" id="children" autocomplete="off" data-age="children">
+                                    <i class="fas fa-child"></i> Niños
+                                </label>
+                                <label class="btn btn-outline-secondary active">
+                                    <input type="radio" name="age" id="youth" autocomplete="off" checked data-age="youth">
+                                    <i class="fas fa-user"></i> Jóvenes
+                                </label>
+                                <label class="btn btn-outline-secondary">
+                                    <input type="radio" name="age" id="elderly" autocomplete="off" data-age="elderly">
+                                    <i class="fas fa-user-tie"></i> Adultos
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- SKIN TONE -->
+                        <div class="group">
+                            <label class="label">Tono de Piel</label>
+                            <div class="d-flex justify-content-between">
+                                <div class="color-btn active" data-skin="light" style="background: rgb(255, 241, 228);">
+                                    <input type="radio" name="skin_tone" id="light" checked data-skin="light" class="d-none">
+                                    <span class="color-check"><i class="fas fa-check"></i></span>
+                                </div>
+                                <div class="color-btn" data-skin="medium" style="background: rgb(250, 201, 145);">
+                                    <input type="radio" name="skin_tone" id="medium" data-skin="medium" class="d-none">
+                                    <span class="color-check"><i class="fas fa-check"></i></span>
+                                </div>
+                                <div class="color-btn" data-skin="dark" style="background: rgb(143, 81, 40);">
+                                    <input type="radio" name="skin_tone" id="dark" data-skin="dark" class="d-none">
+                                    <span class="color-check"><i class="fas fa-check"></i></span>
+                                </div>
+                                <div class="color-btn" data-skin="olive" style="background: rgb(195, 151, 112);">
+                                    <input type="radio" name="skin_tone" id="olive" data-skin="olive" class="d-none">
+                                    <span class="color-check"><i class="fas fa-check"></i></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- PROMPT SECTION -->
+                    <div class="section">
+                        <div class="title d-flex align-items-center">
+                            <i class="fas fa-edit mr-2"></i>
+                            <span>Prompt Personalizado</span>
+                            {{-- <button class="btn btn-outline-info btn-sm info-btn ml-auto" id="promptInfoBtn" title="Guía de Prompts">
+                                <i class="fas fa-info-circle"></i>
+                            </button> --}}
+                        </div>
+
+                        <!-- HINTS MEJORADOS -->
+                        <div class="group">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <label class="label mb-0">Sugerencias Rápidas</label>
+                                <button class="btn btn-outline-secondary btn-sm" id="refreshHints" title="Cargar nuevas sugerencias">
+                                    <i class="fas fa-sync-alt"></i>
+                                </button>
+                            </div>
+                            <div class="grid-4" id="hintsContainer">
+                                <!-- Los hints se cargarán aquí dinámicamente -->
+                            </div>
+                        </div>
+
+                        <!-- TEXTAREA AUTOEXPANDIBLE -->
+                        <div class="group">
+                            <label class="label">Descripción Personalizada</label>
+                            <div class="auto-textarea-container">
+                                <textarea id="promptText" class="form-control auto-textarea" rows="2" placeholder="Ingresa una descripción personalizada o selecciona una sugerencia..." maxlength="2500"></textarea>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center mt-2">
+                                <small class="text-muted char-count">0/2500</small>
+                                <button class="btn btn-outline-secondary btn-sm" id="clearPrompt">
+                                    <i class="fas fa-eraser"></i> Limpiar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- OUTPUT SETTINGS -->
+                    <div class="section">
+                        <div class="title d-flex align-items-center">
+                            <i class="fas fa-cogs mr-2"></i>
+                            <span>Configuración de Salida</span>
+                        </div>
+
+                        <!-- ASPECT RATIO -->
+                        <div class="group">
+                            <label class="label">Relación de Aspecto</label>
+                            <div class="btn-group btn-group-toggle w-100" data-toggle="buttons">
+                                <label class="btn btn-outline-warning active">
+                                    <input type="radio" name="aspect_ratio" id="ratio-3-4" autocomplete="off" checked data-ratio="3:4">3:4
+                                </label>
+                                <label class="btn btn-outline-warning">
+                                    <input type="radio" name="aspect_ratio" id="ratio-2-3" autocomplete="off" data-ratio="2:3">2:3
+                                </label>
+                                <label class="btn btn-outline-warning">
+                                    <input type="radio" name="aspect_ratio" id="ratio-9-16" autocomplete="off" data-ratio="9:16">9:16
+                                </label>
+                                <label class="btn btn-outline-warning">
+                                    <input type="radio" name="aspect_ratio" id="ratio-1-1" autocomplete="off" data-ratio="1:1">1:1
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- OUTPUT COUNT -->
+                        <div class="group">
+                            <label class="label">Cantidad de Imágenes</label>
+                            <select class="form-control selector" id="outputCount" disabled>
+                                <option value="1" selected>1 Resultado (Fijo)</option>
+                            </select>
+                        </div>
+
+                        <!-- GENERATE BUTTON -->
+                        <button class="btn btn-success btn-block btn-generate mt-4" id="generateVirtualModel">
+                            <i class="fas fa-user-plus"></i> Generar Modelo Virtual
                         </button>
                     </div>
-                    <div class="grid-4" id="hintsContainer">
-                        <!-- Los hints se cargarán aquí dinámicamente -->
-                    </div>
                 </div>
-
-                <!-- TEXTAREA AUTOEXPANDIBLE -->
-                <div class="group">
-                    <label class="label">Descripción Personalizada</label>
-                    <div class="auto-textarea-container">
-                        <textarea id="promptText" class="form-control auto-textarea" rows="2" placeholder="Ingresa una descripción personalizada o selecciona una sugerencia..." maxlength="2500"></textarea>
-                    </div>
-                    <div class="d-flex justify-content-between align-items-center mt-2">
-                        <small class="text-muted char-count">0/2500</small>
-                        <button class="btn btn-outline-secondary btn-sm" id="clearPrompt">
-                            <i class="fas fa-eraser"></i> Limpiar
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- OUTPUT SETTINGS -->
-            <div class="section">
-                <div class="title d-flex align-items-center">
-                    <i class="fas fa-cogs mr-2"></i>
-                    <span>Configuración de Salida</span>
-                </div>
-
-                <!-- ASPECT RATIO -->
-                <div class="group">
-                    <label class="label">Relación de Aspecto</label>
-                    <div class="btn-group btn-group-toggle w-100" data-toggle="buttons">
-                        <label class="btn btn-outline-warning active">
-                            <input type="radio" name="aspect_ratio" id="ratio-3-4" autocomplete="off" checked data-ratio="3:4">3:4
-                        </label>
-                        <label class="btn btn-outline-warning">
-                            <input type="radio" name="aspect_ratio" id="ratio-2-3" autocomplete="off" data-ratio="2:3">2:3
-                        </label>
-                        <label class="btn btn-outline-warning">
-                            <input type="radio" name="aspect_ratio" id="ratio-9-16" autocomplete="off" data-ratio="9:16">9:16
-                        </label>
-                        <label class="btn btn-outline-warning">
-                            <input type="radio" name="aspect_ratio" id="ratio-1-1" autocomplete="off" data-ratio="1:1">1:1
-                        </label>
-                    </div>
-                </div>
-
-                <!-- OUTPUT COUNT -->
-                <div class="group">
-                    <label class="label">Cantidad de Imágenes</label>
-                    <select class="form-control selector" id="outputCount" disabled>
-                        <option value="1" selected>1 Resultado (Fijo)</option>
-                    </select>
-                </div>
-
-                <!-- GENERATE BUTTON -->
-                <button class="btn btn-success btn-lg btn-block btn-generate mt-4" id="generateVirtualModel">
-                    <i class="fas fa-user-plus"></i> Generar Modelo Virtual
-                </button>
             </div>
         </div>
     </div>
 
     <!-- RIGHT PANEL -->
-    <div class="right-panel">
-        <div class="results-header">
-            <i class="fas fa-users"></i>
-            <span><b>Modelos Virtuales Generados</b></span>
-        </div>
-        <div class="results-content">
-            <div id="virtualModelResults">
-                <!-- Results will be loaded here -->
+    <div class="col-12 col-lg-8 d-flex flex-column overflow-hidden px-2 h-100" style="align-items:stretch">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-users"></i>
+                <span><b>Modelos Virtuales Generados</b></span>
+            </div>
+            <div class="card-body">
+                <div id="virtualModelResults">
+                    <!-- Results will be loaded here -->
+                </div>
             </div>
         </div>
     </div>
 </div>
 
 <!-- TOOLTIP CONFIGURACIÓN - TAMAÑO REDUCIDO -->
-<div class="tooltip model-guidelines compact-tooltip" id="settingsTooltip">
+{{-- <div class="tooltip model-guidelines compact-tooltip" id="settingsTooltip">
     <div class="tooltip-header bg-light border-bottom-dark d-flex justify-content-between align-items-center p-2">
         <h6 class="mb-0 text-dark d-flex align-items-center">
             <i class="fas fa-cog mr-2"></i> Configuración
@@ -249,7 +256,7 @@
             <small><strong>Tip:</strong> Combina sugerencias con descripciones personalizadas</small>
         </div>
     </div>
-</div>
+</div> --}}
 
 <!-- MODAL MEJORADO CON ZOOM -->
 <div class="modal fade" id="imageModal" tabindex="-1" aria-hidden="true">

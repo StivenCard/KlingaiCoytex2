@@ -4,11 +4,11 @@ namespace App\Services\KlingAi;
 
 use App\Models\VirtualModel;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Http;
-use Intervention\Image\Facades\Image;
 use Illuminate\Support\Facades\Storage;
+use Intervention\Image\Facades\Image;
 use Intervention\Image\Image as InterventionImage;
+use Illuminate\Support\Facades\Log;
 
 class ImageProcessingService
 {
@@ -22,7 +22,7 @@ class ImageProcessingService
     }
 
     /**
-     * Combina dos imágenes horizontalmente en una sola imagen y la convierte a base64 en formato PNG.
+     * Combina dos imágenes horizontalmente y las convierte a base64 PNG.
      */
     public function combineImagesToBase64(UploadedFile $file1, UploadedFile $file2): string
     {
@@ -30,7 +30,7 @@ class ImageProcessingService
     }
 
     /**
-     * Guarda una imagen subida en el disco público y retorna la ruta relativa.
+     * Guarda una imagen subida en disco y retorna la ruta relativa.
      */
     public function saveImage(UploadedFile $file, string $directory, string $prefix = ''): string
     {
@@ -45,12 +45,11 @@ class ImageProcessingService
     }
 
     /**
-     * Combina dos imágenes en una sola sobre un lienzo blanco, la guarda en el disco público y retorna la ruta relativa.
+     * Combina dos imágenes, las guarda en disco y retorna la ruta relativa.
      */
     public function saveCombinedImage(UploadedFile $file1, UploadedFile $file2, string $directory): string
     {
         $canvas = $this->combineImages($file1, $file2);
-
         $filename = 'combined_' . uniqid() . '.png';
         $path = $directory . '/' . $filename;
 
@@ -60,7 +59,7 @@ class ImageProcessingService
     }
 
     /**
-     * 🔥 CORREGIDO: Descarga imagen y aplica marca de agua MEJORADA
+     * Descarga una imagen desde URL, aplica marca de agua y guarda en disco.
      */
     public function downloadAndSaveImage(string $url, string $directory, string $prefix = ''): string
     {
@@ -71,16 +70,13 @@ class ImageProcessingService
                 throw new \Exception('No se pudo descargar la imagen desde: ' . $url);
             }
 
-            // Crear imagen desde el contenido descargado
             $image = Image::make($response->body());
-
-            // 🎨 APLICAR MARCA DE AGUA MEJORADA CON CONFIGURACIÓN
-            $watermarkedImage = $this->addWatermarkWithConfig($image);
+            $watermarked = $this->addHighQualityLogo($image);
 
             $filename = $prefix . uniqid() . '.png';
             $path = $directory . '/' . $filename;
 
-            Storage::disk('public')->put($path, $watermarkedImage->encode('png'));
+            Storage::disk('public')->put($path, $watermarked->encode('png'));
 
             return $path;
         } catch (\Exception $e) {
@@ -89,21 +85,16 @@ class ImageProcessingService
     }
 
     /**
-     * Retorna una imagen default seleccionada en formato base64 PNG.
+     * Retorna una imagen default convertida a base64 PNG.
      */
     public function getSelectedDefaultModelBase64(string $selectedModel): string
     {
         $path = public_path('klingai/default_models/' . $selectedModel);
-
-        if (!file_exists($path)) {
-            throw new \Exception('Default model not found: ' . $selectedModel);
-        }
-
-        return base64_encode(Image::make($path)->encode('png'));
+        return $this->imageToBase64($path);
     }
 
     /**
-     * Obtiene una imagen específica de un modelo virtual en formato base64.
+     * Retorna una imagen generada por la API convertida a base64 PNG.
      */
     public function getVirtualModelBase64(string $virtualModelId, int $index = 0): string
     {
@@ -120,114 +111,11 @@ class ImageProcessingService
         }
 
         $fullPath = storage_path('app/public/' . $imagePaths[$index]);
-
-        if (!file_exists($fullPath)) {
-            throw new \Exception('Virtual model image file not found');
-        }
-
-        return base64_encode(Image::make($fullPath)->encode('png'));
+        return $this->imageToBase64($fullPath);
     }
 
     /**
-     * Convierte cualquier imagen almacenada en base64.
-     */
-    public function convertStoredImageToBase64(string $storagePath): string
-    {
-        $fullPath = storage_path('app/public/' . $storagePath);
-
-        if (!file_exists($fullPath)) {
-            throw new \Exception('Image file not found: ' . $storagePath);
-        }
-
-        return base64_encode(Image::make($fullPath)->encode('png'));
-    }
-
-    /**
-     * 🔥 NUEVO: Aplica marca de agua MEJORADA con configuración desde config/watermark.php
-     */
-    private function addWatermarkWithConfig($image): InterventionImage
-    {
-        // Aplicar logo primero
-        $image = $this->addHighQualityLogo($image);
-
-        return $image;
-    }
-
-    /**
-     * 🔥 NUEVO: Aplica logo SIO de ALTA CALIDAD
-     */
-    private function addHighQualityLogo($image): InterventionImage
-    {
-        $logoPath = public_path('images/logo_sio.png');
-
-        try {
-            $logo = Image::make($logoPath);
-
-            // Tamaño dinámico del logo (20% del ancho o mínimo 150px)
-            $sizeFactor = 0.2;
-            $logoWidth = max(150, $image->width() * $sizeFactor);
-
-            $logo->resize($logoWidth, null, function ($constraint) {
-                $constraint->aspectRatio();
-                $constraint->upsize();
-            });
-
-            $margin = 25;
-
-            // Coordenadas del logo
-            $logoX = $image->width() - $logo->width() - $margin;
-            $logoY = $image->height() - $logo->height() - $margin;
-
-            // Insertar logo sin fondo, en la esquina inferior derecha
-            $image->insert($logo, 'bottom-right', $margin, $margin);
-
-            // Calcular un tamaño de fuente más grande para "Generado por"
-            $fontSize = min($logo->width() * 0.08, 32); // 12% del ancho del logo, máximo 32px
-
-            // Texto "Generado por" con mejoras
-            $text = 'Generado por';
-
-            // Posicionar el texto centrado arriba del logo
-            $textX = $logoX + ($logo->width() / 2);
-            $textY = $logoY - 1; // Espacio entre texto y logo
-
-            // Luego agregar el texto principal en blanco
-            $image->text($text, $textX, $textY, function ($font) use ($fontSize) {
-                $font->file(public_path('fonts/Verdana.ttf')); // Usar una fuente en negrita
-                $font->size($fontSize);
-                $font->color('#000000');
-                $font->align('center');
-                $font->valign('bottom');
-            });
-
-        } catch (\Exception $e) {
-            Log::warning('Error al aplicar logo de marca de agua: ' . $e->getMessage());
-        }
-
-        return $image;
-    }
-
-    /**
-     * Aplica marca de agua a imagen existente en storage.
-     */
-    public function addWatermarkToStoredImage(string $storagePath): string
-    {
-        $fullPath = storage_path('app/public/' . $storagePath);
-
-        if (!file_exists($fullPath)) {
-            throw new \Exception('Image file not found: ' . $storagePath);
-        }
-
-        $image = Image::make($fullPath);
-        $watermarkedImage = $this->addWatermarkWithConfig($image);
-
-        Storage::disk('public')->put($storagePath, $watermarkedImage->encode('png'));
-
-        return $storagePath;
-    }
-
-    /**
-     * Valida una imagen subida por el usuario.
+     * Valida una imagen cargada por el usuario según restricciones KlingAI.
      */
     private function validateImage(UploadedFile $file): void
     {
@@ -250,7 +138,7 @@ class ImageProcessingService
     }
 
     /**
-     * Combina dos imágenes horizontalmente en un solo canvas blanco.
+     * Combina dos imágenes horizontalmente sobre un fondo blanco.
      */
     private function combineImages(UploadedFile $file1, UploadedFile $file2): InterventionImage
     {
@@ -266,10 +154,66 @@ class ImageProcessingService
         $img2->resize(null, $targetHeight, fn($c) => $c->aspectRatio());
 
         $canvas = Image::canvas($img1->width() + $img2->width(), $targetHeight, '#ffffff');
-
         $canvas->insert($img1, 'left');
         $canvas->insert($img2, 'top-right');
 
         return $canvas;
+    }
+
+    /**
+     * Convierte una imagen en disco a base64 PNG.
+     */
+    private function imageToBase64(string $fullPath): string
+    {
+        if (!file_exists($fullPath)) {
+            throw new \Exception("File not found: $fullPath");
+        }
+
+        return base64_encode(Image::make($fullPath)->encode('png'));
+    }
+
+    /**
+     * Aplica logo de marca de agua con configuración fija.
+     */
+    private function addHighQualityLogo($image): InterventionImage
+    {
+        $logoPath = public_path('images/logo_sio.png');
+
+        try {
+            $logo = Image::make($logoPath);
+
+            $sizeFactor = 0.2;
+            $logoWidth = max(150, $image->width() * $sizeFactor);
+
+            $logo->resize($logoWidth, null, function ($constraint) {
+                $constraint->aspectRatio();
+                $constraint->upsize();
+            });
+
+            $margin = 25;
+
+            $logoX = $image->width() - $logo->width() - $margin;
+            $logoY = $image->height() - $logo->height() - $margin;
+
+            $image->insert($logo, 'bottom-right', $margin, $margin);
+
+            $fontSize = min($logo->width() * 0.08, 32);
+            $text = 'Generado por';
+            $textX = $logoX + ($logo->width() / 2);
+            $textY = $logoY - 1;
+
+            $image->text($text, $textX, $textY, function ($font) use ($fontSize) {
+                $font->file(public_path('fonts/Verdana.ttf'));
+                $font->size($fontSize);
+                $font->color('#000000');
+                $font->align('center');
+                $font->valign('bottom');
+            });
+
+        } catch (\Exception $e) {
+            Log::warning('Error al aplicar logo de marca de agua: ' . $e->getMessage());
+        }
+
+        return $image;
     }
 }

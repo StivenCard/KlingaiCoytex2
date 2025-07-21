@@ -13,7 +13,6 @@ class KlingApiService
     private string $baseUrl;
     private string $accessKey;
     private string $secretKey;
-    private ?string $jwtToken = null;
 
     /**
      * Inicializa el servicio con los datos de configuración desde el archivo `config/services.php`.
@@ -38,16 +37,14 @@ class KlingApiService
      */
     private function generateJwtToken(): string
     {
-       $this->jwtToken = Cache::remember('klingai_token', now()->addMinutes(30), function () {
+        return Cache::remember('klingai_token', now()->addMinutes(30), function () {
             $payload = [
                 'iss' => $this->accessKey,
                 'exp' => time() + 1800,
-                'nbf' => time() - 5
+                'nbf' => time() - 5,
             ];
             return JWT::encode($payload, $this->secretKey, 'HS256');
         });
-
-        return $this->jwtToken;
     }
 
     /**
