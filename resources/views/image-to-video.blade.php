@@ -670,10 +670,11 @@ function renderVideoHistory() {
         if (video.status === 'completed' && video.result_video_paths?.length) {
             html += `<div class="video-grid">`;
             video.result_video_paths.forEach(path => {
+                const videoUrl = `/storage/${path.replace(/\\/g, '/')}`;
                 html += `
-                    <div class="video-item" onclick="openVideoModal('${path}')">
+                    <div class="video-item" onclick="openVideoModal('${videoUrl}')">
                         <video class="preview-video">
-                            <source src="${path}" type="video/mp4">
+                            <source src="${videoUrl}" type="video/mp4">
                         </video>
                         <div class="video-overlay">
                             <i class="fas fa-play"></i>

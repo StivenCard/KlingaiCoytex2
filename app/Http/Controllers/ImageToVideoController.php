@@ -146,7 +146,7 @@ class ImageToVideoController extends Controller
                     try {
                         $results[] = $this->images->downloadAndSaveVideo(
                             $video['url'],
-                            'klingai/video_results',
+                            'klingai/video_results',  // Esta carpeta debe existir en storage/app/public
                             'video_'
                         );
                     } catch (\Exception $e) {
@@ -160,6 +160,7 @@ class ImageToVideoController extends Controller
                         'status' => 'completed'
                     ]);
 
+                    // Modificar cómo se construyen las URLs locales
                     $response['data']['local_videos'] = array_map(
                         fn($p) => Storage::url($p),
                         $results

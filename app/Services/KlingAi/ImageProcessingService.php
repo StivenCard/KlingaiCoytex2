@@ -227,12 +227,22 @@ class ImageProcessingService
      */
     public function downloadAndSaveVideo(string $url, string $path, string $prefix = ''): string
     {
-        $contents = file_get_contents($url);
-        $filename = $prefix . uniqid() . '.mp4';
-        $fullPath = $path . '/' . $filename;
+        try {
+            $response = Http::timeout(60)->get($url);
 
-        Storage::put($fullPath, $contents);
+            if (!$response->successful()) {
+                throw new \Exception('No se pudo descargar el video desde: ' . $url);
+            }
 
-        return $fullPath;
+            $filename = $prefix . uniqid() . '.mp4';
+            $fullPath = $path . '/' . $filename;
+
+            // Usar el disco público para almacenar el video
+            Storage::disk('public')->put($fullPath, $response->body());
+
+            return $fullPath;
+        } catch (\Exception $e) {
+            throw new \Exception('Error al descargar video: ' . $e->getMessage());
+        }
     }
 }
