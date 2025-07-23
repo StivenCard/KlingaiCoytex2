@@ -24,3 +24,4 @@ Route::get('/virtual-model/status/{taskId}', [VirtualModelController::class, 'ta
 Route::get('/image-to-video', [ImageToVideoController::class, 'show'])->name('image-to-video');
 Route::post('/image-to-video/generate', [ImageToVideoController::class, 'generate'])->name('image-to-video.generate');
 Route::get('/image-to-video/status/{taskId}', [ImageToVideoController::class, 'taskStatus'])->name('image-to-video.status');
+

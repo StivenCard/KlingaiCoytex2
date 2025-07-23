@@ -158,11 +158,16 @@ class KlingApiService
             'http_method'    => $httpMethod,
         ];
 
+        // Agregar datos específicos según el tipo de operación
         if ($type === 'virtual_model') {
             $logData['request_data'] = $data;
         } elseif ($type === 'virtual_try_on') {
             $logData['human_image_path'] = $humanPath;
             $logData['cloth_image_path'] = $clothPath;
+        } elseif ($type === 'multi_image_to_video') {
+            $logData['input_image_paths'] = $data['input_image_paths'] ?? null;
+            // Excluimos image_list del request_data por ser muy grande
+            $logData['request_data'] = array_diff_key($data, ['image_list' => true]);
         }
 
         ApiLog::create($logData);
@@ -214,5 +219,27 @@ class KlingApiService
     public function getVirtualTryOnResult(string $taskId, ?string $humanPath = null, ?string $clothPath = null): array
     {
         return $this->get('/v1/images/kolors-virtual-try-on/' . $taskId, 'virtual_try_on', $humanPath, $clothPath);
+    }
+
+    /**
+     * Crea una tarea de generación de video a partir de múltiples imágenes.
+     *
+     * @param array $data Payload con image_list, prompt, etc.
+     * @return array Respuesta de la API.
+     */
+    public function createMultiImageToVideo(array $data): array
+    {
+        return $this->post('/v1/videos/multi-image2video', $data, 'multi_image_to_video');
+    }
+
+    /**
+     * Consulta el estado/resultados de una tarea de generación de video.
+     *
+     * @param string $taskId ID de la tarea.
+     * @return array Resultado del servidor.
+     */
+    public function getMultiImageToVideoResult(string $taskId): array
+    {
+        return $this->get('/v1/videos/multi-image2video/' . $taskId, 'multi_image_to_video');
     }
 }

@@ -34,5 +34,6 @@ class VirtualTryOn extends Model
             ->all();
     }
 
+    
 }
 

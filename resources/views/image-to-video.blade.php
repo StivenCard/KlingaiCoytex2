@@ -83,14 +83,14 @@
                         <span>Configuración de Salida</span>
                     </div>
 
-                    <div class="group mt-3">
+                    {{-- <div class="group mt-3">
                         <label class="label">Creatividad / Relevancia</label>
                         <input type="range" id="cfgScale" min="0" max="1" step="0.1" value="0.5" class="custom-range">
                         <div class="d-flex justify-content-between">
                             <small>Creatividad</small>
                             <small>Relevancia</small>
                         </div>
-                    </div>
+                    </div> --}}
 
                     <div class="group mt-3">
                         <label class="label">Modo de Generación</label>
@@ -113,6 +113,21 @@
                         <select class="form-control selector" id="outputCount" disabled>
                             <option value="1" selected>1 Resultado </option>
                         </select>
+                    </div>
+
+                    <div class="group">
+                        <label class="label">Relación de Aspecto</label>
+                        <div class="btn-group btn-group-toggle w-100" data-toggle="buttons">
+                            <label class="btn btn-outline-warning active">
+                                <input type="radio" name="aspect_ratio" id="ratio-16-9" autocomplete="off" checked data-ratio="16:9">16:9
+                            </label>
+                            <label class="btn btn-outline-warning">
+                                <input type="radio" name="aspect_ratio" id="ratio-9-16" autocomplete="off" data-ratio="9:16">9:16
+                            </label>
+                            <label class="btn btn-outline-warning">
+                                <input type="radio" name="aspect_ratio" id="ratio-1-1" autocomplete="off" data-ratio="1:1">1:1
+                            </label>
+                        </div>
                     </div>
 
                     <!-- GENERATE VIDEO -->
@@ -206,7 +221,9 @@
     <input type="hidden" name="model_source" id="hiddenModelSource">
     <input type="hidden" name="selected_default_model" id="hiddenSelectedModel">
     <input type="hidden" name="selected_virtual_model" id="hiddenSelectedVirtualModel">
-    <input type="hidden" name="garment_type" id="hiddenGarmentType" value="single">
+    <input type="hidden" name="aspect_ratio" id="hiddenRatio" value="3:4">
+    <input type="hidden" name="output_count" id="hiddenOutputCount" value="1">
+    <input type="hidden" name="prompt" id="hiddenPrompt">
     <input type="hidden" name="output_count" id="hiddenOutputCount" value="1">
 </form>
 

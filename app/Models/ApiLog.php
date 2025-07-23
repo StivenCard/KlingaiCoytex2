@@ -29,5 +29,6 @@ class ApiLog extends Model
         'request_data'   => 'array',
         'response_data'  => 'array',
         'error_details'  => 'array',
+        'input_image_paths' => 'array', // Solo para multi_image_to_video
     ];
 }

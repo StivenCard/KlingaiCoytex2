@@ -216,4 +216,23 @@ class ImageProcessingService
 
         return $image;
     }
+
+    /**
+     * Descarga y guarda un video desde una URL.
+     *
+     * @param string $url URL del video.
+     * @param string $path Ruta base donde guardar.
+     * @param string $prefix Prefijo para el nombre del archivo.
+     * @return string Ruta donde se guardó el video.
+     */
+    public function downloadAndSaveVideo(string $url, string $path, string $prefix = ''): string
+    {
+        $contents = file_get_contents($url);
+        $filename = $prefix . uniqid() . '.mp4';
+        $fullPath = $path . '/' . $filename;
+
+        Storage::put($fullPath, $contents);
+
+        return $fullPath;
+    }
 }

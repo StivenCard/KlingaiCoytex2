@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::create('api_logs', function (Blueprint $table) {
             $table->id();
-            $table->enum('operation_type', ['virtual_model', 'virtual_try_on']);
+            $table->enum('operation_type', ['virtual_model', 'virtual_try_on', 'multi_image_to_video']);
             $table->string('task_id')->nullable();
             $table->string('model_name')->nullable();
             $table->text('prompt')->nullable(); // Solo para virtual_model
@@ -23,6 +23,9 @@ return new class extends Migration
             // 🔥 AGREGAR rutas específicas PARA virtual_try_on
             $table->string('human_image_path')->nullable(); // Solo try-on
             $table->string('cloth_image_path')->nullable(); // Solo try-on
+
+            // 🔥 AGREGAR campos para multi_image_to_video
+            $table->json('input_image_paths')->nullable(); // Solo multi_image_to_video
 
             $table->json('response_data')->nullable();
             $table->json('error_details')->nullable();
