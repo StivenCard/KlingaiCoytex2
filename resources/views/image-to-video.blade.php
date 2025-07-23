@@ -23,22 +23,66 @@
                     <div class="group">
                         <label class="label">Subir Imágenes (Máximo 4)</label>
                         <div id="imageUploadsContainer">
-                            <div class="upload" id="imageUploadArea1" onclick="triggerFileInput('imageInput1')">
-                                <div class="upload-icon"><i class="fas fa-image"></i></div>
-                                <div class="upload-text">Imagen 1 (Requerida)</div>
+                            <div class="upload" id="imageUploadArea1">
+                                <!-- Nuevo botón dropdown -->
+                                <div class="dropdown">
+                                    <button class="btn btn-upload dropdown-toggle w-100 h-100" type="button" data-toggle="dropdown" aria-expanded="false">
+                                        <div class="upload-content">
+                                            <div class="upload-icon"><i class="fas fa-image"></i></div>
+                                            <div class="upload-text">Imagen 1 (Requerida)</div>
+                                        </div>
+                                    </button>
+                                    <div class="dropdown-menu w-100">
+                                        <button class="dropdown-item" onclick="triggerFileInput('imageInput1')">
+                                            <i class="fas fa-upload mr-2"></i> Subir desde equipo
+                                        </button>
+                                        <button class="dropdown-item" onclick="showTryOnModal(1)">
+                                            <i class="fas fa-images mr-2"></i> Usar imagen del probador
+                                        </button>
+                                    </div>
+                                </div>
+
                                 <input type="file" id="imageInput1" name="images[]" accept=".jpg,.jpeg,.png" class="file-input">
                                 <div class="preview" id="preview1">
                                     <img src="" alt="Preview">
                                     <button class="btn btn-danger btn-sm remove-btn" onclick="clearFileInput('imageInput1', 'imageUploadArea1', 'preview1')">
                                         <i class="fas fa-times"></i>
                                     </button>
-                                    <button class="btn btn-primary btn-sm reupload-btn" onclick="triggerFileInput('imageInput1')">
+                                    <button class="btn btn-primary btn-sm reupload-btn" onclick="$('#imageUploadArea1 .dropdown-toggle').dropdown('toggle')">
                                         <i class="fas fa-upload"></i> Re-subir
                                     </button>
                                 </div>
                             </div>
+                        </div>
+                    </div>
 
-                            <!-- Additional image uploads will be added dynamically -->
+                    <!-- Agregar el modal de selección de imágenes Try-On -->
+                    <div class="modal fade" id="tryOnImagesModal" tabindex="-1">
+                        <div class="modal-dialog modal-xl">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">
+                                        <i class="fas fa-images"></i> Seleccionar Imagen del Probador Virtual
+                                    </h5>
+                                    <button type="button" class="btn btn-outline-danger btn-sm" data-dismiss="modal">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="grid-4" id="tryOnImagesGrid">
+                                        @foreach($virtualTryOns as $tryOn)
+                                            @foreach($tryOn->result_image_paths as $path)
+                                                <div class="item" onclick="selectTryOnImage('{{ Storage::url($path) }}', currentUploadIndex)">
+                                                    <img src="{{ Storage::url($path) }}" alt="Try-On Result">
+                                                    <div class="image-overlay">
+                                                        <i class="fas fa-check"></i>
+                                                    </div>
+                                                </div>
+                                            @endforeach
+                                        @endforeach
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -358,21 +402,66 @@ function showImagePreview(file, index) {
     reader.readAsDataURL(file);
 }
 
+// Función para mostrar el modal de imágenes Try-On
+function showTryOnModal(index) {
+    currentUploadIndex = index;
+    $('#tryOnImagesModal').modal('show');
+}
+
+// Función para seleccionar una imagen del Try-On
+function selectTryOnImage(imageUrl, index) {
+    // Crear un objeto File a partir de la URL
+    fetch(imageUrl)
+        .then(res => res.blob())
+        .then(blob => {
+            const file = new File([blob], `tryon_${Date.now()}.jpg`, { type: 'image/jpeg' });
+
+            // Validar y mostrar la imagen
+            validateAndPreviewImage(file, index, () => {
+                if (index === currentImageCount && currentImageCount < maxImages) {
+                    addNewImageUpload();
+                }
+            });
+
+            // Asignar el archivo al input correspondiente
+            const dataTransfer = new DataTransfer();
+            dataTransfer.items.add(file);
+            document.getElementById(`imageInput${index}`).files = dataTransfer.files;
+        });
+
+    // Cerrar el modal
+    $('#tryOnImagesModal').modal('hide');
+}
+
 function addNewImageUpload() {
     currentImageCount++;
     const newIndex = currentImageCount;
 
     const template = `
-        <div class="upload mt-3" id="imageUploadArea${newIndex}" onclick="triggerFileInput('imageInput${newIndex}')">
-            <div class="upload-icon"><i class="fas fa-image"></i></div>
-            <div class="upload-text">Imagen ${newIndex} (Opcional)</div>
+        <div class="upload mt-3" id="imageUploadArea${newIndex}">
+            <div class="dropdown">
+                <button class="btn btn-upload dropdown-toggle w-100 h-100" type="button" data-toggle="dropdown">
+                    <div class="upload-content">
+                        <div class="upload-icon"><i class="fas fa-image"></i></div>
+                        <div class="upload-text">Imagen ${newIndex} (Opcional)</div>
+                    </div>
+                </button>
+                <div class="dropdown-menu w-100">
+                    <button class="dropdown-item" onclick="triggerFileInput('imageInput${newIndex}')">
+                        <i class="fas fa-upload mr-2"></i> Subir desde equipo
+                    </button>
+                    <button class="dropdown-item" onclick="showTryOnModal(${newIndex})">
+                        <i class="fas fa-images mr-2"></i> Usar imagen del probador
+                    </button>
+                </div>
+            </div>
             <input type="file" id="imageInput${newIndex}" name="images[]" accept=".jpg,.jpeg,.png" class="file-input">
             <div class="preview" id="preview${newIndex}">
                 <img src="" alt="Preview">
                 <button class="btn btn-danger btn-sm remove-btn" onclick="clearFileInput('imageInput${newIndex}', 'imageUploadArea${newIndex}', 'preview${newIndex}')">
                     <i class="fas fa-times"></i>
                 </button>
-                <button class="btn btn-primary btn-sm reupload-btn" onclick="triggerFileInput('imageInput${newIndex}')">
+                <button class="btn btn-primary btn-sm reupload-btn" onclick="$('#imageUploadArea${newIndex} .dropdown-toggle').dropdown('toggle')">
                     <i class="fas fa-upload"></i> Re-subir
                 </button>
             </div>
@@ -740,5 +829,62 @@ function clearFileInput(inputId, areaId, previewId) {
     background: var(--bg-3);
     border-top: 1px solid var(--border);
 }
+
+.btn-upload {
+    background: none;
+    border: 2px dashed var(--border);
+    border-radius: 8px;
+    padding: 15px;
+    text-align: center;
+    transition: all 0.3s;
+}
+
+.btn-upload:hover, .btn-upload:focus {
+    border-color: var(--accent-2);
+    background: rgba(59, 130, 246, 0.1);
+}
+
+.upload-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.dropdown-menu {
+    padding: 0;
+    border-radius: 8px;
+    box-shadow: var(--shadow-medium);
+}
+
+.dropdown-item {
+    padding: 12px 16px;
+    transition: all 0.2s;
+}
+
+.dropdown-item:hover {
+    background: var(--accent-2);
+    color: white;
+}
+
+#tryOnImagesGrid .item {
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+#tryOnImagesGrid .item:hover {
+    transform: scale(1.05);
+    box-shadow: var(--shadow-medium);
+}
+
+#tryOnImagesGrid .image-overlay {
+    background: rgba(59, 130, 246, 0.8);
+    opacity: 0;
+}
+
+#tryOnImagesGrid .item:hover .image-overlay {
+    opacity: 1;
+}
+
 </style>
 @endpush
