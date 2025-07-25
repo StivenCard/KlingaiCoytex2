@@ -440,6 +440,25 @@ function adjustTextareaHeight() {
 }
 
 function initializePrompt() {
+    // Evento de input para el textarea
+    $('#promptText').on('input', function() {
+        const value = $(this).val().trim();
+        updateCharCount();
+        adjustTextareaHeight();
+        isPromptManuallyEdited = value.length > 0;
+        $('#hiddenPrompt').val(value);
+
+        // Si se borró todo el contenido, desactivar el hint seleccionado
+        if (value.length === 0 && selectedHint) {
+            $(`.hint-btn[data-hint="${selectedHint}"]`)
+                .removeClass('btn-info')
+                .addClass('btn-outline-info');
+            selectedHint = null;
+            isPromptManuallyEdited = false;
+        }
+    });
+
+    // Botón de limpiar
     $('#clearPrompt').click(function() {
         $('#promptText').val('');
         $('#hiddenPrompt').val('');

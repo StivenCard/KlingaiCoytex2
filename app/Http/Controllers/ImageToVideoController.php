@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\ImageToVideo;
 use App\Models\VirtualTryOn;
 use Illuminate\Http\Request;
+use App\Services\HintsService;
 use Illuminate\Support\Facades\Storage;
 use App\Services\KlingAi\KlingApiService;
 use App\Services\KlingAi\ImageProcessingService;
@@ -19,7 +20,8 @@ class ImageToVideoController extends Controller
      */
     public function __construct(
         private KlingApiService $api,
-        private ImageProcessingService $images
+        private ImageProcessingService $images,
+        private HintsService $hints
     ) {}
 
     /**
@@ -39,7 +41,10 @@ class ImageToVideoController extends Controller
             ->take(20)
             ->get();
 
-        return view('image-to-video', compact('virtualTryOns', 'existingVideos'));
+        $hintsPrompts = $this->hints->getAllPromptVideo();
+        $hintsNegative = $this->hints->getAllNegativePrompts();
+        
+        return view('image-to-video', compact('virtualTryOns', 'existingVideos', 'hintsPrompts', 'hintsNegative'));
     }
 
     /**

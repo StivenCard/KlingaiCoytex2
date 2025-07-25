@@ -394,6 +394,130 @@
             height: 2.9rem;
             }
 
+        /* Estilos específicos para video */
+        .probador-virtual-container .video-container {
+            position: relative;
+            width: 100%;
+            background: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 400px;
+        }
+
+        .probador-virtual-container #modalVideo {
+            max-width: 100%;
+            max-height: 70vh;
+        }
+
+        .probador-virtual-container .video-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+            gap: 1rem;
+            padding: 1rem;
+        }
+
+        .probador-virtual-container .video-item {
+            position: relative;
+            aspect-ratio: 16/9;
+            cursor: pointer;
+            border-radius: 8px;
+            overflow: hidden;
+            background: #000;
+        }
+
+        .probador-virtual-container .preview-video {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .probador-virtual-container .video-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .probador-virtual-container .video-overlay i {
+            color: white;
+            font-size: 2rem;
+        }
+
+        .probador-virtual-container .video-item:hover .video-overlay {
+            opacity: 1;
+        }
+
+        .probador-virtual-container .video-controls {
+            padding: 1rem;
+            background: var(--bg-3);
+            border-top: 1px solid var(--border);
+        }
+
+        .probador-virtual-container .btn-upload {
+            background: none;
+            border: 2px dashed var(--border);
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+            transition: all 0.3s;
+        }
+
+        .probador-virtual-container .btn-upload:hover, .btn-upload:focus {
+            border-color: var(--accent-2);
+            background: rgba(59, 130, 246, 0.1);
+        }
+
+        .probador-virtual-container .upload-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .probador-virtual-container .dropdown-menu {
+            padding: 0;
+            border-radius: 8px;
+            box-shadow: var(--shadow-medium);
+        }
+
+        .probador-virtual-container .dropdown-item {
+            padding: 12px 16px;
+            transition: all 0.2s;
+        }
+
+        .probador-virtual-container.dropdown-item:hover {
+            background: var(--accent-2);
+            color: white;
+        }
+
+        .probador-virtual-container #tryOnImagesGrid .item {
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .probador-virtual-container #tryOnImagesGrid .item:hover {
+            transform: scale(1.05);
+            box-shadow: var(--shadow-medium);
+        }
+
+        .probador-virtual-container #tryOnImagesGrid .image-overlay {
+            background: rgba(59, 130, 246, 0.8);
+            opacity: 0;
+        }
+
+        .probador-virtual-container #tryOnImagesGrid .item:hover .image-overlay {
+            opacity: 1;
+        }
+
+
     </style>
 </head>
 <body>

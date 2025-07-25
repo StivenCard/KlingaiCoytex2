@@ -93,6 +93,20 @@
                             <span>Descripción del Video</span>
                         </div>
 
+                        <!-- HINTS PRINCIPALES -->
+                        <div class="group">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <label class="label mb-0">Sugerencias de Prompts</label>
+                                <button class="btn btn-outline-secondary btn-sm" id="refreshPromptHints" title="Cargar nuevas sugerencias">
+                                    <i class="fas fa-sync-alt"></i>
+                                </button>
+                            </div>
+                            <div class="grid-4" id="promptHintsContainer">
+                                <!-- Los hints se cargarán aquí dinámicamente -->
+                            </div>
+                        </div>
+
+                        <!-- PROMPT PRINCIPAL -->
                         <div class="group">
                             <label class="label">Prompt Principal</label>
                             <div class="auto-textarea-container">
@@ -102,9 +116,26 @@
                             </div>
                             <div class="d-flex justify-content-between align-items-center mt-2">
                                 <small class="text-muted char-count">0/2500</small>
+                                <button class="btn btn-outline-secondary btn-sm" id="clearPrompt">
+                                    <i class="fas fa-eraser"></i> Limpiar
+                                </button>
                             </div>
                         </div>
 
+                        <!-- HINTS NEGATIVOS -->
+                        <div class="group">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <label class="label mb-0">Sugerencias de Prompts Negativos</label>
+                                <button class="btn btn-outline-secondary btn-sm" id="refreshNegativeHints" title="Cargar nuevas sugerencias">
+                                    <i class="fas fa-sync-alt"></i>
+                                </button>
+                            </div>
+                            <div class="grid-4" id="negativeHintsContainer">
+                                <!-- Los hints negativos se cargarán aquí dinámicamente -->
+                            </div>
+                        </div>
+
+                        <!-- PROMPT NEGATIVO -->
                         <div class="group">
                             <label class="label">Prompt Negativo (Opcional)</label>
                             <div class="auto-textarea-container">
@@ -114,6 +145,9 @@
                             </div>
                             <div class="d-flex justify-content-between align-items-center mt-2">
                                 <small class="text-muted negative-char-count">0/2500</small>
+                                <button class="btn btn-outline-secondary btn-sm" id="clearNegativePrompt">
+                                    <i class="fas fa-eraser"></i> Limpiar
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -266,6 +300,8 @@
 
 <script>
 window.existingVideos = @json($existingVideos);
+window.hintsPrompts = @json($hintsPrompts);
+window.hintsNegative = @json($hintsNegative);
 </script>
 @endsection
 
@@ -276,10 +312,23 @@ let currentVideoUrl = '';
 let maxImages = 4;
 let currentImageCount = 1;
 
+// Variables para hints
+let allPromptHints = window.hintsPrompts || [];
+let allNegativeHints = window.hintsNegative || [];
+let currentPromptHints = [];
+let currentNegativeHints = [];
+let usedPromptHintIndices = [];
+let usedNegativeHintIndices = [];
+let selectedPromptHint = null;
+let selectedNegativeHint = null;
+let isPromptManuallyEdited = false;
+let isNegativePromptManuallyEdited = false;
+
 $(document).ready(function() {
     initializeExistingData();
     initializeTooltips();
     initializeImageUploads();
+    initializeHints();
     initializeTextareas();
     initializeGeneration();
 });
@@ -475,22 +524,28 @@ function addNewImageUpload() {
     });
 }
 
-function initializeTextareas() {
-    $('#promptText, #negativePromptText').on('input', function() {
-        const count = $(this).val().length;
-        const countElement = $(this).closest('.group').find('.char-count, .negative-char-count');
-        countElement.text(`${count}/2500`);
-
-        adjustTextareaHeight(this);
-    });
-}
-
 function adjustTextareaHeight(textarea) {
-    textarea.style.height = 'auto';
-    const scrollHeight = textarea.scrollHeight;
-    const newHeight = Math.min(Math.max(scrollHeight, 48), 200);
-    textarea.style.height = newHeight + 'px';
-    textarea.style.overflowY = scrollHeight > 200 ? 'auto' : 'hidden';
+    // Si se pasa el elemento directamente, usarlo, si no, obtenerlo por ID
+    const element = textarea.tagName ? textarea : document.getElementById(textarea);
+
+    // Resetear la altura para calcular correctamente
+    element.style.height = 'auto';
+
+    // Calcular altura necesaria
+    const scrollHeight = element.scrollHeight;
+    const minHeight = 48; // 2 rows aprox
+    const maxHeight = 200; // máximo 8 rows aprox
+
+    // Aplicar nueva altura dentro de los límites
+    const newHeight = Math.min(Math.max(scrollHeight, minHeight), maxHeight);
+    element.style.height = newHeight + 'px';
+
+    // Habilitar scroll si el contenido excede la altura máxima
+    if (scrollHeight > maxHeight) {
+        element.style.overflowY = 'auto';
+    } else {
+        element.style.overflowY = 'hidden';
+    }
 }
 
 function initializeGeneration() {
@@ -761,131 +816,212 @@ function clearFileInput(inputId, areaId, previewId) {
     area.querySelector('.upload-icon').style.display = 'block';
     area.querySelector('.upload-text').style.display = 'block';
 }
+
+// Inicializar hints
+function initializeHints() {
+    $('#refreshPromptHints').click(function() {
+        $(this).find('i').addClass('fa-spin');
+        setTimeout(() => {
+            loadRandomHints('prompt');
+            $(this).find('i').removeClass('fa-spin');
+        }, 500);
+    });
+
+    $('#refreshNegativeHints').click(function() {
+        $(this).find('i').addClass('fa-spin');
+        setTimeout(() => {
+            loadRandomHints('negative');
+            $(this).find('i').removeClass('fa-spin');
+        }, 500);
+    });
+
+    loadRandomHints('prompt');
+    loadRandomHints('negative');
+}
+
+function loadRandomHints(type) {
+    const hints = type === 'prompt' ? allPromptHints : allNegativeHints;
+    const usedIndices = type === 'prompt' ? usedPromptHintIndices : usedNegativeHintIndices;
+    let currentHints = [];
+
+    if (hints.length <= 4) {
+        currentHints = [...hints];
+        if (type === 'prompt') {
+            usedPromptHintIndices = [];
+            currentPromptHints = currentHints;
+        } else {
+            usedNegativeHintIndices = [];
+            currentNegativeHints = currentHints;
+        }
+    } else {
+        const tempIndices = [...Array(hints.length).keys()];
+        const availableIndices = tempIndices.filter(i => !usedIndices.includes(i));
+
+        if (availableIndices.length < 4) {
+            if (type === 'prompt') usedPromptHintIndices = [];
+            else usedNegativeHintIndices = [];
+        }
+
+        const finalIndices = availableIndices.length >= 4 ? availableIndices : tempIndices;
+        const shuffled = finalIndices.sort(() => 0.5 - Math.random());
+        const selected = shuffled.slice(0, 4);
+
+        if (type === 'prompt') {
+            usedPromptHintIndices.push(...selected);
+            currentPromptHints = selected.map(i => hints[i]);
+        } else {
+            usedNegativeHintIndices.push(...selected);
+            currentNegativeHints = selected.map(i => hints[i]);
+        }
+    }
+
+    renderHints(type);
+}
+
+function renderHints(type) {
+    const container = type === 'prompt' ? $('#promptHintsContainer') : $('#negativeHintsContainer');
+    const hints = type === 'prompt' ? currentPromptHints : currentNegativeHints;
+    let html = '';
+
+    hints.forEach(hint => {
+        const iconClass = getIconForHint(hint.key);
+        html += `
+            <button class="btn btn-outline-info btn-sm hint-btn ${type}-hint"
+                    data-hint="${hint.key}"
+                    data-prompt="${hint.prompt}">
+                <i class="fas fa-${iconClass}"></i>
+                <small>${hint.name}</small>
+            </button>
+        `;
+    });
+
+    container.html(html);
+
+    // Inicializar eventos
+    $(`.${type}-hint`).click(function() {
+        const hint = $(this).data('hint');
+        const hintPrompt = $(this).data('prompt');
+        const isPrompt = $(this).hasClass('prompt-hint');
+        const textareaId = isPrompt ? 'promptText' : 'negativePromptText';
+
+        if ((isPrompt && selectedPromptHint === hint) || (!isPrompt && selectedNegativeHint === hint)) {
+            $(this).removeClass('btn-info').addClass('btn-outline-info');
+            if (isPrompt) {
+                selectedPromptHint = null;
+                if (!isPromptManuallyEdited) {
+                    $('#promptText').val('');
+                    updateCharCount('prompt');
+                    adjustTextareaHeight(textareaId);
+                }
+            } else {
+                selectedNegativeHint = null;
+                if (!isNegativePromptManuallyEdited) {
+                    $('#negativePromptText').val('');
+                    updateCharCount('negative');
+                    adjustTextareaHeight(textareaId);
+                }
+            }
+        } else {
+            $(`.${type}-hint`).removeClass('btn-info').addClass('btn-outline-info');
+            $(this).removeClass('btn-outline-info').addClass('btn-info');
+            if (isPrompt) {
+                selectedPromptHint = hint;
+                if (!isPromptManuallyEdited) {
+                    $('#promptText').val(hintPrompt);
+                    updateCharCount('prompt');
+                    adjustTextareaHeight(textareaId);
+                }
+            } else {
+                selectedNegativeHint = hint;
+                if (!isNegativePromptManuallyEdited) {
+                    $('#negativePromptText').val(hintPrompt);
+                    updateCharCount('negative');
+                    adjustTextareaHeight(textareaId);
+                }
+            }
+        }
+    });
+}
+
+function getIconForHint(key) {
+    const iconMap = {
+        'smooth': 'water',
+        'fast': 'bolt',
+        'creative': 'magic',
+        'elegant': 'gem',
+        'natural': 'leaf',
+        // Agrega más mapeos según tus tipos de hints
+        'default': 'star'
+    };
+    return iconMap[key] || iconMap.default;
+}
+
+// Actualiza la función initializeTextareas
+function initializeTextareas() {
+    $('#promptText').on('input', function() {
+        const value = $(this).val().trim();
+        isPromptManuallyEdited = value.length > 0;
+
+        // Si se borró todo el contenido, desactivar el hint seleccionado
+        if (value.length === 0 && selectedPromptHint) {
+            $(`.prompt-hint[data-hint="${selectedPromptHint}"]`)
+                .removeClass('btn-info')
+                .addClass('btn-outline-info');
+            selectedPromptHint = null;
+            isPromptManuallyEdited = false;
+        }
+
+        updateCharCount('prompt');
+        adjustTextareaHeight(this);
+    });
+
+    $('#negativePromptText').on('input', function() {
+        const value = $(this).val().trim();
+        isNegativePromptManuallyEdited = value.length > 0;
+
+        // Si se borró todo el contenido, desactivar el hint seleccionado
+        if (value.length === 0 && selectedNegativeHint) {
+            $(`.negative-hint[data-hint="${selectedNegativeHint}"]`)
+                .removeClass('btn-info')
+                .addClass('btn-outline-info');
+            selectedNegativeHint = null;
+            isNegativePromptManuallyEdited = false;
+        }
+
+        updateCharCount('negative');
+        adjustTextareaHeight(this);
+    });
+
+    // Botones de limpiar
+    $('#clearPrompt').click(function() {
+        $('#promptText').val('');
+        $('.prompt-hint').removeClass('btn-info').addClass('btn-outline-info');
+        selectedPromptHint = null;
+        isPromptManuallyEdited = false;
+        updateCharCount('prompt');
+        adjustTextareaHeight('promptText');
+    });
+
+    $('#clearNegativePrompt').click(function() {
+        $('#negativePromptText').val('');
+        $('.negative-hint').removeClass('btn-info').addClass('btn-outline-info');
+        selectedNegativeHint = null;
+        isNegativePromptManuallyEdited = false;
+        updateCharCount('negative');
+        adjustTextareaHeight('negativePromptText');
+    });
+}
+
+// Actualiza la función updateCharCount
+function updateCharCount(type) {
+    const length = type === 'prompt' ?
+        $('#promptText').val().length :
+        $('#negativePromptText').val().length;
+    const element = type === 'prompt' ?
+        $('.char-count') :
+        $('.negative-char-count');
+    element.text(`${length}/2500`);
+}
+
 </script>
-
-<style>
-/* Estilos específicos para video */
-.video-container {
-    position: relative;
-    width: 100%;
-    background: #000;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 400px;
-}
-
-#modalVideo {
-    max-width: 100%;
-    max-height: 70vh;
-}
-
-.video-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 1rem;
-    padding: 1rem;
-}
-
-.video-item {
-    position: relative;
-    aspect-ratio: 16/9;
-    cursor: pointer;
-    border-radius: 8px;
-    overflow: hidden;
-    background: #000;
-}
-
-.preview-video {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-}
-
-.video-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0,0,0,0.5);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    opacity: 0;
-    transition: opacity 0.3s;
-}
-
-.video-overlay i {
-    color: white;
-    font-size: 2rem;
-}
-
-.video-item:hover .video-overlay {
-    opacity: 1;
-}
-
-.video-controls {
-    padding: 1rem;
-    background: var(--bg-3);
-    border-top: 1px solid var(--border);
-}
-
-.btn-upload {
-    background: none;
-    border: 2px dashed var(--border);
-    border-radius: 8px;
-    padding: 15px;
-    text-align: center;
-    transition: all 0.3s;
-}
-
-.btn-upload:hover, .btn-upload:focus {
-    border-color: var(--accent-2);
-    background: rgba(59, 130, 246, 0.1);
-}
-
-.upload-content {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-}
-
-.dropdown-menu {
-    padding: 0;
-    border-radius: 8px;
-    box-shadow: var(--shadow-medium);
-}
-
-.dropdown-item {
-    padding: 12px 16px;
-    transition: all 0.2s;
-}
-
-.dropdown-item:hover {
-    background: var(--accent-2);
-    color: white;
-}
-
-#tryOnImagesGrid .item {
-    cursor: pointer;
-    transition: all 0.3s;
-}
-
-#tryOnImagesGrid .item:hover {
-    transform: scale(1.05);
-    box-shadow: var(--shadow-medium);
-}
-
-#tryOnImagesGrid .image-overlay {
-    background: rgba(59, 130, 246, 0.8);
-    opacity: 0;
-}
-
-#tryOnImagesGrid .item:hover .image-overlay {
-    opacity: 1;
-}
-
-</style>
 @endpush
