@@ -654,35 +654,72 @@ function checkVideoStatus(taskId) {
             .done(response => {
                 if (response.data) {
                     const status = response.data.task_status;
+                    const errorMsg = response.data.task_status_msg;
+
                     if (status === 'succeed') {
                         const video = videoHistory.find(v => v.task_id === taskId);
                         if (video) {
                             video.status = 'completed';
-                            video.result_video_paths = response.data.local_videos || [];
+                            video.result_video_paths = response.data.local_videos?.map(path => `/storage/${path}`) || [];
                             updateVideoInHistory(video);
                         }
                         resetGenerateButton();
                     } else if (status === 'processing' || status === 'submitted') {
-                        setTimeout(poll, 3000);
-                    } else {
-                        const video = videoHistory.find(v => v.task_id === taskId);
-                        if (video) {
-                            video.status = 'failed';
-                            updateVideoInHistory(video);
-                        }
+                        setTimeout(poll, 10000);
+                    } else if (status === 'failed') {
+                        // Eliminar el resultado fallido del historial
+                        videoHistory = videoHistory.filter(v => v.task_id !== taskId);
+                        renderVideoHistory();
                         resetGenerateButton();
+
+                        // Traducir mensajes de error comunes
+                        let translatedError = 'Error desconocido';
+                        if (errorMsg) {
+                            switch (errorMsg.toLowerCase()) {
+                                case 'failure to pass the risk control system':
+                                    translatedError = 'El contenido no cumple con las políticas de seguridad';
+                                    break;
+                                case 'invalid prompt':
+                                    translatedError = 'El prompt ingresado no es válido';
+                                    break;
+                                case 'invalid image format':
+                                    translatedError = 'Formato de imagen no válido';
+                                    break;
+                                default:
+                                    translatedError = errorMsg;
+                            }
+                        }
+
+                        // Mostrar error con SweetAlert2
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error en la generación',
+                            text: translatedError,
+                            confirmButtonText: 'Entendido',
+                            customClass: {
+                                confirmButton: 'btn btn-primary'
+                            }
+                        });
                     }
                 }
             })
             .fail(() => {
-                const video = videoHistory.find(v => v.task_id === taskId);
-                if (video) {
-                    video.status = 'failed';
-                    updateVideoInHistory(video);
-                }
+                // Eliminar el resultado fallido del historial
+                videoHistory = videoHistory.filter(v => v.task_id !== taskId);
+                renderVideoHistory();
                 resetGenerateButton();
+
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error de conexión',
+                    text: 'No se pudo verificar el estado del proceso',
+                    confirmButtonText: 'Entendido',
+                    customClass: {
+                        confirmButton: 'btn btn-primary'
+                    }
+                });
             });
-    }, 2000);
+    }, 10000);
 }
 
 function addVideoToHistory(video) {
@@ -742,7 +779,7 @@ function renderVideoHistory() {
                 <div style="text-align: center; padding: 40px;">
                     <div class="spinner-border text-primary" role="status"></div>
                     <p class="mt-3">Generando video...</p>
-                    <small>⏳ Tiempo estimado: 30-60 segundos.</small>
+                    <small>⏳ Tiempo estimado: 5-6 minutos.</small>
                 </div>`;
         } else {
             html += `

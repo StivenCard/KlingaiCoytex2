@@ -2,62 +2,40 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use App\Models\ImageToVideo;
 use App\Models\VirtualTryOn;
-use Illuminate\Http\Request;
 use App\Services\HintsService;
-use Illuminate\Support\Facades\Storage;
 use App\Services\KlingAi\KlingApiService;
 use App\Services\KlingAi\ImageProcessingService;
 
 class ImageToVideoController extends Controller
 {
-    /**
-     * Constructor del controlador de Image to Video.
-     *
-     * @param KlingApiService $api Servicio para interactuar con la API de KlingAI.
-     * @param ImageProcessingService $images Servicio para procesar imágenes.
-     */
     public function __construct(
         private KlingApiService $api,
         private ImageProcessingService $images,
         private HintsService $hints
     ) {}
 
-    /**
-     * Muestra la vista principal de generación de videos desde imágenes.
-     *
-     * @return View
-     */
     public function show()
     {
-        $virtualTryOns = VirtualTryOn::where('status', 'completed')
-            ->latest()
-            ->take(20)
-            ->get();
+        $virtualTryOns = VirtualTryOn::where('status', 'completed')->latest()->take(20)->get();
+        $existingVideos = ImageToVideo::where('status', '!=', 'failed')->latest()->take(20)->get();
 
-        $existingVideos = ImageToVideo::where('status', '!=', 'failed')
-            ->latest()
-            ->take(20)
-            ->get();
-
-        $hintsPrompts = $this->hints->getAllPromptVideo();
-        $hintsNegative = $this->hints->getAllNegativePrompts();
-        
-        return view('image-to-video', compact('virtualTryOns', 'existingVideos', 'hintsPrompts', 'hintsNegative'));
+        return view('image-to-video', [
+            'virtualTryOns' => $virtualTryOns,
+            'existingVideos' => $existingVideos,
+            'hintsPrompts' => $this->hints->getAllPromptVideo(),
+            'hintsNegative' => $this->hints->getAllNegativePrompts()
+        ]);
     }
 
-    /**
-     * Procesa una solicitud para generar un video a partir de múltiples imágenes.
-     *
-     * @param Request $request
-     * @return JsonResponse
-     */
     public function generate(Request $request)
     {
         $request->validate([
-            'images.*' => 'required|file|image|mimes:jpg,jpeg,png|max:10240',
             'images' => 'required|array|min:1|max:4',
+            'images.*' => 'required|image|mimes:jpg,jpeg,png|max:10240',
             'prompt' => 'required|string|max:2500',
             'negative_prompt' => 'nullable|string|max:2500',
             'mode' => 'nullable|in:std,pro',
@@ -66,22 +44,8 @@ class ImageToVideoController extends Controller
         ]);
 
         try {
-            $imageList = [];
-            $imagePaths = [];
+            [$imageList, $imagePaths] = $this->prepareImages($request->file('images'));
 
-            // Procesar cada imagen
-            foreach ($request->file('images') as $image) {
-                // Guardar imagen para trazabilidad
-                $path = $this->images->saveImage($image, 'klingai/video_inputs', 'input_');
-                $imagePaths[] = $path;
-
-                // Convertir a base64 para la API
-                $imageList[] = [
-                    'image' => $this->images->convertToBase64($image)
-                ];
-            }
-
-            // Preparar payload para la API
             $payload = [
                 'model_name' => 'kling-v1-6',
                 'image_list' => $imageList,
@@ -95,19 +59,17 @@ class ImageToVideoController extends Controller
                 $payload['negative_prompt'] = $request->negative_prompt;
             }
 
-            // Llamar a la API
             $response = $this->api->createMultiImageToVideo($payload);
 
-            // Guardar registro en base de datos
             if ($taskId = $response['data']['task_id'] ?? null) {
                 ImageToVideo::create([
                     'task_id' => $taskId,
                     'model_name' => 'kling-v1-6',
                     'prompt' => $request->prompt,
                     'negative_prompt' => $request->negative_prompt,
-                    'mode' => $request->input('mode', 'std'),
-                    'duration' => $request->input('duration', '5'),
-                    'aspect_ratio' => $request->input('aspect_ratio', '16:9'),
+                    'mode' => $payload['mode'],
+                    'duration' => $payload['duration'],
+                    'aspect_ratio' => $payload['aspect_ratio'],
                     'input_image_paths' => $imagePaths,
                     'status' => 'processing',
                 ]);
@@ -119,12 +81,6 @@ class ImageToVideoController extends Controller
         }
     }
 
-    /**
-     * Consulta el estado de una tarea de generación de video.
-     *
-     * @param string $taskId
-     * @return JsonResponse
-     */
     public function taskStatus(string $taskId)
     {
         try {
@@ -136,40 +92,24 @@ class ImageToVideoController extends Controller
             }
 
             $status = $response['data']['task_status'];
-            $videoTask->update([
-                'status' => match($status) {
-                    'succeed' => 'completed',
-                    'failed' => 'failed',
-                    default => 'processing',
-                }
-            ]);
+            $videoTask->update(['status' => $this->mapStatus($status)]);
 
             if ($status === 'succeed') {
-                $results = [];
+                $videoPaths = collect($response['data']['task_result']['videos'] ?? [])
+                    ->map(fn($video) => $this->images->downloadAndSaveVideo(
+                        $video['url'], 'klingai/video_results', 'video_'
+                    ))
+                    ->filter()
+                    ->values()
+                    ->toArray();
 
-                foreach ($response['data']['task_result']['videos'] ?? [] as $video) {
-                    try {
-                        $results[] = $this->images->downloadAndSaveVideo(
-                            $video['url'],
-                            'klingai/video_results',  // Esta carpeta debe existir en storage/app/public
-                            'video_'
-                        );
-                    } catch (\Exception $e) {
-                        continue;
-                    }
-                }
-
-                if ($results) {
+                if ($videoPaths) {
                     $videoTask->update([
-                        'result_video_paths' => $results,
+                        'result_video_paths' => $videoPaths,
                         'status' => 'completed'
                     ]);
 
-                    // Modificar cómo se construyen las URLs locales
-                    $response['data']['local_videos'] = array_map(
-                        fn($p) => Storage::url($p),
-                        $results
-                    );
+                    $response['data']['local_videos'] = array_map(fn($p) => Storage::url($p), $videoPaths);
                 }
             }
 
@@ -177,5 +117,34 @@ class ImageToVideoController extends Controller
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 422);
         }
+    }
+
+    /**
+     * Procesa imágenes subidas: guarda en disco y las convierte a base64.
+     */
+    private function prepareImages(array $images): array
+    {
+        $imageList = [];
+        $imagePaths = [];
+
+        foreach ($images as $image) {
+            $path = $this->images->saveImage($image, 'klingai/video_inputs', 'input_');
+            $imagePaths[] = $path;
+            $imageList[] = ['image' => $this->images->convertToBase64($image)];
+        }
+
+        return [$imageList, $imagePaths];
+    }
+
+    /**
+     * Mapea el estado de Kling a estados locales.
+     */
+    private function mapStatus(string $status): string
+    {
+        return match($status) {
+            'succeed' => 'completed',
+            'failed' => 'failed',
+            default => 'processing',
+        };
     }
 }

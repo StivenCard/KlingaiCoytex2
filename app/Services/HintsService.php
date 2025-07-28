@@ -22,11 +22,11 @@ class HintsService
     ];
 
     private array $promptVideo = [
-        'sugerencia 1' => 'Una modelo da una vuelta elegante para mostrar su atuendo completo, la cámara sigue suavemente su movimiento desde distintos ángulos. El vestido ondea con naturalidad mientras gira, resaltando cada detalle del diseño. Fondo neutro con iluminación profesional de pasarela.',
-        'sugerencia 2' => 'Una modelo camina por la pasarela luciendo majestuosas alas estilizadas, como si fuera un ángel de alta costura. El público observa maravillado mientras la iluminación brillante realza la textura de las alas y el vestido. Estilo etéreo y fantasioso',
-        'sugerencia 3' => 'Toda la escena transmite una experiencia visual inmersiva y vibrante, con colores intensos y una estética surrealista. Inspirado en el estilo del fotógrafo David LaChapelle, con iluminación teatral, fondos llamativos y poses audaces que rompen la realidad convencional.',
-        'sugerencia 4' => 'Una modelo se encuentra en el escenario de la Semana de la Moda de París, rodeada por otras modelos que lucen vestidos de alta costura. La iluminación suave y difusa resalta cada detalle delicado de las prendas, creando una atmósfera mágica y sofisticada.',
-        'sugerencia 5' => 'Escena de un desfile de moda sobre una pasarela moderna. Modelos caminan con seguridad, mostrando prendas elegantes y contemporáneas, mientras el público observa desde los costados. Luces de escenario, cámaras y flashes crean una ambientación profesional.'
+        'opcion 1' => 'Una modelo da una vuelta elegante para mostrar su atuendo completo, la cámara sigue suavemente su movimiento desde distintos ángulos. El vestido ondea con naturalidad mientras gira, resaltando cada detalle del diseño. Fondo neutro con iluminación profesional de pasarela.',
+        'opcion 2' => 'Una modelo camina por la pasarela luciendo majestuosas alas estilizadas, como si fuera un ángel de alta costura. El público observa maravillado mientras la iluminación brillante realza la textura de las alas y el vestido. Estilo etéreo y fantasioso',
+        'opcion 3' => 'Toda la escena transmite una experiencia visual inmersiva y vibrante, con colores intensos y una estética surrealista. Inspirado en el estilo del fotógrafo David LaChapelle, con iluminación teatral, fondos llamativos y poses audaces que rompen la realidad convencional.',
+        'opcion 4' => 'Una modelo se encuentra en el escenario de la Semana de la Moda de París, rodeada por otras modelos que lucen vestidos de alta costura. La iluminación suave y difusa resalta cada detalle delicado de las prendas, creando una atmósfera mágica y sofisticada.',
+        'opcion 5' => 'Escena de un desfile de moda sobre una pasarela moderna. Modelos caminan con seguridad, mostrando prendas elegantes y contemporáneas, mientras el público observa desde los costados. Luces de escenario, cámaras y flashes crean una ambientación profesional.'
     ];
 
     private array $negativePrompts = [
@@ -39,37 +39,24 @@ class HintsService
 
     ];
 
-    public function getAllPromptVideo():array {
+    private function formatPrompts(array $source): array {
         return array_map(fn($key) => [
             'key' => $key,
             'name' => ucfirst($key),
-            'prompt' => $this->promptVideo[$key]
-        ], array_keys($this->promptVideo));
+            'prompt' => $source[$key]
+        ], array_keys($source));
     }
 
-    public function getAllNegativePrompts():array {
-        return array_map(fn($key) => [
-            'key' => $key,
-            'name' => ucfirst($key),
-            'prompt' => $this->negativePrompts[$key]
-        ], array_keys($this->negativePrompts));
+    public function getAllHints(): array {
+        return $this->formatPrompts($this->hints);
     }
 
-    /**
-     * Retorna todos los hints disponibles.
-     *
-     * @return array[] Lista con:
-     *   - key: identificador interno
-     *   - name: nombre capitalizado (para mostrar)
-     *   - prompt: texto completo que se inserta en el textarea
-     */
-    public function getAllHints(): array
-    {
-        return array_map(fn($key) => [
-            'key' => $key,
-            'name' => ucfirst($key),
-            'prompt' => $this->hints[$key]
-        ], array_keys($this->hints));
+    public function getAllPromptVideo(): array {
+        return $this->formatPrompts($this->promptVideo);
+    }
+
+    public function getAllNegativePrompts(): array {
+        return $this->formatPrompts($this->negativePrompts);
     }
 
     /**
