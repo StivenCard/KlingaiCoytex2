@@ -11,19 +11,11 @@
             <div class="card-body">
                 <!-- IMAGES SECTION -->
                 <div class="section mt-0">
-                    <div class="title d-flex align-items-center">
-                        <i class="fas fa-images mr-2"></i>
-                        <span>Imágenes de Entrada</span>
-                        <button class="btn btn-outline-info btn-sm info-btn ml-auto" id="imagesInfoBtn" title="Guía de Imágenes">
-                            <i class="fas fa-info-circle"></i>
-                        </button>
-                    </div>
-
                     <!-- MULTIPLE IMAGE UPLOAD -->
                     <div class="group">
                         <label class="label">Subir Imágenes (Máximo 4)</label>
                         <div id="imageUploadsContainer">
-                            <div class="upload" id="imageUploadArea1">
+                            <div class="upload upload-dropdown" id="imageUploadArea1">
                                 <!-- Nuevo botón dropdown -->
                                 <div class="dropdown">
                                     <button class="btn btn-upload dropdown-toggle w-100 h-100" type="button" data-toggle="dropdown" aria-expanded="false">
@@ -48,7 +40,7 @@
                                     <button class="btn btn-danger btn-sm remove-btn" onclick="clearFileInput('imageInput1', 'imageUploadArea1', 'preview1')">
                                         <i class="fas fa-times"></i>
                                     </button>
-                                    <button class="btn btn-primary btn-sm reupload-btn" onclick="$('#imageUploadArea1 .dropdown-toggle').dropdown('toggle')">
+                                    <button class="btn btn-primary btn-sm reupload-btn" onclick="triggerFileInput('imageInput1')">
                                         <i class="fas fa-upload"></i> Re-subir
                                     </button>
                                 </div>
@@ -74,9 +66,6 @@
                                             @foreach($tryOn->result_image_paths as $path)
                                                 <div class="item" onclick="selectTryOnImage('{{ Storage::url($path) }}', currentUploadIndex)">
                                                     <img src="{{ Storage::url($path) }}" alt="Try-On Result">
-                                                    <div class="image-overlay">
-                                                        <i class="fas fa-check"></i>
-                                                    </div>
                                                 </div>
                                             @endforeach
                                         @endforeach
@@ -235,7 +224,7 @@
 </div>
 
 <!-- TOOLTIP IMAGES -->
-<div class="tooltip model-guidelines" id="imagesToolTip">
+{{-- <div class="tooltip model-guidelines" id="imagesToolTip">
     <div class="tooltip-header bg-light border-bottom-dark d-flex justify-content-between align-items-center p-3">
         <h6 class="mb-0 text-dark d-flex align-items-center">
             <i class="fas fa-info-circle mr-2"></i> Guía de Imágenes
@@ -258,7 +247,7 @@
             </ul>
         </div>
     </div>
-</div>
+</div> --}}
 
 <!-- MODAL PARA VER VIDEO -->
 <div class="modal fade" id="videoModal" tabindex="-1" aria-hidden="true">
@@ -442,11 +431,15 @@ function showImagePreview(file, index) {
     reader.onload = e => {
         const preview = document.getElementById(`preview${index}`);
         const uploadArea = document.getElementById(`imageUploadArea${index}`);
+        const button = $(uploadArea.querySelector('.btn-upload'));
+
         preview.querySelector('img').src = e.target.result;
         preview.style.display = 'block';
         uploadArea.classList.add('has-file');
-        uploadArea.querySelector('.upload-icon').style.display = 'none';
-        uploadArea.querySelector('.upload-text').style.display = 'none';
+        button.attr("hidden", true);
+        // uploadArea.querySelector('.upload-icon').style.display = 'none';
+        // uploadArea.querySelector('.upload-text').style.display = 'none';
+        // button.removeClass("dropdown-toggle");
     };
     reader.readAsDataURL(file);
 }
@@ -487,7 +480,7 @@ function addNewImageUpload() {
     const newIndex = currentImageCount;
 
     const template = `
-        <div class="upload mt-3" id="imageUploadArea${newIndex}">
+        <div class="upload upload-dropdown mt-3" id="imageUploadArea${newIndex}">
             <div class="dropdown">
                 <button class="btn btn-upload dropdown-toggle w-100 h-100" type="button" data-toggle="dropdown">
                     <div class="upload-content">
@@ -510,7 +503,7 @@ function addNewImageUpload() {
                 <button class="btn btn-danger btn-sm remove-btn" onclick="clearFileInput('imageInput${newIndex}', 'imageUploadArea${newIndex}', 'preview${newIndex}')">
                     <i class="fas fa-times"></i>
                 </button>
-                <button class="btn btn-primary btn-sm reupload-btn" onclick="$('#imageUploadArea${newIndex} .dropdown-toggle').dropdown('toggle')">
+                <button class="btn btn-primary btn-sm reupload-btn" onclick="triggerFileInput('imageInput${newIndex}')">
                     <i class="fas fa-upload"></i> Re-subir
                 </button>
             </div>
@@ -629,20 +622,51 @@ function submitGeneration(formData) {
                 updateVideoInHistory(tempResult);
                 checkVideoStatus(response.data.task_id);
             } else {
-                tempResult.status = 'failed';
-                updateVideoInHistory(tempResult);
+                // Eliminar del historial si no hay task_id
+                videoHistory = videoHistory.filter(v => v.id !== tempResult.id);
+                renderVideoHistory();
                 resetGenerateButton();
+
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error de generación',
+                    text: 'No se recibió un ID de tarea válido'
+                });
             }
         },
         error: xhr => {
-            tempResult.status = 'failed';
-            updateVideoInHistory(tempResult);
+            // Eliminar del historial en caso de error
+            videoHistory = videoHistory.filter(v => v.id !== tempResult.id);
+            renderVideoHistory();
             resetGenerateButton();
+
+            // Traducir mensajes de error comunes
+            const errorMsg = xhr.responseJSON?.error;
+
+            let translatedError = 'Error del servidor';
+            if (errorMsg) {
+                switch (errorMsg.toLowerCase()) {
+                    case 'failure to pass the risk control system':
+                        translatedError = 'El contenido no cumple con las políticas de seguridad';
+                        break;
+                    case 'invalid prompt':
+                        translatedError = 'El prompt ingresado no es válido';
+                        break;
+                    case 'invalid image format':
+                        translatedError = 'Formato de imagen no válido';
+                        break;
+                    case 'Account balance not enough':
+                        translatedError = 'Saldo insuficiente en la cuenta';
+                        break;
+                    default:
+                        translatedError = errorMsg;
+                }
+            }
 
             Swal.fire({
                 icon: 'error',
                 title: 'Error de generación',
-                text: xhr.responseJSON?.error || 'Error del servidor'
+                text: translatedError || 'Error del servidor'
             });
         }
     });
@@ -684,6 +708,9 @@ function checkVideoStatus(taskId) {
                                     break;
                                 case 'invalid image format':
                                     translatedError = 'Formato de imagen no válido';
+                                    break;
+                                case 'Account balance not enough':
+                                    translatedError = 'Saldo insuficiente en la cuenta';
                                     break;
                                 default:
                                     translatedError = errorMsg;
@@ -846,12 +873,143 @@ function clearFileInput(inputId, areaId, previewId) {
     const input = document.getElementById(inputId);
     const area = document.getElementById(areaId);
     const preview = document.getElementById(previewId);
+    const button = $(area.querySelector('.btn-upload'));
 
-    input.value = '';
-    preview.style.display = 'none';
-    area.classList.remove('has-file');
-    area.querySelector('.upload-icon').style.display = 'block';
-    area.querySelector('.upload-text').style.display = 'block';
+    // Obtén el índice del elemento que se va a eliminar
+    const indexMatch = areaId.match(/\d+$/);
+    const index = indexMatch ? parseInt(indexMatch[0]) : 1;
+
+    // Recopilar todas las imágenes existentes ANTES de eliminar
+    const existingImages = [];
+    const uploadAreas = document.querySelectorAll('[id^="imageUploadArea"]');
+
+    uploadAreas.forEach((uploadArea) => {
+        const areaInput = uploadArea.querySelector('input[type="file"]');
+        const areaPreview = uploadArea.querySelector('.preview');
+        const areaIndex = parseInt(uploadArea.id.match(/\d+$/)[0]);
+
+        // Solo recopilar si no es el elemento que se va a eliminar y tiene imagen
+        if (areaIndex !== index && areaInput && areaInput.files[0] &&
+            areaPreview && areaPreview.style.display !== 'none') {
+            existingImages.push({
+                file: areaInput.files[0],
+                previewSrc: areaPreview.querySelector('img').src
+            });
+        }
+    });
+
+    // Limpiar TODOS los inputs existentes
+    uploadAreas.forEach((uploadArea) => {
+        const areaInput = uploadArea.querySelector('input[type="file"]');
+        const areaPreview = uploadArea.querySelector('.preview');
+        const areaButton = $(uploadArea.querySelector('.btn-upload'));
+
+        if (areaInput) areaInput.value = '';
+        if (areaPreview) areaPreview.style.display = 'none';
+        uploadArea.classList.remove('has-file');
+        if (areaButton.length) areaButton.attr("hidden", false);
+    });
+
+    // Eliminar inputs excedentes (mantener solo los necesarios)
+    const requiredInputs = Math.min(existingImages.length + 1, maxImages);
+
+    for (let i = uploadAreas.length; i > requiredInputs; i--) {
+        const areaToRemove = document.getElementById(`imageUploadArea${i}`);
+        if (areaToRemove && i > 1) { // Nunca eliminar el primer input
+            areaToRemove.parentNode.removeChild(areaToRemove);
+        }
+    }
+
+    // Actualizar currentImageCount
+    currentImageCount = Math.max(requiredInputs, 1);
+
+    // Redistribuir las imágenes existentes en orden
+    existingImages.forEach((imageData, idx) => {
+        const targetIndex = idx + 1;
+        const targetInput = document.getElementById(`imageInput${targetIndex}`);
+        const targetArea = document.getElementById(`imageUploadArea${targetIndex}`);
+        const targetPreview = document.getElementById(`preview${targetIndex}`);
+        const targetButton = $(targetArea?.querySelector('.btn-upload'));
+
+        if (targetInput && targetArea && targetPreview) {
+            // Asignar el archivo al input
+            const dataTransfer = new DataTransfer();
+            dataTransfer.items.add(imageData.file);
+            targetInput.files = dataTransfer.files;
+
+            // Mostrar preview
+            targetPreview.querySelector('img').src = imageData.previewSrc;
+            targetPreview.style.display = 'block';
+            targetArea.classList.add('has-file');
+            if (targetButton.length) targetButton.attr("hidden", true);
+        }
+    });
+
+    // Crear input adicional si es necesario y no se ha alcanzado el máximo
+    if (existingImages.length < maxImages && existingImages.length + 1 > currentImageCount) {
+        addNewImageUpload();
+    }
+
+    // Reordenar para actualizar IDs y referencias
+    reorderImageInputs();
+}
+
+function reorderImageInputs() {
+    // Selecciona todos los bloques de upload
+    const uploadAreas = document.querySelectorAll('[id^="imageUploadArea"]');
+
+    uploadAreas.forEach((area, i) => {
+        const newIndex = i + 1;
+        area.id = `imageUploadArea${newIndex}`;
+
+        // Cambia el botón file input
+        const input = area.querySelector('input[type="file"]');
+        if (input) {
+            input.id = `imageInput${newIndex}`;
+        }
+
+        // Cambia el preview
+        const preview = area.querySelector('.preview');
+        if (preview) {
+            preview.id = `preview${newIndex}`;
+        }
+
+        // Cambia el texto
+        const text = area.querySelector('.upload-text');
+        if (text) {
+            text.textContent = `Imagen ${newIndex} ${newIndex === 1 ? '(Requerida)' : '(Opcional)'}`;
+        }
+
+        // Cambia los botones de subir y re-subir
+        const uploadBtn = area.querySelector('.dropdown-item[onclick^="triggerFileInput"]');
+        if (uploadBtn) {
+            uploadBtn.setAttribute('onclick', `triggerFileInput('imageInput${newIndex}')`);
+        }
+        const reuploadBtn = area.querySelector('.reupload-btn');
+        if (reuploadBtn) {
+            reuploadBtn.setAttribute('onclick', `triggerFileInput('imageInput${newIndex}')`);
+        }
+        const removeBtn = area.querySelector('.remove-btn');
+        if (removeBtn) {
+            removeBtn.setAttribute('onclick', `clearFileInput('imageInput${newIndex}', 'imageUploadArea${newIndex}', 'preview${newIndex}')`);
+        }
+
+        // Cambia el botón de usar imagen del probador
+        const tryonBtn = area.querySelector('.dropdown-item[onclick^="showTryOnModal"]');
+        if (tryonBtn) {
+            tryonBtn.setAttribute('onclick', `showTryOnModal(${newIndex})`);
+        }
+
+        // Vuelve a asignar el event listener al input
+        if (input) {
+            $(input).off('change').on('change', function() {
+                handleImageUpload(this, newIndex);
+            });
+        }
+    });
+
+    // Actualizar currentImageCount al número real de inputs visibles
+    currentImageCount = uploadAreas.length;
 }
 
 // Inicializar hints

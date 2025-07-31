@@ -30,7 +30,7 @@
         .probador-virtual-container .navbar-brand:hover { color: var(--accent-2) !important; }
         .probador-virtual-container .nav-link { color: var(--txt-2) !important; font-weight: 500; padding: 8px 16px !important; border-radius: 6px; transition: all 0.3s; }
         .probador-virtual-container .nav-link:hover { color: #D3D3D3 !important; background: #545b62; }
-        .probador-virtual-container .nav-link.active { color: #ffffff !important; background: var(--accent-2); }
+        .probador-virtual-container .nav-link.active { color: var(--txt-1) !important; background: var(--accent-2); }
 
         /* 🔥 LAYOUT */
         .probador-virtual-container .main-content { padding: 0; margin: 0; width: 100%;  overflow: hidden; }
@@ -133,7 +133,7 @@
         .probador-virtual-container  .overlay-date { color: rgba(255, 255, 255, 0.7); font-size: 9px; }
 
         /* 🔥 UPLOAD */
-        .probador-virtual-container  .upload { border: 2px dashed var(--border); border-radius: 8px; padding: 15px; text-align: center; background: var(--bg-3); margin-bottom: 16px; cursor: pointer; transition: all 0.3s; position: relative; min-height: 80px; }
+        .probador-virtual-container  .upload { border: 2px dashed var(--border); border-radius: 8px; padding:15px; text-align: center; background: var(--bg-3); margin-bottom: 16px; cursor: pointer; transition: all 0.3s; position: relative; min-height: 80px; }
         .probador-virtual-container  .upload:hover { border-color: var(--accent-2); background: rgba(59, 130, 246, 0.1); }
         .probador-virtual-container  .upload.has-file { padding: 4px; border-color: var(--accent-2); }
         .probador-virtual-container  .upload-icon { font-size: 32px; color: var(--txt-2); margin-bottom: 8px; }
@@ -384,7 +384,7 @@
             border-radius: 50%; /* Rounded corners */
             font-size: 18px; /* Increase font size */
             text-align: center;
-            }
+        }
 
             .probador-virtual-container .goBackUp:hover {
             background-color: #ffffff; /* Add a dark-grey background on hover */
@@ -394,7 +394,7 @@
             height: 2.9rem;
             }
 
-        /* Estilos específicos para video */
+            /* Estilos específicos para video */
         .probador-virtual-container .video-container {
             position: relative;
             width: 100%;
@@ -461,10 +461,15 @@
             border-top: 1px solid var(--border);
         }
 
+        .probador-virtual-container .upload.upload-dropdown {
+            padding: 0 !important;
+        }
+
         .probador-virtual-container .btn-upload {
             background: none;
-            border: 2px dashed var(--border);
-            border-radius: 8px;
+            /* border: 2px dashed var(--border); */
+            border: none;
+            /* border-radius: 8px; */
             padding: 15px;
             text-align: center;
             transition: all 0.3s;
@@ -517,7 +522,10 @@
             opacity: 1;
         }
 
-
+        .probador-virtual-container button:focus {
+            outline: none;
+            box-shadow: none;
+        }
     </style>
 </head>
 <body>

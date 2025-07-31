@@ -22,21 +22,27 @@ class HintsService
     ];
 
     private array $promptVideo = [
-        'opcion 1' => 'Una modelo da una vuelta elegante para mostrar su atuendo completo, la cámara sigue suavemente su movimiento desde distintos ángulos. El vestido ondea con naturalidad mientras gira, resaltando cada detalle del diseño. Fondo neutro con iluminación profesional de pasarela.',
-        'opcion 2' => 'Una modelo camina por la pasarela luciendo majestuosas alas estilizadas, como si fuera un ángel de alta costura. El público observa maravillado mientras la iluminación brillante realza la textura de las alas y el vestido. Estilo etéreo y fantasioso',
-        'opcion 3' => 'Toda la escena transmite una experiencia visual inmersiva y vibrante, con colores intensos y una estética surrealista. Inspirado en el estilo del fotógrafo David LaChapelle, con iluminación teatral, fondos llamativos y poses audaces que rompen la realidad convencional.',
-        'opcion 4' => 'Una modelo se encuentra en el escenario de la Semana de la Moda de París, rodeada por otras modelos que lucen vestidos de alta costura. La iluminación suave y difusa resalta cada detalle delicado de las prendas, creando una atmósfera mágica y sofisticada.',
-        'opcion 5' => 'Escena de un desfile de moda sobre una pasarela moderna. Modelos caminan con seguridad, mostrando prendas elegantes y contemporáneas, mientras el público observa desde los costados. Luces de escenario, cámaras y flashes crean una ambientación profesional.'
+        'opcion 1' => 'Modelo da una vuelta elegante mostrando su atuendo completo. La cámara sigue suavemente su movimiento. El vestido se mueve con naturalidad. Fondo neutro con luz de pasarela profesional.',
+        'opcion 2' => 'Modelo camina con majestuosas alas estilizadas como ángel de alta costura. Iluminación brillante resalta alas y vestido. Estilo etéreo y fantasioso.',
+        'opcion 3' => 'Escena vibrante y surreal, con colores intensos y estética teatral. Inspiración en David LaChapelle. Fondos llamativos, poses audaces y dramáticas.',
+        'opcion 4' => 'Modelo en la Semana de la Moda de París, rodeada de alta costura. Iluminación suave resalta detalles finos. Ambiente mágico y sofisticado.',
+        'opcion 5' => 'Desfile sobre pasarela moderna. Modelos caminan seguras mostrando ropa elegante. Público observa, luces y flashes crean un entorno profesional.',
+        'opcion 6' => 'Modelo gira lentamente en un set minimalista con fondo blanco, mostrando su ropa desde todos los ángulos. Luz suave y limpia resalta texturas y siluetas.',
+        'opcion 7' => 'Una modelo desfila al aire libre sobre una plataforma rodeada de vegetación tropical, con iluminación natural dorada y una brisa suave moviendo la ropa.'
     ];
 
     private array $negativePrompts = [
-        'opcion 1' => 'Sin artefactos visuales, sin deformaciones corporales, sin desenfoque por movimiento, sin doble exposición, evitar calidad baja, sin duplicación de extremidades, sin píxeles visibles, sin apariencia estática o congelada, sin rostro mal definido, evitar estilo anime o caricaturesco.',
-        'opcion 2' => 'Sin alas deformes ni poco detalladas, evitar imágenes borrosas, sin distorsión de manos, sin múltiples extremidades, sin dientes mal formados, sin textura pixelada, sin estilo de dibujos animados o anime, sin congelamiento de cuadros, sin saturación excesiva ni iluminación exagerada.',
-        'opcion 3' => 'Sin calidad baja o granulada, evitar desenfoque, sin proporciones extrañas en el cuerpo, sin deformaciones de la cara, evitar superposición errática, sin elementos pixelados, sin movimiento errático ni difuso, sin ambiente opaco o estático, sin estilo anime, sin errores de morfología.',
-        'opcion 4' => 'Sin borrosidad, evitar distorsión de rostros o vestidos, sin imágenes de baja resolución, sin manos o piernas deformadas, sin falta de enfoque, sin estilo de caricatura, sin parpadeos, evitar duplicación de modelos, sin errores de renderizado o desenfoque artificial.',
-        'opcion 5' => 'Sin desenfoque de movimiento, sin deformidades en las modelos, evitar distorsión de la pasarela, sin estilo anime o cartoon, sin ruido visual, sin baja calidad, evitar imágenes congeladas, sin errores de luz ni sombra, sin expresiones irreales o proporciones inhumanas.',
-        'opcion 6' => 'Artefactos, Deformado, Baja calidad, Múltiples apéndices, Granulado, Dientes deformados, Tres piernas, Manos deformadas Borroso, Distorsionado, Pixelado, Similar a anime, Caricaturesco, Estático, Plano, Desenfocado, Poco claro, Sobresaturado, Borroso, Neblinoso, Deformado, Fijo, Morphing, Propenso a errores, Lento, Baja resolución, Sin refinar, Indefinido, Congelado, Movimiento rápido Desenfoque, desfiguración, desenfoque, mala cara'
+        'opcion 1' => 'artefactos, deformaciones, desenfoque por movimiento, doble exposición, calidad baja, duplicación de extremidades, píxeles visibles, imagen congelada, rostro borroso, estilo anime, caricaturesco',
 
+        'opcion 2' => 'alas deformadas, imagen borrosa, manos distorsionadas, extremidades múltiples, dientes malformados, textura pixelada, estilo animado, cuadros congelados, sobresaturación, iluminación exagerada',
+
+        'opcion 3' => 'baja calidad, imagen granulada, desenfoque, proporciones extrañas, cara deformada, superposición, elementos pixelados, movimiento errático, fondo estático, estilo anime, errores morfológicos',
+
+        'opcion 4' => 'imagen borrosa, distorsión facial, baja resolución, extremidades deformadas, falta de enfoque, estilo de caricatura, parpadeo, duplicación de modelos, errores de renderizado, desenfoque artificial',
+
+        'opcion 5' => 'desenfoque por movimiento, deformidades físicas, distorsión del entorno, estilo anime, estilo cartoon, ruido visual, calidad baja, imagen congelada, errores de luz, proporciones irreales',
+
+        'opcion 6' => 'artefactos, deformado, baja calidad, múltiples apéndices, imagen granulada, dientes malformados, extremidades adicionales, manos deformadas, borroso, distorsionado, pixelado, estilo anime, caricaturesco, imagen estática, plano, desenfocado, sin detalle, sobresaturado, congelado, desenfoque rápido, sin definición, sin refinar'
     ];
 
     private function formatPrompts(array $source): array {

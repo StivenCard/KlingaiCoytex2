@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Storage;
 use Intervention\Image\Facades\Image;
 use Intervention\Image\Image as InterventionImage;
 use Illuminate\Support\Facades\Log;
+use ProtoneMedia\LaravelFFMpeg\Support\FFMpeg;
 
 class ImageProcessingService
 {
@@ -237,12 +238,65 @@ class ImageProcessingService
             $filename = $prefix . uniqid() . '.mp4';
             $fullPath = $path . '/' . $filename;
 
-            // Usar el disco público para almacenar el video
+            // Guarda el video temporalmente (sin marca de agua)
             Storage::disk('public')->put($fullPath, $response->body());
 
-            return $fullPath;
+            // Aplica marca de agua y guarda resultado
+            $watermarkedFileName = $prefix . 'wm_' . uniqid() . '.mp4';
+            $watermarkedFullPath = $path . '/' . $watermarkedFileName;
+
+            $this->addWatermarkToVideo(
+                storage_path('app/public/' . $fullPath),
+                storage_path('app/public/' . $watermarkedFullPath)
+            );
+
+            // Borra el original temporal
+            Storage::disk('public')->delete($fullPath);
+
+            return $watermarkedFullPath;
         } catch (\Exception $e) {
-            throw new \Exception('Error al descargar video: ' . $e->getMessage());
+            throw new \Exception('Error al descargar o marcar video: ' . $e->getMessage());
         }
+    }
+
+
+        /**
+     * Agrega una marca de agua (logo + texto) a un video usando pbmedia/laravel-ffmpeg.
+     *
+     * @param string $inputVideoPath Ruta absoluta al video de entrada.
+     * @param string $outputVideoPath Ruta absoluta para guardar el video de salida.
+     */
+    public function addWatermarkToVideo(string $inputVideoPath, string $outputVideoPath): void
+    {
+        $logoPath = public_path('images/logo_sio.png');
+        $fontPath = public_path('fonts/Verdana.ttf');
+        $text = 'Generado por';
+
+        // Carga información del video para obtener dimensiones
+        $media = FFMpeg::fromDisk('public')->open(str_replace(storage_path('app/public/'), '', $inputVideoPath));
+        $videoStream = $media->getFFProbe()->streams($inputVideoPath)->videos()->first();
+        $width = $videoStream->get('width');
+        $height = $videoStream->get('height');
+
+        // Escala logo al 20% del ancho del video
+        $logoWidth = intval($width * 0.20);
+
+        // Filtro para overlay y drawtext
+        // El logo se posiciona en la esquina inferior derecha con margen 25px,
+        // el texto centrado arriba del logo con margen de 10px
+        $filter = "[1:v]scale={$logoWidth}:-1[wm];" .
+                  "[0:v][wm]overlay=W-w-25:H-h-25:format=auto[bg];" .
+                  "[bg]drawtext=fontfile={$fontPath}:text='{$text}':fontsize=32:" .
+                  "fontcolor=white:borderw=2:bordercolor=black:" .
+                  "x=W-w-25+(w/2)-(text_w/2):y=H-h-25-10";
+
+        FFMpeg::fromDisk('public')
+            ->open(str_replace(storage_path('app/public/'), '', $inputVideoPath))
+            ->addFilter(function ($filters) use ($filter, $logoPath) {
+                $filters->custom(" -i " . escapeshellarg($logoPath) . " -filter_complex \"$filter\" ");
+            })
+            ->export()
+            ->toDisk('public')
+            ->save(str_replace(storage_path('app/public/'), '', $outputVideoPath));
     }
 }
