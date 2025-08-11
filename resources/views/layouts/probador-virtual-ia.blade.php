@@ -526,6 +526,93 @@
             outline: none;
             box-shadow: none;
         }
+
+        /* Admin */
+        .probador-virtual-container .admin-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .probador-virtual-container .stat-card {
+            background: var(--bg-2);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1.5rem;
+            transition: all 0.3s;
+        }
+
+        .probador-virtual-container .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-medium);
+        }
+
+        .probador-virtual-container .stat-title {
+            font-size: 0.875rem;
+            color: var(--txt-2);
+            margin-bottom: 0.5rem;
+        }
+
+        .probador-virtual-container .stat-value {
+            font-size: 2rem;
+            font-weight: 600;
+            color: var(--txt-1);
+        }
+
+        .probador-virtual-container .admin-table {
+            background: var(--bg-2);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .probador-virtual-container .admin-table th {
+            background: var(--bg-3);
+            color: var(--txt-1);
+            font-weight: 600;
+            padding: 1rem;
+            border-bottom: 2px solid var(--border);
+        }
+
+        .probador-virtual-container .admin-table td {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border);
+            color: var(--txt-2);
+        }
+
+        .probador-virtual-container .admin-table tr:hover {
+            background: var(--bg-3);
+        }
+
+        .probador-virtual-container .delete-btn {
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            transition: all 0.3s;
+        }
+
+        .probador-virtual-container .delete-btn:hover {
+            background: #dc2626;
+            transform: scale(1.05);
+        }
+
+        .probador-virtual-container .delete-all-btn {
+            background: #dc2626;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .probador-virtual-container .delete-all-btn:hover {
+            background: #b91c1c;
+            transform: scale(1.05);
+        }
+
     </style>
 </head>
 <body>
@@ -550,6 +637,12 @@
                             {{-- @can("plm.diseno.probador-virtual-ia.image-to-video") --}}
                             <a class="nav-link {{ request()->routeIs('image-to-video') ? 'active' : '' }}" href="{{ route('image-to-video') }}">
                                 <i class="fas fa-video"></i> Imagen a Video
+                            </a>
+                            {{-- @endcan --}}
+                            <!-- Nuevo enlace para el panel de administración -->
+                            {{-- @can("plm.diseno.probador-virtual-ia.admin") --}}
+                            <a class="nav-link {{ request()->routeIs('admin.generations') ? 'active' : '' }}" href="{{ route('admin.generations') }}">
+                                <i class="fas fa-cog"></i> Admin
                             </a>
                             {{-- @endcan --}}
                         </div>

@@ -130,11 +130,14 @@ class ImageProcessingService
         }
 
         $image = Image::make($file->getRealPath());
-        $min = min($image->width(), $image->height());
-        $max = max($image->width(), $image->height());
+        $width = $image->width();
+        $height = $image->height();
 
-        if ($min < 300 || $max > 4096) {
-            throw new \Exception('Resolución no permitida. Mínimo 300px, máximo 4096px.');
+        $short = min($width, $height);
+        $long = max($width, $height);
+
+        if ($short < 300 || $long > 4096) {
+            throw new \Exception('Resolución no permitida. El lado corto debe ser al menos 300px y el lado largo como máximo 4096px.');
         }
     }
 
@@ -176,37 +179,42 @@ class ImageProcessingService
     /**
      * Aplica logo de marca de agua con configuración fija.
      */
-    private function addHighQualityLogo($image): InterventionImage
+    private function addHighQualityLogo(InterventionImage $image): InterventionImage
     {
         $logoPath = public_path('images/logo_sio.png');
 
         try {
             $logo = Image::make($logoPath);
 
-            $sizeFactor = 0.2;
-            $logoWidth = max(150, $image->width() * $sizeFactor);
+            $imgW = $image->width();
+            $imgH = $image->height();
 
+            // 20% del ancho, pero nunca menos de 60px y nunca más del 25% del alto
+            $logoWidth = max(60, min($imgW * 0.20, $imgH * 0.25));
             $logo->resize($logoWidth, null, function ($constraint) {
                 $constraint->aspectRatio();
                 $constraint->upsize();
             });
 
-            $margin = 25;
+            // Márgenes: proporcionales, pero con mínimo
+            $margin = max(15, round($imgW * 0.025));
 
-            $logoX = $image->width() - $logo->width() - $margin;
-            $logoY = $image->height() - $logo->height() - $margin;
+            // Posición logo
+            $logoX = $imgW - $logo->width() - $margin;
+            $logoY = $imgH - $logo->height() - $margin;
 
             $image->insert($logo, 'bottom-right', $margin, $margin);
 
-            $fontSize = min($logo->width() * 0.08, 32);
+            // Texto adaptativo: entre 14 y 38px, centrado arriba del logo
+            $fontSize = max(14, min($logo->width() * 0.12, 38));
             $text = 'Generado por';
             $textX = $logoX + ($logo->width() / 2);
-            $textY = $logoY - 1;
+            $textY = $logoY - max(8, $fontSize / 3);
 
             $image->text($text, $textX, $textY, function ($font) use ($fontSize) {
                 $font->file(public_path('fonts/Verdana.ttf'));
                 $font->size($fontSize);
-                $font->color('#000000');
+                $font->color([0, 0, 0, 0.68]); // negro semi-transparente
                 $font->align('center');
                 $font->valign('bottom');
             });
@@ -238,65 +246,16 @@ class ImageProcessingService
             $filename = $prefix . uniqid() . '.mp4';
             $fullPath = $path . '/' . $filename;
 
-            // Guarda el video temporalmente (sin marca de agua)
+            // Usar el disco público para almacenar el video
             Storage::disk('public')->put($fullPath, $response->body());
 
-            // Aplica marca de agua y guarda resultado
-            $watermarkedFileName = $prefix . 'wm_' . uniqid() . '.mp4';
-            $watermarkedFullPath = $path . '/' . $watermarkedFileName;
-
-            $this->addWatermarkToVideo(
-                storage_path('app/public/' . $fullPath),
-                storage_path('app/public/' . $watermarkedFullPath)
-            );
-
-            // Borra el original temporal
-            Storage::disk('public')->delete($fullPath);
-
-            return $watermarkedFullPath;
+            return $fullPath;
         } catch (\Exception $e) {
-            throw new \Exception('Error al descargar o marcar video: ' . $e->getMessage());
+            throw new \Exception('Error al descargar video: ' . $e->getMessage());
         }
     }
-
-
-        /**
-     * Agrega una marca de agua (logo + texto) a un video usando pbmedia/laravel-ffmpeg.
-     *
-     * @param string $inputVideoPath Ruta absoluta al video de entrada.
-     * @param string $outputVideoPath Ruta absoluta para guardar el video de salida.
-     */
-    public function addWatermarkToVideo(string $inputVideoPath, string $outputVideoPath): void
-    {
-        $logoPath = public_path('images/logo_sio.png');
-        $fontPath = public_path('fonts/Verdana.ttf');
-        $text = 'Generado por';
-
-        // Carga información del video para obtener dimensiones
-        $media = FFMpeg::fromDisk('public')->open(str_replace(storage_path('app/public/'), '', $inputVideoPath));
-        $videoStream = $media->getFFProbe()->streams($inputVideoPath)->videos()->first();
-        $width = $videoStream->get('width');
-        $height = $videoStream->get('height');
-
-        // Escala logo al 20% del ancho del video
-        $logoWidth = intval($width * 0.20);
-
-        // Filtro para overlay y drawtext
-        // El logo se posiciona en la esquina inferior derecha con margen 25px,
-        // el texto centrado arriba del logo con margen de 10px
-        $filter = "[1:v]scale={$logoWidth}:-1[wm];" .
-                  "[0:v][wm]overlay=W-w-25:H-h-25:format=auto[bg];" .
-                  "[bg]drawtext=fontfile={$fontPath}:text='{$text}':fontsize=32:" .
-                  "fontcolor=white:borderw=2:bordercolor=black:" .
-                  "x=W-w-25+(w/2)-(text_w/2):y=H-h-25-10";
-
-        FFMpeg::fromDisk('public')
-            ->open(str_replace(storage_path('app/public/'), '', $inputVideoPath))
-            ->addFilter(function ($filters) use ($filter, $logoPath) {
-                $filters->custom(" -i " . escapeshellarg($logoPath) . " -filter_complex \"$filter\" ");
-            })
-            ->export()
-            ->toDisk('public')
-            ->save(str_replace(storage_path('app/public/'), '', $outputVideoPath));
-    }
 }
+
+
+
+

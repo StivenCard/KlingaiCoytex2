@@ -5,6 +5,7 @@ use App\Services\KlingAi\KlingApiService;
 use App\Http\Controllers\ImageToVideoController;
 use App\Http\Controllers\VirtualModelController;
 use App\Http\Controllers\VirtualTryOnController;
+use App\Http\Controllers\AdminGenerationsController;
 
 Route::get('/', function () {
     return redirect()->route('virtual-try-on');
@@ -24,4 +25,11 @@ Route::get('/virtual-model/status/{taskId}', [VirtualModelController::class, 'ta
 Route::get('/image-to-video', [ImageToVideoController::class, 'show'])->name('image-to-video');
 Route::post('/image-to-video/generate', [ImageToVideoController::class, 'generate'])->name('image-to-video.generate');
 Route::get('/image-to-video/status/{taskId}', [ImageToVideoController::class, 'taskStatus'])->name('image-to-video.status');
+
+// RUTAS DE ADMINISTRACIÓN
+Route::prefix('admin')->group(function () {
+    Route::get('/generations', [AdminGenerationsController::class, 'index'])->name('admin.generations');
+    Route::delete('/generations/{type}/{id}', [AdminGenerationsController::class, 'deleteGeneration'])->name('admin.generations.delete');
+    Route::delete('/generations/all', [AdminGenerationsController::class, 'deleteAllGenerations'])->name('admin.generations.delete.all');
+});
 
