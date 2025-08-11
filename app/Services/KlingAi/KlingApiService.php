@@ -174,6 +174,42 @@ class KlingApiService
     }
 
     /**
+     * Consulta el consumo de recursos y tokens de la API
+     *
+     * @param int|null $startTime Tiempo inicial en timestamp (ms)
+     * @param int|null $endTime Tiempo final en timestamp (ms)
+     * @param string|null $resourcePackName Nombre del paquete específico (opcional)
+     * @return array
+     */
+    public function getApiConsumption($startTime = null, $endTime = null, $resourcePackName = null)
+    {
+        // Si no se especifica, consulta último mes
+        $startTime = $startTime ?? (time() - (30 * 24 * 60 * 60)) * 1000;
+        $endTime = $endTime ?? time() * 1000;
+
+        try {
+            return Cache::remember("api_consumption_{$startTime}_{$endTime}", 3600, function () use ($startTime, $endTime, $resourcePackName) {
+                $response = Http::withHeaders($this->getHeaders())
+                    ->timeout(30)
+                    ->retry(2, 1000)
+                    ->get($this->baseUrl . '/account/costs', [
+                        'start_time' => $startTime,
+                        'end_time' => $endTime,
+                        'resource_pack_name' => $resourcePackName
+                    ]);
+
+                if ($response->failed()) {
+                    throw new Exception("API Error: {$response->status()} - " . ($response->json()['message'] ?? 'Unknown error'));
+                }
+
+                return $response->json();
+            });
+        } catch (Exception $e) {
+            throw new Exception("Error consultando consumo de API: " . $e->getMessage());
+        }
+    }
+
+    /**
      * Crea una tarea de generación de imagen (modelo virtual).
      *
      * @param array $data Payload con modelo_name, prompt, etc.
