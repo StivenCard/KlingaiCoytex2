@@ -33,6 +33,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('kling_user_log');
+        Schema::dropIfExists('kling_user_logs');
     }
 };
