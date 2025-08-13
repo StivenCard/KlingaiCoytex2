@@ -13,7 +13,7 @@ use App\Services\KlingAi\KlingApiService;
 
 class AdminGenerationsController extends Controller
 {
-     private $klingService;
+    private $klingService;
 
     public function __construct(KlingApiService $klingService)
     {
@@ -22,140 +22,116 @@ class AdminGenerationsController extends Controller
 
     public function index(Request $request)
     {
-        // Obtener el consumo de la API
+        // 1. Obtener datos de consumo de API
         try {
             $apiConsumption = $this->klingService->getApiConsumption();
-            $resourcePacks = $apiConsumption['data']['resource_pack_subscribe_infos'] ?? [];
+            $resourcePacks = $this->processApiConsumption($apiConsumption['data']['resource_pack_subscribe_infos'] ?? []);
         } catch (\Exception $e) {
-            $resourcePacks = [];
             Log::error("Error obteniendo consumo de API: " . $e->getMessage());
+            $resourcePacks = [];
         }
 
-        // Código existente para obtener generaciones...
-        $userId = $request->input('user_id');
-        if ($userId && !is_numeric($userId)) {
-            return redirect()->back()->withErrors(['user_id' => 'El ID de usuario debe ser un número válido']);
-        }
+        // 2. Procesar parámetros de filtrado
+        $filters = $this->processFilters($request);
 
+        // 3. Obtener datos para cada tabla independientemente
+        $data = [
+            'videos' => $this->getVideoData($filters['video_user_id'] ?? null),
+            'tryons' => $this->getTryOnData($filters['tryon_user_id'] ?? null),
+            'models' => $this->getModelData($filters['model_user_id'] ?? null),
+        ];
+
+        // 4. Calcular totales generales (solo si no hay filtros específicos)
         $totals = [
-            'videos' => ImageToVideo::when($userId, fn($q) => $q->where('user_id', $userId))
-                ->where('status', 'completed')
-                ->count(),
-            'tryons' => VirtualTryOn::when($userId, fn($q) => $q->where('user_id', $userId))
-                ->where('status', 'completed')
-                ->count(),
-            'models' => VirtualModel::when($userId, fn($q) => $q->where('user_id', $userId))
-                ->where('status', 'completed')
-                ->count(),
+            'videos' => $data['videos']['count'],
+            'tryons' => $data['tryons']['count'],
+            'models' => $data['models']['count'],
         ];
 
-        $generations = [
-            'videos' => ImageToVideo::when($userId, fn($q) => $q->where('user_id', $userId))
-                ->where('status', '!=', 'failed')
-                ->latest()
-                ->get(),
-            'tryons' => VirtualTryOn::when($userId, fn($q) => $q->where('user_id', $userId))
-                ->where('status', '!=', 'failed')
-                ->latest()
-                ->get(),
-            'models' => VirtualModel::when($userId, fn($q) => $q->where('user_id', $userId))
-                ->where('status', '!=', 'failed')
-                ->latest()
-                ->get(),
-        ];
+        return view('admin.generations', compact('data', 'totals', 'resourcePacks', 'filters'));
+    }
 
-        return view('admin.generations', compact('totals', 'generations', 'userId', 'resourcePacks'));
+    private function processApiConsumption(array $packs): array
+    {
+        foreach ($packs as &$pack) {
+            $pack['used_quantity'] = $pack['total_quantity'] - $pack['remaining_quantity'];
+            $pack['percentage_used'] = $pack['total_quantity'] > 0
+                ? ($pack['used_quantity'] / $pack['total_quantity']) * 100
+                : 0;
+
+            $now = new \DateTime();
+            $purchaseDate = new \DateTime('@' . ($pack['purchase_time']/1000));
+            $daysActive = $purchaseDate->diff($now)->days ?: 1;
+
+            $pack['daily_usage'] = $pack['used_quantity'] / $daysActive;
+            $pack['formatted_dates'] = [
+                'purchase' => $purchaseDate->format('d/m/Y H:i:s'),
+                'effective'  => date('d/m/Y H:i:s', $pack['effective_time'] / 1000),
+                'expiration' => date('d/m/Y H:i:s', $pack['invalid_time'] / 1000),
+            ];
+        }
+
+        return $packs;
+    }
+
+    private function processFilters(Request $request): array
+    {
+        return [
+            'video_user_id' => $request->input('video_user_id'),
+            'tryon_user_id' => $request->input('tryon_user_id'),
+            'model_user_id' => $request->input('model_user_id'),
+        ];
+    }
+
+    private function getVideoData(?int $userId = null): array
+    {
+        $query = ImageToVideo::query()
+            ->when($userId, fn($q) => $q->where('user_id', $userId));
+
+        return [
+            'items' => $query->where('status', '!=', 'failed')->latest()->get(),
+            'count' => $query->where('status', 'completed')->count(),
+        ];
+    }
+
+    private function getTryOnData(?int $userId = null): array
+    {
+        $query = VirtualTryOn::query()
+            ->when($userId, fn($q) => $q->where('user_id', $userId));
+
+        return [
+            'items' => $query->where('status', '!=', 'failed')->latest()->get(),
+            'count' => $query->where('status', 'completed')->count(),
+        ];
+    }
+
+    private function getModelData(?int $userId = null): array
+    {
+        $query = VirtualModel::query()
+            ->when($userId, fn($q) => $q->where('user_id', $userId));
+
+        return [
+            'items' => $query->where('status', '!=', 'failed')->latest()->get(),
+            'count' => $query->where('status', 'completed')->count(),
+        ];
     }
 
     public function deleteGeneration(Request $request, $type, $id)
     {
         try {
-            // Obtener user_id del request para validación adicional si es necesario
-            $userId = $request->input('user_id');
-
-            Log::info("Iniciando eliminación de generación", [
-                'type' => $type,
-                'id' => $id,
-                'user_id' => $userId
-            ]);
-
             DB::beginTransaction();
 
-            switch ($type) {
-                case 'video':
-                    $item = ImageToVideo::findOrFail($id);
+            $item = $this->findGenerationItem($type, $id);
 
-                    // Validación opcional: verificar que pertenece al usuario
-                    if ($userId && $item->user_id != $userId) {
-                        throw new \Exception('No tienes permisos para eliminar esta generación');
-                    }
-
-                    // Eliminar videos resultantes
-                    if (!empty($item->result_video_paths)) {
-                        foreach ($item->result_video_paths as $path) {
-                            $this->deleteFile($path);
-                        }
-                    }
-
-                    // Eliminar imágenes de entrada
-                    if (!empty($item->input_image_paths)) {
-                        foreach ($item->input_image_paths as $path) {
-                            $this->deleteFile($path);
-                        }
-                    }
-
-                    $item->delete();
-                    break;
-
-                case 'tryon':
-                    $item = VirtualTryOn::findOrFail($id);
-
-                    // Validación opcional: verificar que pertenece al usuario
-                    if ($userId && $item->user_id != $userId) {
-                        throw new \Exception('No tienes permisos para eliminar esta generación');
-                    }
-
-                    // Eliminar imágenes resultantes
-                    if (!empty($item->result_image_paths)) {
-                        foreach ($item->result_image_paths as $path) {
-                            $this->deleteFile($path);
-                        }
-                    }
-
-                    // Eliminar imagen humana
-                    if ($item->human_image_path) {
-                        $this->deleteFile($item->human_image_path);
-                    }
-
-                    // Eliminar imagen de ropa
-                    if ($item->cloth_image_path) {
-                        $this->deleteFile($item->cloth_image_path);
-                    }
-
-                    $item->delete();
-                    break;
-
-                case 'model':
-                    $item = VirtualModel::findOrFail($id);
-
-                    // Validación opcional: verificar que pertenece al usuario
-                    if ($userId && $item->user_id != $userId) {
-                        throw new \Exception('No tienes permisos para eliminar esta generación');
-                    }
-
-                    // Eliminar imágenes resultantes
-                    if (!empty($item->result_image_paths)) {
-                        foreach ($item->result_image_paths as $path) {
-                            $this->deleteFile($path);
-                        }
-                    }
-
-                    $item->delete();
-                    break;
-
-                default:
-                    throw new \Exception('Tipo de generación no válido');
+            // Verificar permisos si hay filtro de usuario
+            if ($request->has('user_id') && $item->user_id != $request->user_id) {
+                throw new \Exception('No tienes permisos para eliminar esta generación');
             }
+
+            // Eliminar archivos asociados
+            $this->deleteGenerationFiles($item, $type);
+
+            $item->delete();
 
             DB::commit();
 
@@ -169,7 +145,6 @@ class AdminGenerationsController extends Controller
             Log::error("Error al eliminar generación: " . $e->getMessage(), [
                 'type' => $type,
                 'id' => $id,
-                'user_id' => $userId,
                 'error' => $e->getMessage()
             ]);
 
@@ -180,115 +155,87 @@ class AdminGenerationsController extends Controller
         }
     }
 
+    private function findGenerationItem(string $type, int $id)
+    {
+        return match($type) {
+            'video' => ImageToVideo::findOrFail($id),
+            'tryon' => VirtualTryOn::findOrFail($id),
+            'model' => VirtualModel::findOrFail($id),
+            default => throw new \Exception('Tipo de generación no válido'),
+        };
+    }
+
+    private function deleteGenerationFiles($item, string $type): void
+    {
+        switch ($type) {
+            case 'video':
+                $this->deleteVideoPaths($item);
+                break;
+            case 'tryon':
+                $this->deleteTryOnPaths($item);
+                break;
+            case 'model':
+                $this->deleteModelPaths($item);
+                break;
+        }
+    }
+
+    private function deleteVideoPaths($item): void
+    {
+        if (!empty($item->result_video_paths)) {
+            foreach ($item->result_video_paths as $path) {
+                $this->deleteFile($path);
+            }
+        }
+        if (!empty($item->input_image_paths)) {
+            foreach ($item->input_image_paths as $path) {
+                $this->deleteFile($path);
+            }
+        }
+    }
+
+    private function deleteTryOnPaths($item): void
+    {
+        if (!empty($item->result_image_paths)) {
+            foreach ($item->result_image_paths as $path) {
+                $this->deleteFile($path);
+            }
+        }
+        if ($item->human_image_path) {
+            $this->deleteFile($item->human_image_path);
+        }
+        if ($item->cloth_image_path) {
+            $this->deleteFile($item->cloth_image_path);
+        }
+    }
+
+    private function deleteModelPaths($item): void
+    {
+        if (!empty($item->result_image_paths)) {
+            foreach ($item->result_image_paths as $path) {
+                $this->deleteFile($path);
+            }
+        }
+    }
+
     public function deleteAllGenerations(Request $request)
     {
         try {
-            // Obtener user_id del request (opcional)
-            $userId = $request->input('user_id');
-
-            Log::info("Iniciando eliminación masiva de generaciones", ['user_id' => $userId]);
-
             DB::beginTransaction();
 
-            if ($userId) {
-                // Eliminar solo las generaciones del usuario específico
-                $videos = ImageToVideo::where('user_id', $userId)->get();
-                $tryons = VirtualTryOn::where('user_id', $userId)->get();
-                $models = VirtualModel::where('user_id', $userId)->get();
+            $type = $request->input('type');
+            $userId = $request->input('user_id');
 
-                // Eliminar archivos y registros de ImageToVideo del usuario específico
-                foreach ($videos as $video) {
-                    if (!empty($video->result_video_paths)) {
-                        foreach ($video->result_video_paths as $path) {
-                            $this->deleteFile($path);
-                        }
-                    }
-                    if (!empty($video->input_image_paths)) {
-                        foreach ($video->input_image_paths as $path) {
-                            $this->deleteFile($path);
-                        }
-                    }
-                }
-                ImageToVideo::where('user_id', $userId)->delete();
-
-                // Eliminar archivos y registros de VirtualTryOn del usuario específico
-                foreach ($tryons as $tryon) {
-                    if (!empty($tryon->result_image_paths)) {
-                        foreach ($tryon->result_image_paths as $path) {
-                            $this->deleteFile($path);
-                        }
-                    }
-                    if ($tryon->human_image_path) {
-                        $this->deleteFile($tryon->human_image_path);
-                    }
-                    if ($tryon->cloth_image_path) {
-                        $this->deleteFile($tryon->cloth_image_path);
-                    }
-                }
-                VirtualTryOn::where('user_id', $userId)->delete();
-
-                // Eliminar archivos y registros de VirtualModel del usuario específico
-                foreach ($models as $model) {
-                    if (!empty($model->result_image_paths)) {
-                        foreach ($model->result_image_paths as $path) {
-                            $this->deleteFile($path);
-                        }
-                    }
-                }
-                VirtualModel::where('user_id', $userId)->delete();
-
-                $message = "Todas las generaciones del usuario {$userId} han sido eliminadas";
-
+            if ($type) {
+                // Eliminar solo un tipo específico de generaciones
+                $this->deleteGenerationsByType($type, $userId);
+                $message = "Todas las generaciones de tipo $type han sido eliminadas";
             } else {
-                // Eliminar TODAS las generaciones de todos los usuarios
-                $videos = ImageToVideo::all();
-                $tryons = VirtualTryOn::all();
-                $models = VirtualModel::all();
-
-                // Eliminar todos los archivos de ImageToVideo
-                foreach ($videos as $video) {
-                    if (!empty($video->result_video_paths)) {
-                        foreach ($video->result_video_paths as $path) {
-                            $this->deleteFile($path);
-                        }
-                    }
-                    if (!empty($video->input_image_paths)) {
-                        foreach ($video->input_image_paths as $path) {
-                            $this->deleteFile($path);
-                        }
-                    }
-                }
-
-                // Eliminar todos los archivos de VirtualTryOn
-                foreach ($tryons as $tryon) {
-                    if (!empty($tryon->result_image_paths)) {
-                        foreach ($tryon->result_image_paths as $path) {
-                            $this->deleteFile($path);
-                        }
-                    }
-                    if ($tryon->human_image_path) {
-                        $this->deleteFile($tryon->human_image_path);
-                    }
-                    if ($tryon->cloth_image_path) {
-                        $this->deleteFile($tryon->cloth_image_path);
-                    }
-                }
-
-                // Eliminar todos los archivos de VirtualModel
-                foreach ($models as $model) {
-                    if (!empty($model->result_image_paths)) {
-                        foreach ($model->result_image_paths as $path) {
-                            $this->deleteFile($path);
-                        }
-                    }
-                }
-
-                // Eliminar registros de la base de datos
-                ImageToVideo::truncate();
-                VirtualTryOn::truncate();
-                VirtualModel::truncate();
-
-                $message = 'Todas las generaciones han sido eliminadas';
+                // Eliminar todos los tipos
+                $this->deleteAllTypes($userId);
+                $message = $userId
+                    ? "Todas las generaciones del usuario $userId han sido eliminadas"
+                    : 'Todas las generaciones han sido eliminadas';
             }
 
             DB::commit();
@@ -301,6 +248,7 @@ class AdminGenerationsController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Error al eliminar generaciones: ' . $e->getMessage(), [
+                'type' => $type ?? 'all',
                 'user_id' => $userId
             ]);
 
@@ -311,6 +259,39 @@ class AdminGenerationsController extends Controller
         }
     }
 
+    private function deleteGenerationsByType(string $type, ?int $userId = null): void
+    {
+        $query = match($type) {
+            'video' => ImageToVideo::query(),
+            'tryon' => VirtualTryOn::query(),
+            'model' => VirtualModel::query(),
+            default => throw new \Exception('Tipo de generación no válido'),
+        };
+
+        if ($userId) {
+            $query->where('user_id', $userId);
+        }
+
+        $items = $query->get();
+        foreach ($items as $item) {
+            $this->deleteGenerationFiles($item, $type);
+        }
+
+        $query->delete();
+    }
+
+    private function deleteAllTypes(?int $userId = null): void
+    {
+        // Eliminar videos
+        $this->deleteGenerationsByType('video', $userId);
+
+        // Eliminar try-ons
+        $this->deleteGenerationsByType('tryon', $userId);
+
+        // Eliminar modelos
+        $this->deleteGenerationsByType('model', $userId);
+    }
+
     private function deleteFile($path)
     {
         if (empty($path)) {
@@ -318,7 +299,6 @@ class AdminGenerationsController extends Controller
         }
 
         try {
-            // Eliminar cualquier 'storage/' del inicio del path si existe
             $path = preg_replace('/^storage\//', '', $path);
 
             if (Storage::disk('public')->exists($path)) {
