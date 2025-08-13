@@ -233,6 +233,9 @@
                                 <tr>
                                     <th>Usuario</th>
                                     <th>Modelo</th>
+                                    <th style="min-width: 25rem">Prompt</th>
+                                    <th>Prompt Negativo</th>
+                                    <th>Relacion de Aspecto</th>
                                     <th>Modo</th>
                                     <th>Duración</th>
                                     <th>Estado</th>
@@ -248,6 +251,13 @@
                                             <span class="badge badge-secondary">{{ $video->user_id }}</span>
                                         </td>
                                         <td>{{ $video->model_name }}</td>
+                                        <td>{{ $video->prompt }}</td>
+                                        @if ($video->negative_prompt == null)
+                                            <td>No definido</td>
+                                        @else
+                                            <td>{{ $video->negative_prompt }}</td>
+                                        @endif
+                                        <td>{{ $video->aspect_ratio }}</td>
                                         <td>
                                             <span class="badge badge-info">{{ $video->mode }}</span>
                                         </td>
@@ -325,6 +335,8 @@
                                 <tr>
                                     <th>Usuario</th>
                                     <th>Modelo</th>
+                                    <th>Tipo de Modelo</th>
+                                    <th>Tipo de Prenda</th>
                                     <th>Estado</th>
                                     <th>Fecha</th>
                                     <th>Imágenes</th>
@@ -338,6 +350,8 @@
                                             <span class="badge badge-secondary">{{ $tryon->user_id }}</span>
                                         </td>
                                         <td>{{ $tryon->model_name }}</td>
+                                        <td>{{$tryon->model_type}}</td>
+                                        <td>{{$tryon->garments_type}}</td>
                                         <td>
                                             <span class="badge badge-{{ $tryon->status == 'completed' ? 'success' : 'warning' }}">
                                                 {{ $tryon->status }}

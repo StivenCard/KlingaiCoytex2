@@ -45,4 +45,26 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
+    //Conexiones
+    public function imageToVideos()
+    {
+        return $this->hasMany(ImageToVideo::class);
+    }
+
+    public function virtualModels()
+    {
+        return $this->hasMany(VirtualModel::class);
+    }
+
+    public function virtualTryOns()
+    {
+        return $this->hasMany(VirtualTryOn::class);
+    }
+
+    public function logs()
+    {
+        return $this->hasMany(KlingUserLog::class);
+    }
+
 }

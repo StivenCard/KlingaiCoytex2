@@ -12,6 +12,7 @@ class VirtualTryOn extends Model
 
     protected $fillable = [
         'task_id',             // ID de la tarea en la API de Kling
+        'user_id',
         'model_name',          // Nombre del modelo usado (v1, v1.5, etc.)
         'model_type',          // 'default' o 'virtual' (tipo de modelo)
         'human_image_path',    // Ruta de la imagen humana usada
@@ -34,6 +35,17 @@ class VirtualTryOn extends Model
             ->all();
     }
 
-    
+    public function logs(){
+        return $this->hasMany(KlingUserLog::class);
+    }
+
+    protected static function booted()
+    {
+        static::deleting(function ($img) {
+            foreach ((array) $img->result_image_paths as $path) {
+                Storage::disk('public')->delete(preg_replace('/^storage\//', '', $path));
+            }
+        });
+    }
 }
 
