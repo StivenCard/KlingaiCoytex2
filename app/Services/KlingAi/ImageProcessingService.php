@@ -9,7 +9,6 @@ use Illuminate\Support\Facades\Storage;
 use Intervention\Image\Facades\Image;
 use Intervention\Image\Image as InterventionImage;
 use Illuminate\Support\Facades\Log;
-use ProtoneMedia\LaravelFFMpeg\Support\FFMpeg;
 
 class ImageProcessingService
 {
@@ -19,6 +18,7 @@ class ImageProcessingService
     public function convertToBase64(UploadedFile $file): string
     {
         $this->validateImage($file);
+
         return base64_encode(Image::make($file->getRealPath())->encode('png'));
     }
 
@@ -37,8 +37,8 @@ class ImageProcessingService
     {
         $this->validateImage($file);
 
-        $filename = $prefix . uniqid() . '.' . $file->getClientOriginalExtension();
-        $path = $directory . '/' . $filename;
+        $filename = $prefix.uniqid().'.'.$file->getClientOriginalExtension();
+        $path = $directory.'/'.$filename;
 
         Storage::disk('public')->putFileAs($directory, $file, $filename);
 
@@ -51,8 +51,8 @@ class ImageProcessingService
     public function saveCombinedImage(UploadedFile $file1, UploadedFile $file2, string $directory): string
     {
         $canvas = $this->combineImages($file1, $file2);
-        $filename = 'combined_' . uniqid() . '.png';
-        $path = $directory . '/' . $filename;
+        $filename = 'combined_'.uniqid().'.png';
+        $path = $directory.'/'.$filename;
 
         Storage::disk('public')->put($path, $canvas->encode('png'));
 
@@ -67,21 +67,21 @@ class ImageProcessingService
         try {
             $response = Http::timeout(30)->get($url);
 
-            if (!$response->successful()) {
-                throw new \Exception('No se pudo descargar la imagen desde: ' . $url);
+            if (! $response->successful()) {
+                throw new \Exception('No se pudo descargar la imagen desde: '.$url);
             }
 
             $image = Image::make($response->body());
             $watermarked = $this->addHighQualityLogo($image);
 
-            $filename = $prefix . uniqid() . '.png';
-            $path = $directory . '/' . $filename;
+            $filename = $prefix.uniqid().'.png';
+            $path = $directory.'/'.$filename;
 
             Storage::disk('public')->put($path, $watermarked->encode('png'));
 
             return $path;
         } catch (\Exception $e) {
-            throw new \Exception('Error al descargar imagen: ' . $e->getMessage());
+            throw new \Exception('Error al descargar imagen: '.$e->getMessage());
         }
     }
 
@@ -90,7 +90,8 @@ class ImageProcessingService
      */
     public function getSelectedDefaultModelBase64(string $selectedModel): string
     {
-        $path = public_path('klingai/default_models/' . $selectedModel);
+        $path = public_path('klingai/default_models/'.$selectedModel);
+
         return $this->imageToBase64($path);
     }
 
@@ -101,17 +102,18 @@ class ImageProcessingService
     {
         $model = VirtualModel::find($virtualModelId);
 
-        if (!$model || $model->status !== 'completed') {
+        if (! $model || $model->status !== 'completed') {
             throw new \Exception('Virtual model not found or not completed');
         }
 
         $imagePaths = $model->result_image_paths;
 
-        if (empty($imagePaths) || !isset($imagePaths[$index])) {
+        if (empty($imagePaths) || ! isset($imagePaths[$index])) {
             throw new \Exception("No image found at index $index for virtual model.");
         }
 
-        $fullPath = storage_path('app/public/' . $imagePaths[$index]);
+        $fullPath = storage_path('app/public/'.$imagePaths[$index]);
+
         return $this->imageToBase64($fullPath);
     }
 
@@ -125,19 +127,16 @@ class ImageProcessingService
         }
 
         $allowedMime = ['image/jpeg', 'image/png'];
-        if (!in_array($file->getMimeType(), $allowedMime)) {
+        if (! in_array($file->getMimeType(), $allowedMime)) {
             throw new \Exception('Formato no permitido. Solo JPG y PNG.');
         }
 
         $image = Image::make($file->getRealPath());
-        $width = $image->width();
-        $height = $image->height();
+        $min = min($image->width(), $image->height());
+        $max = max($image->width(), $image->height());
 
-        $short = min($width, $height);
-        $long = max($width, $height);
-
-        if ($short < 300 || $long > 4096) {
-            throw new \Exception('Resolución no permitida. El lado corto debe ser al menos 300px y el lado largo como máximo 4096px.');
+        if ($min < 300 || $max > 4096) {
+            throw new \Exception('Resolución no permitida. Mínimo 300px, máximo 4096px.');
         }
     }
 
@@ -154,8 +153,8 @@ class ImageProcessingService
 
         $targetHeight = max($img1->height(), $img2->height());
 
-        $img1->resize(null, $targetHeight, fn($c) => $c->aspectRatio());
-        $img2->resize(null, $targetHeight, fn($c) => $c->aspectRatio());
+        $img1->resize(null, $targetHeight, fn ($c) => $c->aspectRatio());
+        $img2->resize(null, $targetHeight, fn ($c) => $c->aspectRatio());
 
         $canvas = Image::canvas($img1->width() + $img2->width(), $targetHeight, '#ffffff');
         $canvas->insert($img1, 'left');
@@ -169,7 +168,7 @@ class ImageProcessingService
      */
     private function imageToBase64(string $fullPath): string
     {
-        if (!file_exists($fullPath)) {
+        if (! file_exists($fullPath)) {
             throw new \Exception("File not found: $fullPath");
         }
 
@@ -179,48 +178,42 @@ class ImageProcessingService
     /**
      * Aplica logo de marca de agua con configuración fija.
      */
-    private function addHighQualityLogo(InterventionImage $image): InterventionImage
+    private function addHighQualityLogo($image): InterventionImage
     {
         $logoPath = public_path('images/logo_sio.png');
 
         try {
             $logo = Image::make($logoPath);
 
-            $imgW = $image->width();
-            $imgH = $image->height();
+            $sizeFactor = 0.2;
+            $logoWidth = max(150, $image->width() * $sizeFactor);
 
-            // 20% del ancho, pero nunca menos de 60px y nunca más del 25% del alto
-            $logoWidth = max(60, min($imgW * 0.20, $imgH * 0.25));
             $logo->resize($logoWidth, null, function ($constraint) {
                 $constraint->aspectRatio();
                 $constraint->upsize();
             });
 
-            // Márgenes: proporcionales, pero con mínimo
-            $margin = max(15, round($imgW * 0.025));
+            $margin = 25;
 
-            // Posición logo
-            $logoX = $imgW - $logo->width() - $margin;
-            $logoY = $imgH - $logo->height() - $margin;
+            $logoX = $image->width() - $logo->width() - $margin;
+            $logoY = $image->height() - $logo->height() - $margin;
 
             $image->insert($logo, 'bottom-right', $margin, $margin);
 
-            // Texto adaptativo: entre 14 y 38px, centrado arriba del logo
-            $fontSize = max(14, min($logo->width() * 0.12, 38));
+            $fontSize = min($logo->width() * 0.08, 32);
             $text = 'Generado por';
             $textX = $logoX + ($logo->width() / 2);
-            $textY = $logoY - max(8, $fontSize / 3);
+            $textY = $logoY - 1;
 
             $image->text($text, $textX, $textY, function ($font) use ($fontSize) {
                 $font->file(public_path('fonts/Verdana.ttf'));
                 $font->size($fontSize);
-                $font->color([0, 0, 0, 0.68]); // negro semi-transparente
+                $font->color('#000000');
                 $font->align('center');
                 $font->valign('bottom');
             });
-
         } catch (\Exception $e) {
-            Log::warning('Error al aplicar logo de marca de agua: ' . $e->getMessage());
+            Log::warning('Error al aplicar logo de marca de agua: '.$e->getMessage());
         }
 
         return $image;
@@ -248,6 +241,14 @@ class ImageProcessingService
 
             // Usar el disco público para almacenar el video
             Storage::disk('public')->put($fullPath, $response->body());
+
+            // TODO: test if it works
+            // Wait until the file is truly available (max 2s)
+            $waitTime = 0;
+            while (!Storage::disk('public')->exists($fullPath) && $waitTime < 2000000) {
+                usleep(100000); // 100ms
+                $waitTime += 100000;
+            }
 
             return $fullPath;
         } catch (\Exception $e) {

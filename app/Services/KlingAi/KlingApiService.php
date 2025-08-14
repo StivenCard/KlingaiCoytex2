@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Cache;
 use Exception;
 
+
 class KlingApiService
 {
     private string $baseUrl;
@@ -32,12 +33,16 @@ class KlingApiService
 
     /**
      * Genera o recupera un token JWT válido desde la caché.
+     * La clave de la caché ahora es única para cada accessKey.
      *
      * @return string Token JWT generado.
      */
     private function generateJwtToken(): string
     {
-        return Cache::remember('klingai_token', now()->addMinutes(30), function () {
+        // Usa el accessKey para generar una clave de caché única
+        $cacheKey = 'klingai_token_' . md5($this->accessKey);
+
+        return Cache::remember($cacheKey, now()->addMinutes(30), function () {
             $payload = [
                 'iss' => $this->accessKey,
                 'exp' => time() + 1800,
@@ -147,6 +152,7 @@ class KlingApiService
     {
         $logData = [
             'operation_type' => $type,
+            'user_id'        => '77788', // ID del usuario autenticado, si existe
             'task_id'        => $result['data']['task_id'] ?? null,
             'model_name'     => $data['model_name'] ?? null,
             'prompt'         => $data['prompt'] ?? null,
@@ -175,6 +181,7 @@ class KlingApiService
 
     /**
      * Consulta el consumo de recursos y tokens de la API
+     * La clave de la caché ahora es única para cada accessKey.
      *
      * @param int|null $startTime Tiempo inicial en timestamp (ms)
      * @param int|null $endTime Tiempo final en timestamp (ms)
@@ -188,7 +195,10 @@ class KlingApiService
         $endTime = $endTime ?? time() * 1000;
 
         try {
-            return Cache::remember("api_consumption_{$startTime}_{$endTime}", 3600, function () use ($startTime, $endTime, $resourcePackName) {
+            // Usa el accessKey para generar una clave de caché única
+            $cacheKey = "api_consumption_{$startTime}_{$endTime}_" . md5($this->accessKey);
+
+            return Cache::remember($cacheKey, 3600, function () use ($startTime, $endTime, $resourcePackName) {
                 $response = Http::withHeaders($this->getHeaders())
                     ->timeout(30)
                     ->retry(2, 1000)
@@ -279,3 +289,4 @@ class KlingApiService
         return $this->get('/v1/videos/multi-image2video/' . $taskId, 'multi_image_to_video');
     }
 }
+

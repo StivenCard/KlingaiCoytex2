@@ -12,6 +12,7 @@ class ApiLog extends Model
     protected $fillable = [
         'operation_type',       // 'virtual_model' o 'virtual_try_on'
         'task_id',              // ID de la tarea asignado por Kling
+        'user_id',              // ID del usuario que realizó la acción
         'model_name',           // Nombre del modelo usado (ej: 'kling-v1-5')
         'prompt',               // Prompt utilizado (si aplica)
         'status',               // Estado general del registro ('completed', 'failed')
