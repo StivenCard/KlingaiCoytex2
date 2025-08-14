@@ -153,7 +153,7 @@
         .probador-virtual-container  .result-group { background: var(--bg-2); border-radius: 12px; padding: 16px; margin-bottom: 20px; border: 1px solid var(--border);}
         .probador-virtual-container  .result-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
         .probador-virtual-container  .result-info { font-size: 12px; color: var(--txt-2); }
-        .probador-virtual-container  .status { padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+        .probador-virtual-container  .status {display: inline-block; min-width: 100px; text-align: center; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; white-space: nowrap;}
         .probador-virtual-container  .status.completed { background: rgb(6, 192, 0); color: #ffffff; }
         .probador-virtual-container  .status.processing { background: orange; color: #fffff; }
         .probador-virtual-container  .status.failed { background: rgba(239, 68, 68, 0.2); color: #ef4444; }

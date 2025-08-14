@@ -110,12 +110,6 @@
                                             {{ number_format($pack['daily_usage'], 2) }}
                                         </strong>
                                     </div>
-                                    <div class="col-4">
-                                        <small class="text-muted d-block" >Consumido</small>
-                                        <strong class="text-warning">
-                                            {{ number_format($pack['used_quantity'], 2)}}
-                                        </strong>
-                                    </div>
                                 </div>
 
                                 <div class="small">
@@ -199,21 +193,19 @@
     <!-- RIGHT PANEL -->
     <div class="col-12 col-lg-8 d-flex flex-column overflow-hidden px-2">
         <!-- Sección de Videos -->
-        <div id="videos-section" class="card mb-4 section-content" style="{{ $data['videos']['count'] == 0 ? 'display: none;' : '' }}">
-            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-                <h5 class="mb-0">
-                    <i class="fas fa-film"></i> Videos Generados
-                    <span class="badge badge-light">{{ $data['videos']['count'] }}</span>
-                </h5>
-                @if($data['videos']['count'] > 0)
+        @if($data['videos']['count'] > 0)
+            <div id="videos-section" class="card mb-4 section-content">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-film"></i> Videos Generados
+                        <span class="badge badge-light">{{ $data['videos']['count'] }}</span>
+                    </h5>
                     <button class="btn btn-light btn-sm"
                             onclick="deleteGenerationType('video', {{ $filters['video_user_id'] ?? 'null' }})">
                         <i class="fas fa-trash"></i> Eliminar Historial
                     </button>
-                @endif
-            </div>
-            <div class="card-body">
-                @if($data['videos']['count'] > 0)
+                </div>
+                <div class="card-body">
                     <!-- Filtro específico para videos -->
                     <form method="GET" action="{{ route('admin.generations') }}" class="mb-3">
                         <div class="input-group">
@@ -298,43 +290,24 @@
                             </tbody>
                         </table>
                     </div>
-                @else
-                    <!-- Estado vacío para Videos -->
-                    <div class="text-center py-5">
-                        <i class="fas fa-film fa-4x text-muted mb-4" style="opacity: 0.3;"></i>
-                        <h4 class="text-muted mb-3">Aún no hay videos generados</h4>
-                        <p class="text-muted mb-4">Los usuarios pueden subir sus imágenes y generar videos increíbles.</p>
-                        <div class="row justify-content-center">
-                            <div class="col-md-8">
-                                <div class="alert alert-info border-0" style="background: rgba(23, 162, 184, 0.1);">
-                                    <small class="text-info">
-                                        <i class="fas fa-info-circle mr-1"></i>
-                                        Los videos aparecerán aquí una vez que los usuarios comiencen a generar contenido.
-                                    </small>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                @endif
+                </div>
             </div>
-        </div>
+        @endif
 
         <!-- Sección de Try-Ons -->
-        <div id="tryons-section" class="card mb-4 section-content" style="{{ $data['tryons']['count'] == 0 ? 'display: none;' : '' }}">
-            <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
-                <h5 class="mb-0">
-                    <i class="fas fa-tshirt"></i> Try-Ons
-                    <span class="badge badge-light">{{ $data['tryons']['count'] }}</span>
-                </h5>
-                @if($data['tryons']['count'] > 0)
+        @if($data['tryons']['count'] > 0)
+            <div id="tryons-section" class="card mb-4 section-content">
+                <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-tshirt"></i> Try-Ons
+                        <span class="badge badge-light">{{ $data['tryons']['count'] }}</span>
+                    </h5>
                     <button class="btn btn-light btn-sm"
                             onclick="deleteGenerationType('tryon', {{ $filters['tryon_user_id'] ?? 'null' }})">
                         <i class="fas fa-trash"></i> Eliminar Historial
                     </button>
-                @endif
-            </div>
-            <div class="card-body">
-                @if($data['tryons']['count'] > 0)
+                </div>
+                <div class="card-body">
                     <!-- Filtro específico para try-ons -->
                     <form method="GET" action="{{ route('admin.generations') }}" class="mb-3">
                         <div class="input-group">
@@ -356,7 +329,6 @@
                         </div>
                     </form>
 
-                    {{print_r($data['tryons']['items'][0])}}
                     <div class="table-responsive">
                         <table class="table">
                             <thead>
@@ -408,43 +380,24 @@
                             </tbody>
                         </table>
                     </div>
-                @else
-                    <!-- Estado vacío para Try-Ons -->
-                    <div class="text-center py-5">
-                        <i class="fas fa-tshirt fa-4x text-muted mb-4" style="opacity: 0.3;"></i>
-                        <h4 class="text-muted mb-3">Aún no hay pruebas virtuales</h4>
-                        <p class="text-muted mb-4">Los usuarios podrán probar virtualmente diferentes prendas de vestir.</p>
-                        <div class="row justify-content-center">
-                            <div class="col-md-8">
-                                <div class="alert alert-success border-0" style="background: rgba(40, 167, 69, 0.1);">
-                                    <small class="text-success">
-                                        <i class="fas fa-info-circle mr-1"></i>
-                                        Las pruebas virtuales aparecerán aquí cuando los usuarios suban sus modelos y prendas.
-                                    </small>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                @endif
+                </div>
             </div>
-        </div>
+        @endif
 
         <!-- Sección de Modelos -->
-        <div id="models-section" class="card mb-4 section-content" style="{{ $data['models']['count'] == 0 ? 'display: none;' : '' }}">
-            <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
-                <h5 class="mb-0">
-                    <i class="fas fa-user"></i> Modelos Virtuales
-                    <span class="badge badge-light">{{ $data['models']['count'] }}</span>
-                </h5>
-                @if($data['models']['count'] > 0)
+        @if($data['models']['count'] > 0)
+            <div id="models-section" class="card mb-4 section-content">
+                <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-user"></i> Modelos Virtuales
+                        <span class="badge badge-light">{{ $data['models']['count'] }}</span>
+                    </h5>
                     <button class="btn btn-light btn-sm"
                             onclick="deleteGenerationType('model', {{ $filters['model_user_id'] ?? 'null' }})">
                         <i class="fas fa-trash"></i> Eliminar Historial
                     </button>
-                @endif
-            </div>
-            <div class="card-body">
-                @if($data['models']['count'] > 0)
+                </div>
+                <div class="card-body">
                     <!-- Filtro específico para modelos -->
                     <form method="GET" action="{{ route('admin.generations') }}" class="mb-3">
                         <div class="input-group">
@@ -513,82 +466,13 @@
                             </tbody>
                         </table>
                     </div>
-                @else
-                    <!-- Estado vacío para Modelos -->
-                    <div class="text-center py-5">
-                        <i class="fas fa-user-plus fa-4x text-muted mb-4" style="opacity: 0.3;"></i>
-                        <h4 class="text-muted mb-3">Aún no hay modelos virtuales</h4>
-                        <p class="text-muted mb-4">Los usuarios pueden configurar los ajustes y generar modelos virtuales personalizados.</p>
-                        <div class="row justify-content-center">
-                            <div class="col-md-8">
-                                <div class="alert alert-info border-0" style="background: rgba(23, 162, 184, 0.1);">
-                                    <small class="text-info">
-                                        <i class="fas fa-info-circle mr-1"></i>
-                                        Los modelos virtuales aparecerán aquí cuando los usuarios comiencen a crearlos.
-                                    </small>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                @endif
-            </div>
-        </div>
-
-        <!-- Estado vacío global cuando no hay nada -->
-        @if($data['videos']['count'] == 0 && $data['tryons']['count'] == 0 && $data['models']['count'] == 0)
-            <div id="global-empty-state" class="card">
-                <div class="card-body">
-                    <div class="text-center py-5">
-                        <div class="mb-4">
-                            <i class="fas fa-magic fa-4x text-primary" style="opacity: 0.3;"></i>
-                        </div>
-                        <h3 class="text-muted mb-3">¡Bienvenido al Panel de Generaciones!</h3>
-                        <p class="text-muted mb-4 lead">Aquí podrás ver y administrar todas las generaciones de IA de tus usuarios.</p>
-                        
-                        <div class="row justify-content-center">
-                            <div class="col-md-10">
-                                <div class="row">
-                                    <div class="col-md-4 mb-3">
-                                        <div class="card border-primary" style="background: rgba(0, 123, 255, 0.05);">
-                                            <div class="card-body text-center">
-                                                <i class="fas fa-film fa-2x text-primary mb-2"></i>
-                                                <h6 class="text-primary">Videos</h6>
-                                                <small class="text-muted">Generación de videos con IA</small>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4 mb-3">
-                                        <div class="card border-success" style="background: rgba(40, 167, 69, 0.05);">
-                                            <div class="card-body text-center">
-                                                <i class="fas fa-tshirt fa-2x text-success mb-2"></i>
-                                                <h6 class="text-success">Try-Ons</h6>
-                                                <small class="text-muted">Pruebas virtuales de ropa</small>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4 mb-3">
-                                        <div class="card border-info" style="background: rgba(23, 162, 184, 0.05);">
-                                            <div class="card-body text-center">
-                                                <i class="fas fa-user-plus fa-2x text-info mb-2"></i>
-                                                <h6 class="text-info">Modelos</h6>
-                                                <small class="text-muted">Modelos virtuales personalizados</small>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <div class="alert alert-light border" style="background: rgba(248, 249, 250, 0.8);">
-                                    <div class="d-flex align-items-center">
-                                        <i class="fas fa-lightbulb text-warning mr-3 fa-lg"></i>
-                                        <div>
-                                            <strong>Tip:</strong> Una vez que los usuarios comiencen a usar las herramientas de IA, sus generaciones aparecerán automáticamente en las secciones correspondientes.
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
                 </div>
+            </div>
+        @endif
+
+        @if($data['videos']['count'] == 0 && $data['tryons']['count'] == 0 && $data['models']['count'] == 0)
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i> No hay generaciones para mostrar.
             </div>
         @endif
     </div>
@@ -599,13 +483,6 @@
 axios.defaults.headers.common['X-CSRF-TOKEN'] = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
 function toggleSection(sectionId) {
-    // Ocultar el estado vacío global
-    const globalEmpty = document.getElementById('global-empty-state');
-    if (globalEmpty) {
-        globalEmpty.style.display = 'none';
-    }
-
-    // Ocultar todas las secciones
     document.querySelectorAll('.section-content').forEach(section => {
         section.style.display = 'none';
     });
@@ -708,22 +585,10 @@ function deleteRequest(url, loadingMessage, data = {}) {
 // Mostrar la primera sección con contenido al cargar
 document.addEventListener('DOMContentLoaded', function() {
     const sections = ['videos', 'tryons', 'models'];
-    let hasContent = false;
-    
     for (const section of sections) {
-        const sectionElement = document.getElementById(`${section}-section`);
-        if (sectionElement && sectionElement.querySelector('table')) {
+        if (document.querySelector(`#${section}-section .table-responsive`)) {
             toggleSection(`${section}-section`);
-            hasContent = true;
             break;
-        }
-    }
-    
-    // Si no hay contenido en ninguna sección, mostrar el estado vacío global
-    if (!hasContent) {
-        const globalEmpty = document.getElementById('global-empty-state');
-        if (globalEmpty) {
-            globalEmpty.style.display = 'block';
         }
     }
 });

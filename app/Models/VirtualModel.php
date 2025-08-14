@@ -12,6 +12,7 @@ class VirtualModel extends Model
 
     protected $fillable = [
         'task_id',              // ID de la tarea en KlingAI
+        'user_id',
         'model_name',           // Nombre del modelo (v1, etc.)
         'prompt',               // Prompt utilizado
         'gender',               // Género del modelo (opcional)
@@ -32,5 +33,18 @@ class VirtualModel extends Model
             ->filter()
             ->map(fn($path) => Storage::url($path))
             ->all();
+    }
+
+    public function logs(){
+        return $this->hasMany(KlingUserLog::class);
+    }
+
+    protected static function booted()
+    {
+        static::deleting(function ($img) {
+            foreach ((array) $img->result_image_paths as $path) {
+                Storage::disk('public')->delete(preg_replace('/^storage\//', '', $path));
+            }
+        });
     }
 }
