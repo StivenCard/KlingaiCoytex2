@@ -356,6 +356,7 @@
                         </div>
                     </form>
 
+                    {{print_r($data['tryons']['items'][0])}}
                     <div class="table-responsive">
                         <table class="table">
                             <thead>
