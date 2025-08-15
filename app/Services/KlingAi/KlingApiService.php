@@ -8,7 +8,6 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Cache;
 use Exception;
 
-
 class KlingApiService
 {
     private string $baseUrl;
@@ -51,7 +50,7 @@ class KlingApiService
             return JWT::encode($payload, $this->secretKey, 'HS256');
         });
     }
-    
+
     /**
      * Genera los headers de autorización para todas las llamadas HTTP.
      *
@@ -187,22 +186,17 @@ class KlingApiService
      * @param string|null $resourcePackName Nombre del paquete específico (opcional)
      * @return array
      */
-    /**
-     * Consulta el consumo de recursos y tokens de la API
-     *
-     * @param int|null $startTime Tiempo inicial en timestamp (ms)
-     * @param int|null $endTime Tiempo final en timestamp (ms)
-     * @param string|null $resourcePackName Nombre del paquete específico (opcional)
-     * @return array
-     */
     public function getApiConsumption($startTime = null, $endTime = null, $resourcePackName = null)
     {
         // Si no se especifica, consulta último mes
-        $startTime = $startTime ?? (time() - (30 * 24 * 60 * 60)) * 1000;
-        $endTime = $endTime ?? time() * 1000;
+        $startTime = $startTime ?? now()->subDays(3)->timestamp * 1000;
+        $endTime = $endTime ?? now()->timestamp * 1000;
 
         try {
-            return Cache::remember("api_consumption_{$startTime}_{$endTime}", 3600, function () use ($startTime, $endTime, $resourcePackName) {
+            // Usa el accessKey para generar una clave de caché única
+            $cacheKey = "api_consumption_{$startTime}_{$endTime}_" . md5($this->accessKey);
+
+            return Cache::remember($cacheKey, 3600, function () use ($startTime, $endTime, $resourcePackName) {
                 $response = Http::withHeaders($this->getHeaders())
                     ->timeout(30)
                     ->retry(2, 1000)
@@ -293,4 +287,3 @@ class KlingApiService
         return $this->get('/v1/videos/multi-image2video/' . $taskId, 'multi_image_to_video');
     }
 }
-
