@@ -25,6 +25,7 @@ class AdminGenerationsController extends Controller
         try {
             $apiConsumption = $this->klingService->getApiConsumption();
             $resourcePacks = $apiConsumption['data']['resource_pack_subscribe_infos'] ?? [];
+            print_r($resourcePacks);
 
             // NUEVA LÓGICA: Comprueba si la lista de paquetes está vacía
             if (empty($resourcePacks)) {
