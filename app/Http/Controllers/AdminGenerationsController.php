@@ -8,7 +8,6 @@ use App\Models\VirtualTryOn;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
 use App\Services\KlingAi\KlingApiService;
 
 class AdminGenerationsController extends Controller
@@ -25,11 +24,22 @@ class AdminGenerationsController extends Controller
         // 1. Obtener datos de consumo de API
         try {
             $apiConsumption = $this->klingService->getApiConsumption();
-            $resourcePacks = $this->processApiConsumption($apiConsumption['data']['resource_pack_subscribe_infos'] ?? []);
+            $resourcePacks = $apiConsumption['data']['resource_pack_subscribe_infos'] ?? [];
+
+            // NUEVA LÓGICA: Comprueba si la lista de paquetes está vacía
+            if (empty($resourcePacks)) {
+                session()->flash('info_message', 'No hay paquetes de recursos activos o disponibles en su cuenta.');
+            }
+
         } catch (\Exception $e) {
+            // La API falló, registra el error y prepara la vista
             Log::error("Error obteniendo consumo de API: " . $e->getMessage());
             $resourcePacks = [];
+            
+            // Esta línea ya la tenías, captura errores de conexión/autenticación
+            session()->flash('api_error', 'Error de la API: ' . $e->getMessage());
         }
+
         // 2. Procesar parámetros de filtrado
         $filters = $this->processFilters($request);
 

@@ -1,7 +1,6 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Services\KlingAi\KlingApiService;
 use App\Http\Controllers\ImageToVideoController;
 use App\Http\Controllers\VirtualModelController;
 use App\Http\Controllers\VirtualTryOnController;
@@ -32,4 +31,3 @@ Route::prefix('admin')->group(function () {
     Route::delete('/generations/{type}/{id}', [AdminGenerationsController::class, 'deleteGeneration'])->name('admin.generations.delete');
     Route::delete('/generations/all', [AdminGenerationsController::class, 'deleteAllGenerations'])->name('admin.generations.delete.all');
 });
-

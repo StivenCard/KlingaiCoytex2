@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Cache;
 use Exception;
 
+
 class KlingApiService
 {
     private string $baseUrl;
@@ -50,7 +51,7 @@ class KlingApiService
             return JWT::encode($payload, $this->secretKey, 'HS256');
         });
     }
-
+    
     /**
      * Genera los headers de autorización para todas las llamadas HTTP.
      *
@@ -151,7 +152,6 @@ class KlingApiService
     {
         $logData = [
             'operation_type' => $type,
-            'user_id'        => '12345', // ID del usuario autenticado, si existe
             'task_id'        => $result['data']['task_id'] ?? null,
             'model_name'     => $data['model_name'] ?? null,
             'prompt'         => $data['prompt'] ?? null,
@@ -187,6 +187,14 @@ class KlingApiService
      * @param string|null $resourcePackName Nombre del paquete específico (opcional)
      * @return array
      */
+    /**
+     * Consulta el consumo de recursos y tokens de la API
+     *
+     * @param int|null $startTime Tiempo inicial en timestamp (ms)
+     * @param int|null $endTime Tiempo final en timestamp (ms)
+     * @param string|null $resourcePackName Nombre del paquete específico (opcional)
+     * @return array
+     */
     public function getApiConsumption($startTime = null, $endTime = null, $resourcePackName = null)
     {
         // Si no se especifica, consulta último mes
@@ -194,10 +202,7 @@ class KlingApiService
         $endTime = $endTime ?? time() * 1000;
 
         try {
-            // Usa el accessKey para generar una clave de caché única
-            $cacheKey = "api_consumption_{$startTime}_{$endTime}_" . md5($this->accessKey);
-
-            return Cache::remember($cacheKey, 3600, function () use ($startTime, $endTime, $resourcePackName) {
+            return Cache::remember("api_consumption_{$startTime}_{$endTime}", 3600, function () use ($startTime, $endTime, $resourcePackName) {
                 $response = Http::withHeaders($this->getHeaders())
                     ->timeout(30)
                     ->retry(2, 1000)
@@ -288,3 +293,4 @@ class KlingApiService
         return $this->get('/v1/videos/multi-image2video/' . $taskId, 'multi_image_to_video');
     }
 }
+
