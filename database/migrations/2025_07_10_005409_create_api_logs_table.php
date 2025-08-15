@@ -12,7 +12,6 @@ return new class extends Migration
             $table->id();
             $table->enum('operation_type', ['virtual_model', 'virtual_try_on', 'multi_image_to_video']);
             $table->string('task_id')->nullable();
-            $table->string('user_id')->nullable();
             $table->string('model_name')->nullable();
             $table->text('prompt')->nullable(); // Solo para virtual_model
             $table->enum('status', ['submitted', 'processing', 'completed', 'failed']);

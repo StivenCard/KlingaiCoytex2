@@ -77,6 +77,7 @@ class VirtualModelController extends Controller
             if ($taskId = $response['data']['task_id'] ?? null) {
                 VirtualModel::create([
                     'task_id' => $taskId,
+                    'user_id' => '123321',
                     'model_name' => 'kling-v1-5',
                     'prompt' => $prompt,
                     'gender' => $request->gender,

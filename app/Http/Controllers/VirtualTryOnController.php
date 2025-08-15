@@ -102,6 +102,7 @@ class VirtualTryOnController extends Controller
             if ($taskId = $response['data']['task_id'] ?? null) {
                 VirtualTryOn::create([
                     'task_id' => $taskId,
+                    'user_id' => '321123',
                     'model_name' => 'kolors-virtual-try-on-v1-5',
                     'model_type' => $request->model_source,
                     'human_image_path' => $humanImagePath,

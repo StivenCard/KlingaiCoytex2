@@ -20,43 +20,36 @@ class AdminGenerationsController extends Controller
         $this->klingService = $klingService;
     }
 
-    /**
-     * Muestra el dashboard de generaciones del administrador.
-     */
     public function index(Request $request)
     {
-        // Obtener el consumo de la API
+        // 1. Obtener datos de consumo de API
         try {
             $apiConsumption = $this->klingService->getApiConsumption();
             $resourcePacks = $this->processApiConsumption($apiConsumption['data']['resource_pack_subscribe_infos'] ?? []);
         } catch (\Exception $e) {
-            $resourcePacks = [];
             Log::error("Error obteniendo consumo de API: " . $e->getMessage());
+            $resourcePacks = [];
         }
+        // 2. Procesar parámetros de filtrado
+        $filters = $this->processFilters($request);
 
-        // Obtener el user_id del request para filtrar todas las tablas
-        $userIdFilter = $request->input('user_id');
-
-        // Se modificó el llamado a getData para usar un solo user_id
+        // 3. Obtener datos para cada tabla independientemente
         $data = [
-            'videos' => $this->getData(ImageToVideo::class, $userIdFilter),
-            'tryons' => $this->getData(VirtualTryOn::class, $userIdFilter),
-            'models' => $this->getData(VirtualModel::class, $userIdFilter),
+            'videos' => $this->getVideoData($filters['video_user_id'] ?? null),
+            'tryons' => $this->getTryOnData($filters['tryon_user_id'] ?? null),
+            'models' => $this->getModelData($filters['model_user_id'] ?? null),
         ];
 
+        // 4. Calcular totales generales
         $totals = [
             'videos' => $data['videos']['count'],
             'tryons' => $data['tryons']['count'],
             'models' => $data['models']['count'],
         ];
 
-        // Se pasa el filtro a la vista para mantener el valor del campo
-        return view('admin.generations', compact('data', 'totals', 'resourcePacks', 'userIdFilter'));
+        return view('admin.generations', compact('data', 'totals', 'resourcePacks', 'filters'));
     }
 
-    /**
-     * Procesa los datos de consumo de la API para la vista.
-     */
     private function processApiConsumption(array $packs): array
     {
         foreach ($packs as &$pack) {
@@ -66,13 +59,13 @@ class AdminGenerationsController extends Controller
                 : 0;
 
             $now = new \DateTime();
-            $purchaseDate = new \DateTime('@' . ($pack['purchase_time'] / 1000));
+            $purchaseDate = new \DateTime('@' . ($pack['purchase_time']/1000));
             $daysActive = $purchaseDate->diff($now)->days ?: 1;
 
             $pack['daily_usage'] = $pack['used_quantity'] / $daysActive;
             $pack['formatted_dates'] = [
                 'purchase' => $purchaseDate->format('d/m/Y H:i:s'),
-                'effective' => date('d/m/Y H:i:s', $pack['effective_time'] / 1000),
+                'effective'  => date('d/m/Y H:i:s', $pack['effective_time'] / 1000),
                 'expiration' => date('d/m/Y H:i:s', $pack['invalid_time'] / 1000),
             ];
         }
@@ -80,71 +73,61 @@ class AdminGenerationsController extends Controller
         return $packs;
     }
 
-    /**
-     * Obtiene los datos de una tabla de generación, opcionalmente filtrando por usuario.
-     */
-    private function getData(string $modelClass, ?string $userId = null): array
+    private function processFilters(Request $request): array
     {
-        $query = $modelClass::query();
-
-        if ($userId) {
-            $query->where('user_id', $userId);
-        }
-
         return [
-            'items' => (clone $query)->where('status', '!=', 'failed')->latest()->get(),
-            'count' => (clone $query)->where('status', 'completed')->count(),
+            'video_user_id' => $request->input('video_user_id'),
+            'tryon_user_id' => $request->input('tryon_user_id'),
+            'model_user_id' => $request->input('model_user_id'),
         ];
     }
 
-    /**
-     * Encuentra un item de generación por su tipo y ID.
-     */
-    private function findGenerationItem(string $type, int $id)
+    private function getVideoData(?string $userId = null): array
     {
-        return match ($type) {
-            'video' => ImageToVideo::findOrFail($id),
-            'tryon' => VirtualTryOn::findOrFail($id),
-            'model' => VirtualModel::findOrFail($id),
-            default => throw new \Exception('Tipo de generación no válido'),
-        };
+        $query = ImageToVideo::query()
+            ->when($userId, fn($q) => $q->where('user_id', $userId));
+        
+        return [
+            'items' => $query->where('status', '!=', 'failed')->latest()->get(),
+            'count' => $query->where('status', 'completed')->count(),
+        ];
     }
 
-    /**
-     * Elimina todos los archivos asociados a un item de generación.
-     */
-    private function deleteGenerationFiles($item)
+    private function getTryOnData(?string $userId = null): array
     {
-        if ($item instanceof ImageToVideo) {
-            $this->deleteFile($item->result_video_paths);
-            $this->deleteFile($item->input_image_paths);
-        } elseif ($item instanceof VirtualTryOn) {
-            $this->deleteFile($item->result_image_paths);
-            $this->deleteFile($item->human_image_path);
-            $this->deleteFile($item->cloth_image_path);
-        } elseif ($item instanceof VirtualModel) {
-            $this->deleteFile($item->result_image_paths);
-        }
+        $query = VirtualTryOn::query()
+            ->when($userId, fn($q) => $q->where('user_id', $userId));
+        
+        return [
+            'items' => $query->where('status', '!=', 'failed')->latest()->get(),
+            'count' => $query->where('status', 'completed')->count(),
+        ];
     }
 
-    /**
-     * Elimina una generación específica y sus archivos asociados.
-     */
+    private function getModelData(?string $userId = null): array
+    {
+        $query = VirtualModel::query()
+            ->when($userId, fn($q) => $q->where('user_id', $userId));
+        
+        return [
+            'items' => $query->where('status', '!=', 'failed')->latest()->get(),
+            'count' => $query->where('status', 'completed')->count(),
+        ];
+    }
+
     public function deleteGeneration(Request $request, $type, $id)
     {
         try {
             DB::beginTransaction();
 
             $item = $this->findGenerationItem($type, $id);
-            $userId = $request->input('user_id');
 
-            // Validación de permisos. El admin puede eliminar todo,
-            // pero si se especifica un user_id, se verifica que coincida.
-            if ($userId && $item->user_id != $userId) {
+            // Verificación de permisos, aunque ya no es redundante.
+            if ($request->has('user_id') && $item->user_id != $request->user_id) {
                 throw new \Exception('No tienes permisos para eliminar esta generación');
             }
 
-            $this->deleteGenerationFiles($item);
+            // El modelo se encarga de eliminar los archivos automáticamente.
             $item->delete();
 
             DB::commit();
@@ -153,25 +136,22 @@ class AdminGenerationsController extends Controller
                 'success' => true,
                 'message' => 'Generación eliminada con éxito'
             ]);
+
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error("Error al eliminar generación", [
+            Log::error("Error al eliminar generación: " . $e->getMessage(), [
                 'type' => $type,
                 'id' => $id,
-                'user_id' => $request->input('user_id'),
                 'error' => $e->getMessage()
             ]);
 
             return response()->json([
                 'success' => false,
-                'error' => $e->getMessage()
+                'error' => 'Error al eliminar la generación: ' . $e->getMessage()
             ], 500);
         }
     }
 
-    /**
-     * Elimina todas las generaciones de un tipo o de todos los tipos.
-     */
     public function deleteAllGenerations(Request $request)
     {
         try {
@@ -179,10 +159,9 @@ class AdminGenerationsController extends Controller
 
             $type = $request->input('type');
             $userId = $request->input('user_id');
-            $message = '';
 
             if ($type) {
-                $this->deleteAllByType($type, $userId);
+                $this->deleteGenerationsByType($type, $userId);
                 $message = "Todas las generaciones de tipo $type han sido eliminadas";
             } else {
                 $this->deleteAllTypes($userId);
@@ -197,6 +176,7 @@ class AdminGenerationsController extends Controller
                 'success' => true,
                 'message' => $message
             ]);
+
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Error al eliminar generaciones: ' . $e->getMessage(), [
@@ -211,12 +191,19 @@ class AdminGenerationsController extends Controller
         }
     }
 
-    /**
-     * Elimina todas las generaciones de un tipo específico y sus archivos.
-     */
-    private function deleteAllByType(string $type, ?string $userId = null): void
+    private function findGenerationItem(string $type, int $id)
     {
-        $query = match ($type) {
+        return match($type) {
+            'video' => ImageToVideo::findOrFail($id),
+            'tryon' => VirtualTryOn::findOrFail($id),
+            'model' => VirtualModel::findOrFail($id),
+            default => throw new \Exception('Tipo de generación no válido'),
+        };
+    }
+
+    private function deleteGenerationsByType(string $type, ?string $userId = null): void
+    {
+        $query = match($type) {
             'video' => ImageToVideo::query(),
             'tryon' => VirtualTryOn::query(),
             'model' => VirtualModel::query(),
@@ -227,48 +214,17 @@ class AdminGenerationsController extends Controller
             $query->where('user_id', $userId);
         }
 
-        $query->each(function ($item) {
-            $this->deleteGenerationFiles($item);
+        // Iterar y eliminar para que los modelos se encarguen de los archivos
+        $items = $query->get();
+        foreach ($items as $item) {
             $item->delete();
-        });
+        }
     }
 
-    /**
-     * Elimina todas las generaciones de todos los tipos.
-     */
     private function deleteAllTypes(?string $userId = null): void
     {
-        $this->deleteAllByType('video', $userId);
-        $this->deleteAllByType('tryon', $userId);
-        $this->deleteAllByType('model', $userId);
-    }
-
-    /**
-     * Elimina un archivo o una lista de archivos del disco.
-     */
-    private function deleteFile($path)
-    {
-        if (is_array($path)) {
-            foreach ($path as $p) {
-                $this->deleteFile($p);
-            }
-            return;
-        }
-
-        if (empty($path)) {
-            return;
-        }
-
-        try {
-            $path = preg_replace('/^storage\//', '', $path);
-            if (Storage::disk('public')->exists($path)) {
-                Storage::disk('public')->delete($path);
-                Log::info("Archivo eliminado con éxito: {$path}");
-            } else {
-                Log::warning("Archivo no encontrado: {$path}");
-            }
-        } catch (\Exception $e) {
-            Log::error("Error al eliminar archivo: {$path}", ['error' => $e->getMessage()]);
-        }
+        $this->deleteGenerationsByType('video', $userId);
+        $this->deleteGenerationsByType('tryon', $userId);
+        $this->deleteGenerationsByType('model', $userId);
     }
 }

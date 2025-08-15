@@ -29,10 +29,6 @@ class ImageToVideo extends Model
         'result_video_paths' => 'array'
     ];
 
-    public function logs (){
-        return $this->hasMany(KlingUserLog::class);
-    }
-
     protected static function booted()
     {
         static::deleting(function ($video) {

@@ -64,6 +64,7 @@ class ImageToVideoController extends Controller
             if ($taskId = $response['data']['task_id'] ?? null) {
                 ImageToVideo::create([
                     'task_id' => $taskId,
+                    'user_id' => '123456',
                     'model_name' => 'kling-v1-6',
                     'prompt' => $request->prompt,
                     'negative_prompt' => $request->negative_prompt,

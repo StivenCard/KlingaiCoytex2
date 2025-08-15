@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::create('virtual_models', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->string('user_id')->nullable();
             $table->string('task_id')->unique();
             $table->string('model_name'); // kling-v1, kling-v1-5, kling-v2
             $table->text('prompt')->nullable();

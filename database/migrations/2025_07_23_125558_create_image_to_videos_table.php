@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('image_to_videos', function (Blueprint $table) {
             $table->id();
             $table->string('task_id')->unique();
-            $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->string('user_id')->nullable();
             $table->string('model_name');
             $table->text('prompt');
             $table->text('negative_prompt')->nullable();

@@ -35,10 +35,6 @@ class VirtualModel extends Model
             ->all();
     }
 
-    public function logs(){
-        return $this->hasMany(KlingUserLog::class);
-    }
-
     protected static function booted()
     {
         static::deleting(function ($img) {

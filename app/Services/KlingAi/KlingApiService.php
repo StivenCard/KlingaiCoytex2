@@ -8,7 +8,6 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Cache;
 use Exception;
 
-
 class KlingApiService
 {
     private string $baseUrl;
@@ -152,7 +151,7 @@ class KlingApiService
     {
         $logData = [
             'operation_type' => $type,
-            'user_id'        => '77788', // ID del usuario autenticado, si existe
+            'user_id'        => '12345', // ID del usuario autenticado, si existe
             'task_id'        => $result['data']['task_id'] ?? null,
             'model_name'     => $data['model_name'] ?? null,
             'prompt'         => $data['prompt'] ?? null,
@@ -289,4 +288,3 @@ class KlingApiService
         return $this->get('/v1/videos/multi-image2video/' . $taskId, 'multi_image_to_video');
     }
 }
-
