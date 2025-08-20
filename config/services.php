@@ -41,4 +41,9 @@ return [
         'secret_key' => env('KLING_SECRET_KEY'),
     ],
 
+    'servientrega' => [
+        'api_url' => env('SERVIENTREGA_API_URL', 'https://wssismilenio.servientrega.com/wsrastreoenvios/wsrastreoenvios.asmx/ConsultarGuia'),
+        'username' => env('USERNAME'),
+        'password' => env('PASSWORD')
+    ]
 ];

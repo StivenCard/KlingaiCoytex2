@@ -5,6 +5,7 @@ use App\Http\Controllers\ImageToVideoController;
 use App\Http\Controllers\VirtualModelController;
 use App\Http\Controllers\VirtualTryOnController;
 use App\Http\Controllers\AdminGenerationsController;
+use App\Http\Controllers\Servientrega\ServiEntregaController;
 
 Route::get('/', function () {
     return redirect()->route('virtual-try-on');
@@ -26,8 +27,14 @@ Route::post('/image-to-video/generate', [ImageToVideoController::class, 'generat
 Route::get('/image-to-video/status/{taskId}', [ImageToVideoController::class, 'taskStatus'])->name('image-to-video.status');
 
 // RUTAS DE ADMINISTRACIÓN
-Route::prefix('admin')->group(function () {
-    Route::get('/generations', [AdminGenerationsController::class, 'index'])->name('admin.generations');
-    Route::delete('/generations/{type}/{id}', [AdminGenerationsController::class, 'deleteGeneration'])->name('admin.generations.delete');
-    Route::delete('/generations/all', [AdminGenerationsController::class, 'deleteAllGenerations'])->name('admin.generations.delete.all');
+Route::prefix('admin')->name('admin.')->group(function () {
+    // Ruta principal con parámetro opcional de sección
+    Route::get('/generations', [AdminGenerationsController::class, 'index'])->name('generations');
+    
+    // Rutas para eliminación
+    Route::delete('/generations/{type}/{id}', [AdminGenerationsController::class, 'deleteGeneration'])->name('generations.delete');
+    Route::delete('/generations/all', [AdminGenerationsController::class, 'deleteAllGenerations'])->name('generations.delete-all');
 });
+
+//RUTAS PARA SERVIENTREGA
+Route::get('/consultar-guia', [ServiEntregaController::class, 'consultaGuia'])->name('consultar-guia');

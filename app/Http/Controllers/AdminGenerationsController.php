@@ -21,44 +21,91 @@ class AdminGenerationsController extends Controller
 
     public function index(Request $request)
     {
-        // 1. Obtener datos de consumo de API
+        // 1. Determinar la sección activa
+        $activeSection = $request->input('section', 'all'); // 'all', 'videos', 'tryons', 'models'
+        
+        // 2. Obtener datos de consumo de API
         try {
             $apiConsumption = $this->klingService->getApiConsumption();
-            $resourcePacks = $apiConsumption['data']['resource_pack_subscribe_infos'] ?? [];
-            print_r($resourcePacks);
+            $resourcePacks = $this->processApiConsumption($apiConsumption['data']['resource_pack_subscribe_infos'] ?? []);
 
-            // NUEVA LÓGICA: Comprueba si la lista de paquetes está vacía
             if (empty($resourcePacks)) {
                 session()->flash('info_message', 'No hay paquetes de recursos activos o disponibles en su cuenta.');
             }
-
         } catch (\Exception $e) {
-            // La API falló, registra el error y prepara la vista
             Log::error("Error obteniendo consumo de API: " . $e->getMessage());
             $resourcePacks = [];
-            
-            // Esta línea ya la tenías, captura errores de conexión/autenticación
             session()->flash('api_error', 'Error de la API: ' . $e->getMessage());
         }
 
-        // 2. Procesar parámetros de filtrado
-        $filters = $this->processFilters($request);
+        // 3. Procesar filtros específicos por sección
+        $filters = $this->processFilters($request, $activeSection);
 
-        // 3. Obtener datos para cada tabla independientemente
-        $data = [
-            'videos' => $this->getVideoData($filters['video_user_id'] ?? null),
-            'tryons' => $this->getTryOnData($filters['tryon_user_id'] ?? null),
-            'models' => $this->getModelData($filters['model_user_id'] ?? null),
-        ];
+        // 4. Obtener datos según la sección activa
+        $data = $this->getData($filters, $activeSection);
 
-        // 4. Calcular totales generales
+        // 5. Calcular totales generales (siempre sin filtros para el resumen)
         $totals = [
-            'videos' => $data['videos']['count'],
-            'tryons' => $data['tryons']['count'],
-            'models' => $data['models']['count'],
+            'videos' => $this->getVideoData()['count'],
+            'tryons' => $this->getTryOnData()['count'],
+            'models' => $this->getModelData()['count'],
         ];
 
-        return view('admin.generations', compact('data', 'totals', 'resourcePacks', 'filters'));
+        return view('admin.generations', compact('data', 'totals', 'resourcePacks', 'filters', 'activeSection'));
+    }
+
+    private function processFilters(Request $request, string $activeSection): array
+    {
+        $filters = [
+            'active_section' => $activeSection
+        ];
+
+        // Solo procesar filtros para la sección activa
+        switch ($activeSection) {
+            case 'videos':
+                $filters['video_user_id'] = $request->input('video_user_id');
+                break;
+            case 'tryons':
+                $filters['tryon_user_id'] = $request->input('tryon_user_id');
+                break;
+            case 'models':
+                $filters['model_user_id'] = $request->input('model_user_id');
+                break;
+            case 'all':
+            default:
+                // En vista general, no aplicamos filtros específicos
+                break;
+        }
+
+        return $filters;
+    }
+
+    private function getData(array $filters, string $activeSection): array
+    {
+        $data = [];
+
+        switch ($activeSection) {
+            case 'videos':
+                $data['videos'] = $this->getVideoData($filters['video_user_id'] ?? null);
+                break;
+            case 'tryons':
+                $data['tryons'] = $this->getTryOnData($filters['tryon_user_id'] ?? null);
+                break;
+            case 'models':
+                $data['models'] = $this->getModelData($filters['model_user_id'] ?? null);
+                break;
+            case 'all':
+            default:
+                // Vista general: mostrar todas las tablas sin filtros
+                $data = [
+                    'videos' => $this->getVideoData(),
+                    'tryons' => $this->getTryOnData(),
+                    'models' => $this->getModelData(),
+                ];
+                break;
+        }
+
+        return $data;
     }
 
     private function processApiConsumption(array $packs): array
@@ -82,15 +129,6 @@ class AdminGenerationsController extends Controller
         }
 
         return $packs;
-    }
-
-    private function processFilters(Request $request): array
-    {
-        return [
-            'video_user_id' => $request->input('video_user_id'),
-            'tryon_user_id' => $request->input('tryon_user_id'),
-            'model_user_id' => $request->input('model_user_id'),
-        ];
     }
 
     private function getVideoData(?string $userId = null): array
@@ -133,12 +171,10 @@ class AdminGenerationsController extends Controller
 
             $item = $this->findGenerationItem($type, $id);
 
-            // Verificación de permisos, aunque ya no es redundante.
             if ($request->has('user_id') && $item->user_id != $request->user_id) {
                 throw new \Exception('No tienes permisos para eliminar esta generación');
             }
 
-            // El modelo se encarga de eliminar los archivos automáticamente.
             $item->delete();
 
             DB::commit();
@@ -185,7 +221,8 @@ class AdminGenerationsController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => $message
+                'message' => $message,
+                'reload' => true // Indicador para recargar la página
             ]);
 
         } catch (\Exception $e) {
@@ -225,7 +262,6 @@ class AdminGenerationsController extends Controller
             $query->where('user_id', $userId);
         }
 
-        // Iterar y eliminar para que los modelos se encarguen de los archivos
         $items = $query->get();
         foreach ($items as $item) {
             $item->delete();
