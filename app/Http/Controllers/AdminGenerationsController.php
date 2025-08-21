@@ -45,12 +45,32 @@ class AdminGenerationsController extends Controller
         $data = $this->getData($filters, $activeSection);
 
         // 5. Calcular totales generales (siempre sin filtros para el resumen)
-        $totals = [
-            'videos' => $this->getVideoData()['count'],
-            'tryons' => $this->getTryOnData()['count'],
-            'models' => $this->getModelData()['count'],
-        ];
+        $videoData = $this->getVideoData();
+        $tryOnData = $this->getTryOnData();
+        $modelData = $this->getModelData();
 
+        $totals = [
+            'videos' => [
+                'count'  => $videoData['count'],
+                'tokens' => $videoData['tokens'],
+                'price'  => $videoData['price'],
+            ],
+            'tryons' => [
+                'count'  => $tryOnData['count'],
+                'tokens' => $tryOnData['tokens'],
+                'price'  => $tryOnData['price'],
+            ],
+            'models' => [
+                'count'  => $modelData['count'],
+                'tokens' => $modelData['tokens'],
+                'price'  => $modelData['price'],
+            ],
+            'all' => [
+                'count'  => $videoData['count'] + $tryOnData['count'] + $modelData['count'],
+                'tokens' => $videoData['tokens'] + $tryOnData['tokens'] + $modelData['tokens'],
+                'price'  => $videoData['price'] + $tryOnData['price'] + $modelData['price'],
+            ],
+        ];
         return view('admin.generations', compact('data', 'totals', 'resourcePacks', 'filters', 'activeSection'));
     }
 
@@ -135,10 +155,12 @@ class AdminGenerationsController extends Controller
     {
         $query = ImageToVideo::query()
             ->when($userId, fn($q) => $q->where('user_id', $userId));
-        
+
         return [
-            'items' => $query->where('status', '!=', 'failed')->latest()->get(),
-            'count' => $query->where('status', 'completed')->count(),
+            'items'  => $query->where('status', '!=', 'failed')->latest()->get(),
+            'count'  => $query->where('status', 'completed')->count(),
+            'tokens' => $query->sum('tokens'),
+            'price'  => $query->sum('price'),
         ];
     }
 
@@ -146,10 +168,12 @@ class AdminGenerationsController extends Controller
     {
         $query = VirtualTryOn::query()
             ->when($userId, fn($q) => $q->where('user_id', $userId));
-        
+
         return [
-            'items' => $query->where('status', '!=', 'failed')->latest()->get(),
-            'count' => $query->where('status', 'completed')->count(),
+            'items'  => $query->where('status', '!=', 'failed')->latest()->get(),
+            'count'  => $query->where('status', 'completed')->count(),
+            'tokens' => $query->sum('tokens'),
+            'price'  => $query->sum('price'),
         ];
     }
 
@@ -157,10 +181,12 @@ class AdminGenerationsController extends Controller
     {
         $query = VirtualModel::query()
             ->when($userId, fn($q) => $q->where('user_id', $userId));
-        
+
         return [
-            'items' => $query->where('status', '!=', 'failed')->latest()->get(),
-            'count' => $query->where('status', 'completed')->count(),
+            'items'  => $query->where('status', '!=', 'failed')->latest()->get(),
+            'count'  => $query->where('status', 'completed')->count(),
+            'tokens' => $query->sum('tokens'),
+            'price'  => $query->sum('price'),
         ];
     }
 

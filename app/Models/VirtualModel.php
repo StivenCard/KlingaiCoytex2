@@ -20,6 +20,8 @@ class VirtualModel extends Model
         'skin_tone',            // Tono de piel (opcional)
         'aspect_ratio',         // Relación de aspecto solicitada
         'output_count',         // Cantidad de imágenes generadas
+        'tokens',
+        'price',
         'result_image_paths',   // Rutas relativas de imágenes generadas
         'status',               // Estado: processing, completed, failed
     ];

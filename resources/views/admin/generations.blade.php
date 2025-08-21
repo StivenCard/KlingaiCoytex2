@@ -17,15 +17,15 @@
                     </a>
                     <a href="{{ route('admin.generations', ['section' => 'videos']) }}" 
                        class="btn {{ $activeSection === 'videos' ? 'btn-primary' : 'btn-outline-primary' }} mb-2">
-                        <i class="fas fa-film"></i> Solo Videos ({{ $totals['videos'] }})
+                        <i class="fas fa-film"></i> Solo Videos ({{ $totals['videos']['count'] }})
                     </a>
                     <a href="{{ route('admin.generations', ['section' => 'tryons']) }}" 
                        class="btn {{ $activeSection === 'tryons' ? 'btn-success' : 'btn-outline-success' }} mb-2">
-                        <i class="fas fa-tshirt"></i> Solo Try-Ons ({{ $totals['tryons'] }})
+                        <i class="fas fa-tshirt"></i> Solo Try-Ons ({{ $totals['tryons']['count'] }})
                     </a>
                     <a href="{{ route('admin.generations', ['section' => 'models']) }}" 
                        class="btn {{ $activeSection === 'models' ? 'btn-info' : 'btn-outline-info' }}">
-                        <i class="fas fa-user"></i> Solo Modelos ({{ $totals['models'] }})
+                        <i class="fas fa-user"></i> Solo Modelos ({{ $totals['models']['count'] }})
                     </a>
                 </div>
             </div>
@@ -42,7 +42,8 @@
                         <div class="card bg-primary text-white"> 
                             <div class="card-body">
                                 <h5 class="card-title">Total Videos</h5>
-                                <h2>{{ $totals['videos'] }}</h2>
+                                <h2>{{ $totals['videos']['count'] }}</h2>
+                                <small>{{ $totals['videos']['tokens'] }} tokens | ${{ number_format($totals['videos']['price'], 2) }}</small>
                             </div>
                         </div>
                     </div>
@@ -50,7 +51,8 @@
                         <div class="card bg-success text-white">
                             <div class="card-body"> 
                                 <h5 class="card-title">Total Try-Ons</h5> 
-                                <h2>{{ $totals['tryons'] }}</h2> 
+                                <h2>{{ $totals['tryons']['count'] }}</h2>
+                                <small>{{ $totals['tryons']['tokens'] }} tokens | ${{ number_format($totals['tryons']['price'], 2) }}</small>
                             </div>
                         </div>
                     </div>
@@ -58,13 +60,14 @@
                         <div class="card bg-info text-white"> 
                             <div class="card-body"> 
                                 <h5 class="card-title">Total Modelos</h5> 
-                                <h2>{{ $totals['models'] }}</h2> 
+                                <h2>{{ $totals['models']['count'] }}</h2>
+                                <small>{{ $totals['models']['tokens'] }} tokens | ${{ number_format($totals['models']['price'], 2) }}</small>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                @if($totals['videos'] > 0 || $totals['tryons'] > 0 || $totals['models'] > 0) 
+                @if($totals['all']['count'] > 0) 
                     <div class="mt-4">
                         <button class="btn btn-danger btn-block" onclick="deleteAllGenerations()">
                             <i class="fas fa-trash-alt"></i> Eliminar TODO el Historial 
@@ -159,6 +162,103 @@
                         </div>
                     @endforeach
                 @endif
+                <!-- Costos por Operación -->
+                <div class="card">
+                    <div class="card-header bg-light">
+                        <h6 class="mb-0">Costos por Operación</h6>
+                    </div>
+                    <div class="card-body">
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    <i class="fas fa-film"></i> Video (5s) - Estándar
+                                    <small class="d-block text-muted">2 tokens</small>
+                                </div>
+                                <span class="badge badge-primary">$0.28</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    <i class="fas fa-film"></i> Video (10s) - Estándar
+                                    <small class="d-block text-muted">4 tokens</small>
+                                </div>
+                                <span class="badge badge-primary">$0.56</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    <i class="fas fa-film"></i> Video (5s) - Pro
+                                    <small class="d-block text-muted">3.5 tokens</small>
+                                </div>
+                                <span class="badge badge-primary">$0.49</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    <i class="fas fa-film"></i> Video (10s) - Pro
+                                    <small class="d-block text-muted">7 tokens</small>
+                                </div>
+                                <span class="badge badge-primary">$0.98</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    <i class="fas fa-tshirt"></i> Try-on
+                                    <small class="d-block text-muted">1 token</small>
+                                </div>
+                                <span class="badge badge-success">$0.07</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    <i class="fas fa-image"></i> Modelo Virtual
+                                    <small class="d-block text-muted">4 tokens</small>
+                                </div>
+                                <span class="badge badge-info">$0.014</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{--Informacion de TOKENS Y PRECIOS --}}
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0">Resumen de Consumo</h5>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-bordered table-striped mb-0 text-center">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Tipo</th>
+                            <th>Generaciones</th>
+                            <th>Tokens</th>
+                            <th>Precio</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Videos</td>
+                            <td>{{ $totals['videos']['count'] ?? 0 }}</td>
+                            <td>{{ $totals['videos']['tokens'] ?? 0 }}</td>
+                            <td>${{ number_format($totals['videos']['price'] ?? 0, 2) }}</td>
+                        </tr>
+                        <tr>
+                            <td>TryOns</td>
+                            <td>{{ $totals['tryons']['count'] ?? 0 }}</td>
+                            <td>{{ $totals['tryons']['tokens'] ?? 0 }}</td>
+                            <td>${{ number_format($totals['tryons']['price'] ?? 0, 2) }}</td>
+                        </tr>
+                        <tr>
+                            <td>Models</td>
+                            <td>{{ $totals['models']['count'] ?? 0 }}</td>
+                            <td>{{ $totals['models']['tokens'] ?? 0 }}</td>
+                            <td>${{ number_format($totals['models']['price'] ?? 0, 2) }}</td>
+                        </tr>
+                        <tr class="fw-bold table-secondary">
+                            <td>Total</td>
+                            <td>{{ $totals['all']['count'] ?? 0 }}</td>
+                            <td>{{ $totals['all']['tokens'] ?? 0 }}</td>
+                            <td>${{ number_format($totals['all']['price'] ?? 0, 2) }}</td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
@@ -206,6 +306,23 @@
                         @endif
 
                         @if($data['videos']['count'] > 0)
+                            {{-- Mostrar estadísticas filtradas si hay filtro activo --}}
+                            @if($activeSection === 'videos' && isset($filters['video_user_id']))
+                                <div class="alert alert-info mb-3">
+                                    <div class="row text-center">
+                                        <div class="col-4">
+                                            <strong>Generaciones:</strong> {{ count($data['videos']['items']) }}
+                                        </div>
+                                        <div class="col-4">
+                                            <strong>Tokens:</strong> {{ $data['videos']['tokens'] }}
+                                        </div>
+                                        <div class="col-4">
+                                            <strong>Precio:</strong> ${{ number_format($data['videos']['price'], 2) }}
+                                        </div>
+                                    </div>
+                                </div>
+                            @endif
+
                             <div class="table-responsive"> 
                                 <table class="table">
                                     <thead>
@@ -217,7 +334,9 @@
                                             <th>Relacion de Aspecto</th> 
                                             <th>Modo</th> 
                                             <th>Duración</th> 
-                                            <th>Estado</th> 
+                                            <th>Estado</th>
+                                            <th>Tokens</th>
+                                            <th>Precio</th> 
                                             <th>Fecha</th> 
                                             <th>Videos</th> 
                                             <th>Acciones</th> 
@@ -241,6 +360,12 @@
                                                     <span class="badge badge-{{ $video->status == 'completed' ? 'success' : 'warning' }}"> 
                                                         {{ $video->status }}
                                                     </span>
+                                                </td>
+                                                <td>
+                                                    <span class="badge badge-primary">{{ $video->tokens }}</span>
+                                                </td>
+                                                <td>
+                                                    <span class="badge badge-secondary">${{ number_format($video->price, 2) }}</span>
                                                 </td>
                                                 <td>{{ $video->created_at->format('d/m/Y H:i') }}</td> 
                                                 <td>
@@ -319,6 +444,23 @@
                         @endif
 
                         @if($data['tryons']['count'] > 0)
+                            {{-- Mostrar estadísticas filtradas si hay filtro activo --}}
+                            @if($activeSection === 'tryons' && isset($filters['tryon_user_id']))
+                                <div class="alert alert-success mb-3">
+                                    <div class="row text-center">
+                                        <div class="col-4">
+                                            <strong>Generaciones:</strong> {{ count($data['tryons']['items']) }}
+                                        </div>
+                                        <div class="col-4">
+                                            <strong>Tokens:</strong> {{ $data['tryons']['tokens'] }}
+                                        </div>
+                                        <div class="col-4">
+                                            <strong>Precio:</strong> ${{ number_format($data['tryons']['price'], 2) }}
+                                        </div>
+                                    </div>
+                                </div>
+                            @endif
+
                             <div class="table-responsive"> 
                                 <table class="table">
                                     <thead>
@@ -328,6 +470,8 @@
                                             <th>Tipo de Modelo</th> 
                                             <th>Tipo de Prenda</th> 
                                             <th>Estado</th> 
+                                            <th>Tokens</th>
+                                            <th>Precio</th>
                                             <th>Fecha</th> 
                                             <th>Imágenes</th> 
                                             <th>Acciones</th> 
@@ -346,6 +490,12 @@
                                                     <span class="badge badge-{{ $tryon->status == 'completed' ? 'success' : 'warning' }}"> 
                                                         {{ $tryon->status }}
                                                     </span>
+                                                </td>
+                                                <td>
+                                                    <span class="badge badge-primary">{{ $tryon->tokens }}</span>
+                                                </td>
+                                                <td>
+                                                    <span class="badge badge-secondary">${{ number_format($tryon->price, 2) }}</span>
                                                 </td>
                                                 <td>{{ $tryon->created_at->format('d/m/Y H:i') }}</td> 
                                                 <td>
@@ -424,6 +574,23 @@
                         @endif
 
                         @if($data['models']['count'] > 0)
+                            {{-- Mostrar estadísticas filtradas si hay filtro activo --}}
+                            @if($activeSection === 'models' && isset($filters['model_user_id']))
+                                <div class="alert alert-info mb-3">
+                                    <div class="row text-center">
+                                        <div class="col-4">
+                                            <strong>Generaciones:</strong> {{ count($data['models']['items']) }}
+                                        </div>
+                                        <div class="col-4">
+                                            <strong>Tokens:</strong> {{ $data['models']['tokens'] }}
+                                        </div>
+                                        <div class="col-4">
+                                            <strong>Precio:</strong> ${{ number_format($data['models']['price'], 2) }}
+                                        </div>
+                                    </div>
+                                </div>
+                            @endif
+
                             <div class="table-responsive"> 
                                 <table class="table">
                                     <thead>
@@ -431,6 +598,8 @@
                                             <th>Usuario</th>
                                             <th>Modelo</th>
                                             <th>Estado</th>
+                                            <th>Tokens</th>
+                                            <th>Precio</th>
                                             <th>Fecha</th> 
                                             <th>Imágenes</th> 
                                             <th>Acciones</th> 
@@ -447,6 +616,12 @@
                                                     <span class="badge badge-{{ $model->status == 'completed' ? 'success' : 'warning' }}"> 
                                                         {{ $model->status }}
                                                     </span>
+                                                </td>
+                                                <td>
+                                                    <span class="badge badge-primary">{{ $model->tokens }}</span>
+                                                </td>
+                                                <td>
+                                                    <span class="badge badge-secondary">${{ number_format($model->price, 2) }}</span>
                                                 </td>
                                                 <td>{{ $model->created_at->format('d/m/Y H:i') }}</td>
                                                 <td>
@@ -484,7 +659,7 @@
         @endif
 
         {{-- ESTADO VACÍO GLOBAL SOLO PARA VISTA GENERAL --}}
-        @if($activeSection === 'all' && $totals['videos'] == 0 && $totals['tryons'] == 0 && $totals['models'] == 0)
+        @if($activeSection === 'all' && $totals['videos']['count'] == 0 && $totals['tryons']['count'] == 0 && $totals['models']['count'] == 0)
             <div class="card">
                 <div class="card-body"> 
                     <div class="text-center py-5"> 

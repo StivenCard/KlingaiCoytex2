@@ -7,6 +7,7 @@ use App\Services\KlingAi\KlingApiService;
 use App\Services\KlingAi\ImageProcessingService;
 use App\Services\GuidelinesService;
 use App\Models\VirtualTryOn;
+use App\Models\PricingRule;
 use App\Models\VirtualModel;
 use Illuminate\Support\Facades\Storage;
 
@@ -100,6 +101,11 @@ class VirtualTryOnController extends Controller
 
 
             if ($taskId = $response['data']['task_id'] ?? null) {
+
+                $pricing = PricingRule::where('model_name', 'kolors-virtual-try-on-v1-5')
+                ->where('mode', 'default')
+                ->first();
+
                 VirtualTryOn::create([
                     'task_id' => $taskId,
                     'user_id' => '321123',
@@ -109,6 +115,8 @@ class VirtualTryOnController extends Controller
                     'garments_type' => $request->garment_type,
                     'cloth_image_path' => $garmentImagePath,
                     'output_count' => $request->output_count,
+                    'tokens' => $pricing->tokens,
+                    'price' => $pricing->price,
                     'status' => 'processing',
                 ]);
             }

@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use App\Models\ImageToVideo;
 use App\Models\VirtualTryOn;
+use App\Models\PricingRule;
 use App\Services\HintsService;
 use App\Services\KlingAi\KlingApiService;
 use App\Services\KlingAi\ImageProcessingService;
@@ -62,6 +63,12 @@ class ImageToVideoController extends Controller
             $response = $this->api->createMultiImageToVideo($payload);
 
             if ($taskId = $response['data']['task_id'] ?? null) {
+
+                $pricing = PricingRule::where('model_name', 'kling-v1-6-multi-image')
+                ->where('mode', $payload['mode'])
+                ->where('duration', $payload['duration'])   
+                ->first();
+
                 ImageToVideo::create([
                     'task_id' => $taskId,
                     'user_id' => '123456',
@@ -72,6 +79,8 @@ class ImageToVideoController extends Controller
                     'duration' => $payload['duration'],
                     'aspect_ratio' => $payload['aspect_ratio'],
                     'input_image_paths' => $imagePaths,
+                    'tokens' => $pricing->tokens,
+                    'price' => $pricing->price,
                     'status' => 'processing',
                 ]);
             }

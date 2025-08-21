@@ -20,6 +20,8 @@ class VirtualTryOn extends Model
         'cloth_image_path',    // Ruta de la imagen de prenda
         'output_count',        // Número de imágenes generadas
         'result_image_paths',  // Array de rutas de imágenes generadas
+        'tokens',
+        'price',
         'status',              // 'processing', 'completed', 'failed'
     ];
 

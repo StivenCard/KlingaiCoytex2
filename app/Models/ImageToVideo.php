@@ -19,6 +19,8 @@ class ImageToVideo extends Model
         'mode',
         'duration',
         'aspect_ratio',
+        'tokens',
+        'price',
         'input_image_paths',
         'result_video_paths',
         'status'

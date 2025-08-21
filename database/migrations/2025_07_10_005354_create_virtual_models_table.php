@@ -18,6 +18,8 @@ return new class extends Migration
             $table->enum('age_group', ['children', 'youth', 'elderly'])->default('youth');
             $table->enum('skin_tone', ['light', 'medium', 'dark','olive'])->default('medium');
             $table->enum('aspect_ratio', ['1:1', '9:16', '2:3',  '3:4'])->default('3:4');
+            $table->float('tokens')->nullable();
+            $table->float('price')->nullable();
             $table->integer('output_count')->default(1);
             $table->json('result_image_paths')->nullable();
             $table->enum('status', ['submitted', 'processing', 'completed', 'failed'])->default('submitted');

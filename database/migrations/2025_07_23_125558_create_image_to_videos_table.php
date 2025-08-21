@@ -21,6 +21,8 @@ return new class extends Migration
             $table->string('mode')->default('std');
             $table->string('duration')->default('5');
             $table->string('aspect_ratio')->default('16:9');
+            $table->float('tokens')->nullable();
+            $table->float('price')->nullable();
             $table->json('input_image_paths');
             $table->json('result_video_paths')->nullable();
             $table->string('status');

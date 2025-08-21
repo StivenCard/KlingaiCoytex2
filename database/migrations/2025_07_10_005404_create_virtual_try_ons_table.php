@@ -18,6 +18,8 @@ return new class extends Migration
             $table->enum('garments_type', ['single', 'multiple']); // Tipo de prendas
             $table->string('cloth_image_path')->nullable(); // Ruta de prenda guardada
             $table->integer('output_count')->default(1);
+            $table->float('tokens')->nullable();
+            $table->float('price')->nullable();
             $table->json('result_image_paths')->nullable(); // URLs de resultados guardados
             $table->enum('status', ['submitted', 'processing', 'completed', 'failed'])->default('submitted');
             $table->timestamps();

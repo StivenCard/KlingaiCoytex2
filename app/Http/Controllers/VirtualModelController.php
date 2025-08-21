@@ -7,6 +7,7 @@ use App\Services\KlingAi\KlingApiService;
 use App\Services\KlingAi\ImageProcessingService;
 use App\Services\HintsService;
 use App\Models\VirtualModel;
+use App\Models\PricingRule;
 use Illuminate\Support\Facades\Storage;
 
 class VirtualModelController extends Controller
@@ -75,6 +76,12 @@ class VirtualModelController extends Controller
             ]);
 
             if ($taskId = $response['data']['task_id'] ?? null) {
+
+                // Obtener precios y tokens de la regla de precios
+                $pricing = PricingRule::where('model_name', 'kolors-v1-5')
+                ->where('mode', 'text-to-image')
+                ->first();
+
                 VirtualModel::create([
                     'task_id' => $taskId,
                     'user_id' => '123321',
@@ -85,6 +92,8 @@ class VirtualModelController extends Controller
                     'skin_tone' => $request->skin_tone,
                     'aspect_ratio' => $request->aspect_ratio,
                     'output_count' => $request->output_count,
+                    'tokens' => $pricing->tokens,
+                    'price' => $pricing->price,
                     'status' => 'processing',
                 ]);
             }
