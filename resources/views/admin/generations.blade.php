@@ -64,6 +64,14 @@
                                 <small>{{ $totals['models']['tokens'] }} tokens | ${{ number_format($totals['models']['price'], 2) }}</small>
                             </div>
                         </div>
+                    </div><div class="col-12 mb-3"> 
+                        <div class="card bg-warning text-white"> 
+                            <div class="card-body"> 
+                                <h5 class="card-title">Total en conjunto</h5> 
+                                <h2>{{ $totals['all']['count'] ?? 0 }}</h2>
+                                <small>{{ $totals['all']['tokens'] ?? 0 }} tokens | ${{ number_format($totals['all']['price'] ?? 0, 2) }}</small>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -216,9 +224,8 @@
                 </div>
             </div>
         </div>
-
         {{--Informacion de TOKENS Y PRECIOS --}}
-        <div class="card mt-4">
+        {{-- <div class="card mt-4">
             <div class="card-header">
                 <h5 class="mb-0">Resumen de Consumo</h5>
             </div>
@@ -260,7 +267,7 @@
                     </tbody>
                 </table>
             </div>
-        </div>
+        </div> --}}
     </div>
 
     <div class="col-12 col-lg-8 d-flex flex-column overflow-hidden px-2">
