@@ -613,7 +613,27 @@
             transform: scale(1.05);
         }
 
-    </style>
+    /*Estilos Panel Admin */
+    /* Hover para todas las cards-enlace */
+    .card-link .card {
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    /* Efecto hover */
+    .card-link:hover .card {
+        transform: translateY(-3px);
+        box-shadow: 0 6px 12px rgba(0,0,0,0.2);
+        cursor: pointer;
+    }
+
+    /* Estado activo */
+    .card-link.active .card {
+        transform: translateY(-3px);
+        box-shadow: 0 6px 12px rgba(0,0,0,0.25);
+        border: 2px solid #fff;
+    }
+
+</style>
 </head>
 <body>
     <div class="probador-virtual-container">

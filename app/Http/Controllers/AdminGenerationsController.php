@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\ImageToVideo;
 use App\Models\VirtualModel;
 use App\Models\VirtualTryOn;
+use App\Models\PricingRule;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -49,6 +50,24 @@ class AdminGenerationsController extends Controller
         $tryOnData = $this->getTryOnData();
         $modelData = $this->getModelData();
 
+        // 6. Cargar reglas de precios
+            $pricingMap = [
+            ['model' => 'kling-v1-6', 'duration' => 5,  'mode' => 'std'],
+            ['model' => 'kling-v1-6', 'duration' => 10, 'mode' => 'std'],
+            ['model' => 'kling-v1-6', 'duration' => 5,  'mode' => 'pro'],
+            ['model' => 'kling-v1-6', 'duration' => 10, 'mode' => 'pro'],
+            ['model' => 'kolors-virtual-try-on-v1-5',  'duration' => null, 'mode' => 'default'],
+            ['model' => 'kolors-v1-5',   'duration' => null, 'mode' => 'text-to-image'],
+        ];
+
+        // Buscar solo esos registros
+        $pricingRules = collect($pricingMap)->map(function ($map) {
+            return PricingRule::where('model_name', $map['model'])
+                ->when($map['duration'], fn($q) => $q->where('duration', $map['duration']))
+                ->when($map['mode'], fn($q) => $q->where('mode', $map['mode']))
+                ->first();
+        })->filter(); // quitamos nulls por si algo no existe
+
         $totals = [
             'videos' => [
                 'count'  => $videoData['count'],
@@ -71,7 +90,7 @@ class AdminGenerationsController extends Controller
                 'price'  => $videoData['price'] + $tryOnData['price'] + $modelData['price'],
             ],
         ];
-        return view('admin.generations', compact('data', 'totals', 'resourcePacks', 'filters', 'activeSection'));
+        return view('admin.generations', compact('data', 'totals', 'resourcePacks', 'filters', 'activeSection','pricingRules'));
     }
 
     private function processFilters(Request $request, string $activeSection): array
@@ -248,7 +267,8 @@ class AdminGenerationsController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => $message,
-                'reload' => true // Indicador para recargar la página
+                'user_id' => $userId, // Indicamos si se estaba filtrando por usuario
+                'reload' => !$userId // Solo recargamos completamente si no había filtro de usuario
             ]);
 
         } catch (\Exception $e) {
