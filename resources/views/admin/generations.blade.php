@@ -201,7 +201,7 @@
                                         @else badge-secondary
                                         @endif
                                     ">
-                                        ${{ number_format($rule->price, 3) }}
+                                        ${{$rule->price }}
                                     </span>
                                 </li>
                             @endforeach
