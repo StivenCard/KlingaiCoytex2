@@ -3,31 +3,6 @@
 @section('content')
 <meta name="csrf-token" content="{{ csrf_token() }}">
 
-<!-- Modal para visualizar medios -->
-<div class="modal fade" id="mediaModal" tabindex="-1" role="dialog" aria-labelledby="mediaModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="mediaModalLabel">Visualizar Media</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body text-center">
-                <div id="mediaContent">
-                    <!-- Contenido dinámico -->
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
-                <a href="#" id="downloadMediaBtn" class="btn btn-primary" target="_blank">
-                    <i class="fas fa-download"></i> Descargar
-                </a>
-            </div>
-        </div>
-    </div>
-</div>
-
 <div class="mt-3">
     <div class="main-container d-flex flex-wrap flex-row pt-3">
         <!-- Columna izquierda (se mantiene igual) -->
@@ -250,7 +225,7 @@
                 }
             @endphp
             {{-- Mostrar SIEMPRE el filtro global si estás en sección "all" --}}
-            @if($activeSection === 'all')
+            @if($activeSection === 'all' && $hasData)
                 <div class="card mb-4">
                     <div class="card-body">
                         <form method="GET" action="{{ route('admin.generations') }}" class="mb-3">
@@ -273,7 +248,7 @@
                                 </div>
                             </div>
                         </form>
-    
+
                         {{-- Estadísticas de filtro global --}}
                         @if(isset($filters['global_user_id']) && isset($globalFilterStats))
                             <div class="alert alert-warning mb-3">
@@ -472,7 +447,7 @@
                                                             @if($video->result_video_paths) 
                                                                 @foreach($video->result_video_paths as $path) 
                                                                     <button class="btn btn-sm btn-outline-primary mb-1" 
-                                                                            onclick="showMediaModal('{{ Storage::url($path) }}', 'video')"> 
+                                                                            onclick="openVideoModal('{{ Storage::url($path) }}')"> 
                                                                         <i class="fas fa-play"></i> Ver 
                                                                     </button>
                                                                 @endforeach 
@@ -605,7 +580,7 @@
                                                         @if($tryon->result_image_paths) 
                                                             @foreach($tryon->result_image_paths as $path) 
                                                                 <button class="btn btn-sm btn-outline-success mb-1" 
-                                                                        onclick="showMediaModal('{{ Storage::url($path) }}', 'image')"> 
+                                                                        onclick="openImageModal('{{ Storage::url($path) }}', 'Probador Virtual Resultado')"> 
                                                                     <i class="fas fa-image"></i> Ver 
                                                                 </button>
                                                             @endforeach 
@@ -734,7 +709,7 @@
                                                             @if($model->result_image_paths) 
                                                                 @foreach($model->result_image_paths as $path) 
                                                                     <button class="btn btn-sm btn-outline-info mb-1" 
-                                                                            onclick="showMediaModal('{{ Storage::url($path) }}', 'image')"> 
+                                                                            onclick="openImageModal('{{ Storage::url($path) }}', 'Modelo Virtual Resultado')"> 
                                                                         <i class="fas fa-image"></i> Ver 
                                                                     </button>
                                                                 @endforeach 
@@ -751,8 +726,19 @@
                                             </tbody>
                                         </table>
                                     </div>
-                                    <div class="d-flex justify-content-center mt-3">
-                                        {{ $data['models']['items']->appends(request()->query())->links('pagination::bootstrap-4') }}
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            {{ $data['models']['items']->appends(request()->query())->links('pagination::bootstrap-4') }}
+                                        </div>
+                                        <div>
+                                            Mostrando 
+                                            <strong>{{ $data['models']['items']->firstItem() }}</strong> 
+                                            – 
+                                            <strong>{{ $data['models']['items']->lastItem() }}</strong> 
+                                            de 
+                                            <strong>{{ $data['models']['items']->total() }}</strong> resultados
+                                            (Página {{ $data['models']['items']->currentPage() }} de {{ $data['models']['items']->lastPage() }})
+                                        </div>
                                     </div>
                                 @else
                                     <div class="text-center py-5"> 
@@ -769,39 +755,335 @@
         </div>
     </div>
 </div>
+
+<!-- MODAL PARA VER RESULTADOS DE IMAGENES -->
+<div class="modal fade" id="imageModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-images"></i> Vista previa de resultados
+                </h5>
+                <button type="button" class="btn btn-outline-danger btn-sm" data-dismiss="modal" aria-label="Close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body p-0">
+                <div class="image-viewer-container">
+                    <img id="modalImage" src="" alt="Result Image">
+
+                    <!-- 🔍 INDICADOR DE ZOOM -->
+                    <div class="zoom-indicator">
+                        <i class="fas fa-search-plus"></i> <span id="zoomIndicator">100%</span>
+                    </div>
+
+                    <!-- 🔍 AYUDA VISUAL -->
+                    <div class="zoom-help">
+                        <div><i class="fas fa-mouse"></i> Scroll: Zoom</div>
+                        <div><i class="fas fa-hand-rock"></i> Click+Drag: Mover</div>
+                        <div><i class="fas fa-mouse"></i> Doble click: Zoom/Reset</div>
+                    </div>
+                </div>
+                <div class="image-controls">
+                    <div class="row align-items-center">
+                        <div class="col-md-6">
+                            <div class="zoom-controls">
+                                <button class="btn btn-primary btn-sm" onclick="zoomImage(0.8)" title="Zoom Out">
+                                    <i class="fas fa-search-minus"></i>
+                                </button>
+                                <span id="zoomLevel" class="mx-2 badge badge-secondary">100%</span>
+                                <button class="btn btn-primary btn-sm" onclick="zoomImage(1.25)" title="Zoom In">
+                                    <i class="fas fa-search-plus"></i>
+                                </button>
+                                <button class="btn btn-outline-primary btn-sm px-5 ml-2" onclick="resetZoom()" title="Ajustar a pantalla">
+                                    <i class="fas fa-expand-arrows-alt mr-2"></i> Ajustar
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-md-6 text-right">
+                            <button class="btn btn-success" onclick="downloadImage()" title="Descargar imagen">
+                                <i class="fas fa-download"></i> Descargar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL PARA VER VIDEO -->
+<div class="modal fade" id="videoModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-film"></i> Vista previa del video
+                </h5>
+                <button type="button" class="btn btn-outline-danger btn-sm" data-dismiss="modal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body p-0">
+                <div class="video-container">
+                    <video id="modalVideo" controls>
+                        <source src="" type="video/mp4">
+                        Tu navegador no soporta la reproducción de videos.
+                    </video>
+                </div>
+                <div class="video-controls">
+                    <div class="row align-items-center">
+                        <div class="col-md-12 text-right">
+                            <button class="btn btn-success" onclick="downloadVideo()">
+                                <i class="fas fa-download"></i> Descargar Video
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 @push('scripts')
 <script>
-    axios.defaults.headers.common['X-CSRF-TOKEN'] = document.querySelector('meta[name="csrf-token"]').getAttribute('content'); 
+    // Variables globales para el modal de imágenes
+    let currentImageSrc = '';
+    let currentVideoUrl = '';
+    let currentZoom = 1;
+    let translateX = 0;
+    let translateY = 0;
+    let isDragging = false;
+    let startX = 0;
+    let startY = 0;
 
-    function showMediaModal(url, type) {
-        const mediaContent = document.getElementById('mediaContent');
-        const downloadBtn = document.getElementById('downloadMediaBtn');
-        const modalTitle = document.getElementById('mediaModalLabel');
-        
-        // Limpiar contenido anterior
-        mediaContent.innerHTML = '';
-        
-        if (type === 'video') {
-            modalTitle.textContent = 'Video Generado';
-            mediaContent.innerHTML = `
-                <video controls class="img-fluid" style="max-width: 100%; max-height: 70vh;">
-                    <source src="${url}" type="video/mp4">
-                    Tu navegador no soporta la reproducción de video.
-                </video>
-            `;
-        } else if (type === 'image') {
-            modalTitle.textContent = 'Imagen Generada';
-            mediaContent.innerHTML = `
-                <img src="${url}" class="img-fluid" style="max-width: 100%; max-height: 70vh;" alt="Imagen generada">
-            `;
+    // FUNCIONES DE MODAL Y ZOOM PARA IMÁGENES
+    const openImageModal = (imageSrc, title) => {
+        currentImageSrc = imageSrc;
+        currentZoom = 1;
+        translateX = 0;
+        translateY = 0;
+        $('#modalImage').attr('src', imageSrc);
+        $('.modal-title').html(`<i class="fas fa-images"></i> ${title}`);
+        $('#zoomLevel').text('100%');
+        $('#zoomIndicator').text('100%');
+        updateImageTransform();
+        $('#imageModal').modal('show');
+    };
+
+    // 🔍 ZOOM CENTRADO EN EL CURSOR
+    const zoomImage = (factor) => {
+        currentZoom *= factor;
+        currentZoom = Math.max(0.5, Math.min(currentZoom, 5));
+        updateImageTransform();
+        $('#zoomLevel').text(Math.round(currentZoom * 100) + '%');
+        $('#zoomIndicator').text(Math.round(currentZoom * 100) + '%');
+    };
+
+    // 🔍 ZOOM CENTRADO EN EL CURSOR CON POSICIÓN DEL MOUSE
+    const zoomImageAtCursor = (factor, mouseX, mouseY) => {
+        const oldZoom = currentZoom;
+        currentZoom *= factor;
+        currentZoom = Math.max(0.5, Math.min(currentZoom, 5));
+
+        // Calcular el centro del contenedor de imagen
+        const container = $('.image-viewer-container');
+        const containerRect = container[0].getBoundingClientRect();
+        const containerCenterX = containerRect.width / 2;
+        const containerCenterY = containerRect.height / 2;
+
+        // Calcular la posición del mouse relativa al centro del contenedor
+        const mouseRelativeX = mouseX - containerRect.left - containerCenterX;
+        const mouseRelativeY = mouseY - containerRect.top - containerCenterY;
+
+        // Calcular el nuevo desplazamiento para mantener el zoom centrado en el cursor
+        const zoomRatio = currentZoom / oldZoom;
+        translateX = mouseRelativeX - (mouseRelativeX - translateX) * zoomRatio;
+        translateY = mouseRelativeY - (mouseRelativeY - translateY) * zoomRatio;
+
+        updateImageTransform();
+        $('#zoomLevel').text(Math.round(currentZoom * 100) + '%');
+        $('#zoomIndicator').text(Math.round(currentZoom * 100) + '%');
+    };
+
+    const resetZoom = () => {
+        currentZoom = 1;
+        translateX = 0;
+        translateY = 0;
+        updateImageTransform();
+        $('#zoomLevel').text('100%');
+        $('#zoomIndicator').text('100%');
+    };
+
+    const updateImageTransform = () => {
+        const image = $('#modalImage');
+        image.css({
+            transform: `translate(${translateX}px, ${translateY}px) scale(${currentZoom})`,
+            transition: isDragging ? 'none' : 'transform 0.1s ease-out'
+        });
+    };
+
+    const downloadImage = () => {
+        if (!currentImageSrc) return;
+
+        const link = document.createElement('a');
+        link.href = currentImageSrc;
+        link.download = `virtual-try-on-result-${Date.now()}.png`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
+    // EVENTOS DE DRAG Y ZOOM PARA IMÁGENES
+    $('#modalImage').on('mousedown', function(e) {
+        e.preventDefault();
+
+        // Solo permitir drag si hay zoom
+        if (currentZoom <= 1) return;
+
+        isDragging = true;
+        startX = e.clientX - translateX;
+        startY = e.clientY - translateY;
+
+        // Cambiar cursor y deshabilitar selección
+        $(this).css({
+            'cursor': 'grabbing',
+            'user-select': 'none',
+            '-webkit-user-select': 'none',
+            '-moz-user-select': 'none',
+            '-ms-user-select': 'none'
+        });
+
+        // Prevenir comportamiento por defecto
+        $('.image-viewer-container').addClass('dragging');
+
+        // Prevenir selección de texto durante el drag
+        $('body').css('user-select', 'none');
+    });
+
+    $(document).on('mousemove', function(e) {
+        if (!isDragging) return;
+
+        e.preventDefault();
+
+        // Calcular nueva posición
+        const newTranslateX = e.clientX - startX;
+        const newTranslateY = e.clientY - startY;
+
+        // Aplicar límites opcionales para evitar que se salga demasiado
+        const container = $('.image-viewer-container');
+        const containerWidth = container.width();
+        const containerHeight = container.height();
+
+        // Límites suaves (opcional)
+        const maxTranslateX = containerWidth * 0.5;
+        const maxTranslateY = containerHeight * 0.5;
+
+        translateX = Math.max(-maxTranslateX, Math.min(maxTranslateX, newTranslateX));
+        translateY = Math.max(-maxTranslateY, Math.min(maxTranslateY, newTranslateY));
+
+        updateImageTransform();
+    });
+
+    $(document).on('mouseup', function(e) {
+        if (!isDragging) return;
+
+        isDragging = false;
+
+        // Restaurar cursor normal
+        $('#modalImage').css({
+            'cursor': currentZoom > 1 ? 'grab' : 'default',
+            'user-select': 'auto',
+            '-webkit-user-select': 'auto',
+            '-moz-user-select': 'auto',
+            '-ms-user-select': 'auto'
+        });
+
+        $('.image-viewer-container').removeClass('dragging');
+        $('body').css('user-select', 'auto');
+    });
+
+    // 🔍 ZOOM CON SCROLL DEL MOUSE - CENTRADO EN CURSOR
+    $('#modalImage').on('wheel', function(e) {
+        e.preventDefault();
+
+        // Determinar dirección del scroll
+        const delta = e.originalEvent.deltaY;
+        const factor = delta > 0 ? 0.9 : 1.1;
+
+        // Obtener posición del mouse
+        const mouseX = e.clientX;
+        const mouseY = e.clientY;
+
+        // Aplicar zoom centrado en el cursor
+        zoomImageAtCursor(factor, mouseX, mouseY);
+    });
+
+    // 🔍 ZOOM CON BOTONES - CENTRADO EN LA IMAGEN
+    window.zoomImage = (factor) => {
+        // Para botones, usar el centro de la imagen
+        const container = $('.image-viewer-container');
+        const containerRect = container[0].getBoundingClientRect();
+        const centerX = containerRect.left + containerRect.width / 2;
+        const centerY = containerRect.top + containerRect.height / 2;
+
+        zoomImageAtCursor(factor, centerX, centerY);
+    };
+
+    // 🖱️ PREVENIR COMPORTAMIENTOS NO DESEADOS
+    $('#modalImage').on('contextmenu', function(e) {
+        e.preventDefault(); // Prevenir menú contextual
+    });
+
+    $('#modalImage').on('dragstart', function(e) {
+        e.preventDefault(); // Prevenir drag nativo de la imagen
+    });
+
+    // 🔍 INDICADOR VISUAL DE ZOOM
+    $('#modalImage').on('mouseenter', function() {
+        if (currentZoom > 1) {
+            $(this).css('cursor', 'grab');
+        } else {
+            $(this).css('cursor', 'default');
         }
-        
-        // Configurar botón de descarga
-        downloadBtn.href = url;
-        
-        // Mostrar modal
-        $('#mediaModal').modal('show');
+    });
+
+    // 🔍 DOBLE CLICK PARA ZOOM FIT/RESET
+    $('#modalImage').on('dblclick', function(e) {
+        e.preventDefault();
+
+        if (currentZoom === 1) {
+            // Zoom in al 200% centrado en el cursor
+            const mouseX = e.clientX;
+            const mouseY = e.clientY;
+            zoomImageAtCursor(2, mouseX, mouseY);
+        } else {
+            // Reset zoom
+            resetZoom();
+        }
+    });
+
+    // FUNCIONES PARA MODAL DE VIDEO
+    function openVideoModal(videoUrl) {
+        currentVideoUrl = videoUrl;
+        $('#modalVideo source').attr('src', videoUrl);
+        $('#modalVideo')[0].load();
+        $('#videoModal').modal('show');
     }
+
+    function downloadVideo() {
+        if (!currentVideoUrl) return;
+
+        const link = document.createElement('a');
+        link.href = currentVideoUrl;
+        link.download = `virtual-try-on-video-${Date.now()}.mp4`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    // FUNCIONES DE ADMINISTRACIÓN (EXISTENTES)
+    axios.defaults.headers.common['X-CSRF-TOKEN'] = document.querySelector('meta[name="csrf-token"]').getAttribute('content'); 
 
     function deleteGeneration(type, id) {
         Swal.fire({
@@ -878,20 +1160,13 @@
                     text: data.message,
                     timer: 1500
                 }).then(() => {
-                    // Si estamos eliminando el historial de un usuario específico (con filtro)
-                    // Redirigimos a la vista sin filtros para limpiarlos
                     if (data.user_id) {
-                        // Obtener la sección activa actual de la URL
                         const urlParams = new URLSearchParams(window.location.search);
                         const section = urlParams.get('section') || 'all';
-                        
-                        // Redirigir a la misma sección pero sin filtros
                         window.location.href = `{{ route('admin.generations') }}?section=${section}`;
                     } else if (data.reload) {
-                        // Para eliminaciones masivas, recargar la página
                         window.location.reload();
                     } else {
-                        // Para eliminaciones individuales, recargar para ver cambios
                         window.location.reload();
                     }
                 }); 
