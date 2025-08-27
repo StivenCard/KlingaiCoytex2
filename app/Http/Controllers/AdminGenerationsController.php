@@ -45,6 +45,14 @@ class AdminGenerationsController extends Controller
         // 4. Obtener datos según la sección activa
         $data = $this->getData($filters, $activeSection);
 
+        $noResultsForGlobalUser = false;
+        if ($filters['global_user_id']) {
+            $noResultsForGlobalUser = 
+                ($data['videos']['count'] === 0) &&
+                ($data['tryons']['count'] === 0) &&
+                ($data['models']['count'] === 0);
+        }
+
         // 5. Calcular totales generales (siempre sin filtros para el resumen)
         $videoData = $this->getVideoData();
         $tryOnData = $this->getTryOnData();
@@ -59,6 +67,17 @@ class AdminGenerationsController extends Controller
             ['model' => 'kolors-virtual-try-on-v1-5',  'duration' => null, 'mode' => 'default'],
             ['model' => 'kolors-v1-5',   'duration' => null, 'mode' => 'text-to-image'],
         ];
+
+        //7. Filtrado Global
+        if ($filters['global_user_id']) {
+            $globalFilterStats = [
+                'count'  => $data['videos']['count'] + $data['tryons']['count'] + $data['models']['count'],
+                'tokens' => $data['videos']['tokens'] + $data['tryons']['tokens'] + $data['models']['tokens'],
+                'price'  => $data['videos']['price'] + $data['tryons']['price'] + $data['models']['price'],
+            ];
+        } else {
+            $globalFilterStats = null;
+        }
 
         // Buscar solo esos registros
         $pricingRules = collect($pricingMap)->map(function ($map) {
@@ -90,16 +109,18 @@ class AdminGenerationsController extends Controller
                 'price'  => $videoData['price'] + $tryOnData['price'] + $modelData['price'],
             ],
         ];
-        return view('admin.generations', compact('data', 'totals', 'resourcePacks', 'filters', 'activeSection','pricingRules'));
+        return view('admin.generations', compact('data', 'totals', 'resourcePacks', 'filters', 'activeSection','pricingRules','globalFilterStats','noResultsForGlobalUser'));
     }
 
     private function processFilters(Request $request, string $activeSection): array
     {
         $filters = [
-            'active_section' => $activeSection
+            'active_section' => $activeSection,
+            // Filtro global siempre presente
+            'global_user_id' => $request->input('global_user_id'),
         ];
 
-        // Solo procesar filtros para la sección activa
+        // Filtros específicos por sección
         switch ($activeSection) {
             case 'videos':
                 $filters['video_user_id'] = $request->input('video_user_id');
@@ -112,34 +133,37 @@ class AdminGenerationsController extends Controller
                 break;
             case 'all':
             default:
-                // En vista general, no aplicamos filtros específicos
+                $filters['video_user_id'] = $request->input('video_user_id');
+                $filters['tryon_user_id'] = $request->input('tryon_user_id');
+                $filters['model_user_id'] = $request->input('model_user_id');
                 break;
         }
 
         return $filters;
     }
 
+
     private function getData(array $filters, string $activeSection): array
     {
         $data = [];
+        $globalUserId = $filters['global_user_id'] ?? null;
 
         switch ($activeSection) {
             case 'videos':
-                $data['videos'] = $this->getVideoData($filters['video_user_id'] ?? null);
+                $data['videos'] = $this->getVideoData($filters['video_user_id'] ?? null, $globalUserId);
                 break;
             case 'tryons':
-                $data['tryons'] = $this->getTryOnData($filters['tryon_user_id'] ?? null);
+                $data['tryons'] = $this->getTryOnData($filters['tryon_user_id'] ?? null, $globalUserId);
                 break;
             case 'models':
-                $data['models'] = $this->getModelData($filters['model_user_id'] ?? null);
+                $data['models'] = $this->getModelData($filters['model_user_id'] ?? null, $globalUserId);
                 break;
             case 'all':
             default:
-                // Vista general: mostrar todas las tablas sin filtros
                 $data = [
-                    'videos' => $this->getVideoData(),
-                    'tryons' => $this->getTryOnData(),
-                    'models' => $this->getModelData(),
+                    'videos' => $this->getVideoData(null, $globalUserId),
+                    'tryons' => $this->getTryOnData(null, $globalUserId),
+                    'models' => $this->getModelData(null, $globalUserId),
                 ];
                 break;
         }
@@ -170,42 +194,108 @@ class AdminGenerationsController extends Controller
         return $packs;
     }
 
-    private function getVideoData(?string $userId = null): array
+    private function getVideoData(?string $userId = null, ?string $globalUserId = null): array
     {
-        $query = ImageToVideo::query()
-            ->when($userId, fn($q) => $q->where('user_id', $userId));
+        // Query base con filtros
+        $baseQuery = ImageToVideo::query()
+            ->when($userId, fn($q) => $q->where('user_id', $userId))
+            ->when($globalUserId, fn($q) => $q->where('user_id', $globalUserId));
+
+        // Paginación de items (solo los que no fallaron)
+        $itemsQuery = ImageToVideo::query()
+            ->when($userId, fn($q) => $q->where('user_id', $userId))
+            ->when($globalUserId, fn($q) => $q->where('user_id', $globalUserId))
+            ->where('status', '!=', 'failed')
+            ->latest();
+
+        // Conteo solo de completados
+        $countQuery = ImageToVideo::query()
+            ->when($userId, fn($q) => $q->where('user_id', $userId))
+            ->when($globalUserId, fn($q) => $q->where('user_id', $globalUserId))
+            ->where('status', 'completed');
+
+        // Tokens (suma general)
+        $tokensQuery = ImageToVideo::query()
+            ->when($userId, fn($q) => $q->where('user_id', $userId))
+            ->when($globalUserId, fn($q) => $q->where('user_id', $globalUserId));
+
+        // Precio (suma general)
+        $priceQuery = ImageToVideo::query()
+            ->when($userId, fn($q) => $q->where('user_id', $userId))
+            ->when($globalUserId, fn($q) => $q->where('user_id', $globalUserId));
 
         return [
-            'items'  => $query->where('status', '!=', 'failed')->latest()->get(),
-            'count'  => $query->where('status', 'completed')->count(),
-            'tokens' => $query->sum('tokens'),
-            'price'  => $query->sum('price'),
+            'items'  => $itemsQuery->paginate(3, ['*'], 'videos_page'), // 🔹 Paginación aquí
+            'count'  => $countQuery->count(),
+            'tokens' => $tokensQuery->sum('tokens'),
+            'price'  => $priceQuery->sum('price'),
         ];
     }
 
-    private function getTryOnData(?string $userId = null): array
+
+    private function getTryOnData(?string $userId = null, ?string $globalUserId = null): array
     {
-        $query = VirtualTryOn::query()
-            ->when($userId, fn($q) => $q->where('user_id', $userId));
+        // Items paginados (excepto los fallidos)
+        $itemsQuery = VirtualTryOn::query()
+            ->when($userId, fn($q) => $q->where('user_id', $userId))
+            ->when($globalUserId, fn($q) => $q->where('user_id', $globalUserId))
+            ->where('status', '!=', 'failed')
+            ->latest();
+
+        // Conteo de completados
+        $countQuery = VirtualTryOn::query()
+            ->when($userId, fn($q) => $q->where('user_id', $userId))
+            ->when($globalUserId, fn($q) => $q->where('user_id', $globalUserId))
+            ->where('status', 'completed');
+
+        // Tokens
+        $tokensQuery = VirtualTryOn::query()
+            ->when($userId, fn($q) => $q->where('user_id', $userId))
+            ->when($globalUserId, fn($q) => $q->where('user_id', $globalUserId));
+
+        // Precio
+        $priceQuery = VirtualTryOn::query()
+            ->when($userId, fn($q) => $q->where('user_id', $userId))
+            ->when($globalUserId, fn($q) => $q->where('user_id', $globalUserId));
 
         return [
-            'items'  => $query->where('status', '!=', 'failed')->latest()->get(),
-            'count'  => $query->where('status', 'completed')->count(),
-            'tokens' => $query->sum('tokens'),
-            'price'  => $query->sum('price'),
+            'items'  => $itemsQuery->paginate(3, ['*'], 'tryons_page'), // 🔹 Paginación
+            'count'  => $countQuery->count(),
+            'tokens' => $tokensQuery->sum('tokens'),
+            'price'  => $priceQuery->sum('price'),
         ];
     }
 
-    private function getModelData(?string $userId = null): array
+    private function getModelData(?string $userId = null, ?string $globalUserId = null): array
     {
-        $query = VirtualModel::query()
-            ->when($userId, fn($q) => $q->where('user_id', $userId));
+        // Items paginados (excepto los fallidos)
+        $itemsQuery = VirtualModel::query()
+            ->when($userId, fn($q) => $q->where('user_id', $userId))
+            ->when($globalUserId, fn($q) => $q->where('user_id', $globalUserId))
+            ->where('status', '!=', 'failed')
+            ->latest();
+
+        // Conteo de completados
+        $countQuery = VirtualModel::query()
+            ->when($userId, fn($q) => $q->where('user_id', $userId))
+            ->when($globalUserId, fn($q) => $q->where('user_id', $globalUserId))
+            ->where('status', 'completed');
+
+        // Tokens
+        $tokensQuery = VirtualModel::query()
+            ->when($userId, fn($q) => $q->where('user_id', $userId))
+            ->when($globalUserId, fn($q) => $q->where('user_id', $globalUserId));
+
+        // Precio
+        $priceQuery = VirtualModel::query()
+            ->when($userId, fn($q) => $q->where('user_id', $userId))
+            ->when($globalUserId, fn($q) => $q->where('user_id', $globalUserId));
 
         return [
-            'items'  => $query->where('status', '!=', 'failed')->latest()->get(),
-            'count'  => $query->where('status', 'completed')->count(),
-            'tokens' => $query->sum('tokens'),
-            'price'  => $query->sum('price'),
+            'items'  => $itemsQuery->paginate(3, ['*'], 'models_page'), // 🔹 Paginación
+            'count'  => $countQuery->count(),
+            'tokens' => $tokensQuery->sum('tokens'),
+            'price'  => $priceQuery->sum('price'),
         ];
     }
 
