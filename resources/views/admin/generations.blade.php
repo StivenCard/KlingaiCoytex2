@@ -398,21 +398,29 @@
                                         </div>
                                     @endif
     
-                                    <div class="table-responsive"> 
+                                    <div class="table-responsive">
                                         <table class="table">
                                             <thead>
                                                 <tr>
                                                     <th>Usuario</th> 
-                                                    <th>Modelo</th> 
-                                                    <th style="min-width: 25rem">Prompt</th> 
-                                                    <th>Prompt Negativo</th> 
-                                                    <th>Relacion de Aspecto</th> 
+                                                    <th style="min-width: 150px;">Modelo</th> 
+                                                    <th style="min-width: 20rem;">Prompt</th> 
+                                                    <th style="min-width: 20rem;">Prompt Negativo</th> 
+
+                                                    {{-- Ajuste del header Relación de Aspecto --}}
+                                                    <th style="min-width: 180px; white-space: nowrap;">
+                                                        Relación de Aspecto
+                                                    </th> 
+
                                                     <th>Modo</th> 
                                                     <th>Duración</th> 
                                                     <th>Estado</th>
                                                     <th>Tokens</th>
                                                     <th>Precio</th> 
-                                                    <th>Fecha</th> 
+
+                                                    {{-- Fecha con ancho fijo para que siempre se vea completa --}}
+                                                    <th style="min-width: 180px;">Fecha</th> 
+
                                                     <th>Videos</th> 
                                                     <th>Acciones</th> 
                                                 </tr>
@@ -420,39 +428,53 @@
                                             <tbody> 
                                                 @foreach($data['videos']['items'] as $video) 
                                                     <tr>
-                                                        <td>
-                                                            <span class="badge badge-secondary">{{ $video->user_id }}</span> 
+                                                        <td><span class="badge badge-secondary">{{ $video->user_id }}</span></td>
+
+                                                        {{-- Modelo truncado --}}
+                                                        <td style="max-width: 150px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"
+                                                            title="{{ $video->model_name }}">
+                                                            {{ $video->model_name }}
                                                         </td>
-                                                        <td>{{ $video->model_name }}</td> 
-                                                        <td>{{ $video->prompt }}</td> 
-                                                        <td>{{ $video->negative_prompt ?? 'No definido' }}</td> 
+
+                                                        {{-- Prompt truncado --}}
+                                                        <td style="max-width: 300px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"
+                                                            title="{{ $video->prompt }}">
+                                                            {{ $video->prompt }}
+                                                        </td>
+
+                                                        {{-- Prompt negativo truncado --}}
+                                                        <td style="max-width: 300px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"
+                                                            title="{{ $video->negative_prompt ?? 'No definido' }}">
+                                                            {{ $video->negative_prompt ?? 'No definido' }}
+                                                        </td>
+
                                                         <td>{{ $video->aspect_ratio }}</td> 
-                                                        <td>
-                                                            <span class="badge badge-info">{{ $video->mode }}</span> 
-                                                        </td>
+                                                        <td><span class="badge badge-info">{{ $video->mode }}</span></td>
                                                         <td>{{ $video->duration }}s</td> 
                                                         <td>
-                                                            <span class="badge badge-{{ $video->status == 'completed' ? 'success' : 'warning' }}"> 
+                                                            <span class="badge badge-{{ $video->status == 'completed' ? 'success' : 'warning' }}">
                                                                 {{ $video->status }}
                                                             </span>
                                                         </td>
-                                                        <td>
-                                                            <span class="badge badge-primary">{{ $video->tokens }}</span>
-                                                        </td>
-                                                        <td>
-                                                            <span class="badge badge-secondary">${{ number_format($video->price, 2) }}</span>
-                                                        </td>
-                                                        <td>{{ $video->created_at->format('d/m/Y H:i') }}</td> 
-                                                        <td>
+                                                        <td><span class="badge badge-primary">{{ $video->tokens }}</span></td>
+                                                        <td><span class="badge badge-secondary">${{ number_format($video->price, 2) }}</span></td>
+
+                                                        {{-- Fecha siempre visible y completa --}}
+                                                        <td>{{ $video->created_at->format('d/m/Y H:i')}}</td> 
+
+                                                        {{-- Botones en línea --}}
+                                                        <td style="white-space: nowrap;">
                                                             @if($video->result_video_paths) 
                                                                 @foreach($video->result_video_paths as $path) 
-                                                                    <button class="btn btn-sm btn-outline-primary mb-1" 
+                                                                    <button class="btn btn-sm btn-outline-primary"
+                                                                            style="display: inline-block; margin-right: 3px; margin-bottom: 3px;"
                                                                             onclick="openVideoModal('{{ Storage::url($path) }}')"> 
                                                                         <i class="fas fa-play"></i> Ver 
                                                                     </button>
                                                                 @endforeach 
                                                             @endif
                                                         </td>
+
                                                         <td>
                                                             <button class="btn btn-sm btn-danger"
                                                                     onclick="deleteGeneration('video', {{ $video->id }})">
@@ -465,8 +487,19 @@
                                         </table>
                                     </div>
                                     {{-- Links de paginación --}}
-                                    <div class="d-flex justify-content-center mt-3">
-                                        {{ $data['videos']['items']->appends(request()->query())->links('pagination::bootstrap-4') }}
+                                    <div class="d-flex justify-content-between align-items-center mt-3">
+                                        <div>
+                                            {{ $data['videos']['items']->appends(request()->query())->links('pagination::bootstrap-4') }}
+                                        </div>
+                                        <div>
+                                            Mostrando 
+                                            <strong>{{ $data['videos']['items']->firstItem() }}</strong> 
+                                            – 
+                                            <strong>{{ $data['videos']['items']->lastItem() }}</strong> 
+                                            de 
+                                            <strong>{{ $data['videos']['items']->total() }}</strong> resultados
+                                            (Página {{ $data['videos']['items']->currentPage() }} de {{ $data['videos']['items']->lastPage() }})
+                                        </div>
                                     </div>
                                 @else
                                     <div class="text-center py-5"> 
@@ -598,8 +631,19 @@
                                         </table>
                                     </div>
                                     {{-- Links de paginación --}}
-                                    <div class="d-flex justify-content-center mt-3">
-                                        {{ $data['tryons']['items']->appends(request()->query())->links('pagination::bootstrap-4') }}
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            {{ $data['tryons']['items']->appends(request()->query())->links('pagination::bootstrap-4') }}
+                                        </div>
+                                        <div>
+                                            Mostrando 
+                                            <strong>{{ $data['tryons']['items']->firstItem() }}</strong> 
+                                            – 
+                                            <strong>{{ $data['tryons']['items']->lastItem() }}</strong> 
+                                            de 
+                                            <strong>{{ $data['tryons']['items']->total() }}</strong> resultados
+                                            (Página {{ $data['tryons']['items']->currentPage() }} de {{ $data['tryons']['items']->lastPage() }})
+                                        </div>
                                     </div>
                                 @else
                                     <div class="text-center py-5"> 

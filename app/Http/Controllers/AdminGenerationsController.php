@@ -14,6 +14,12 @@ use App\Services\KlingAi\KlingApiService;
 class AdminGenerationsController extends Controller
 {
     private $klingService;
+    private const MODEL_TYPES = ['video', 'tryon', 'model'];
+    private const MODEL_CLASSES = [
+        'video' => ImageToVideo::class,
+        'tryon' => VirtualTryOn::class,
+        'model' => VirtualModel::class
+    ];
 
     public function __construct(KlingApiService $klingService)
     {
@@ -23,9 +29,37 @@ class AdminGenerationsController extends Controller
     public function index(Request $request)
     {
         // 1. Determinar la sección activa
-        $activeSection = $request->input('section', 'all'); // 'all', 'videos', 'tryons', 'models'
+        $activeSection = $request->input('section', 'all');
         
         // 2. Obtener datos de consumo de API
+        $resourcePacks = $this->getResourcePacks();
+
+        // 3. Procesar filtros
+        $filters = $this->processFilters($request, $activeSection);
+
+        // 4. Obtener datos según la sección activa
+        $data = $this->getSectionData($filters, $activeSection);
+
+        // 5. Verificar si no hay resultados para filtro global
+        $noResultsForGlobalUser = $this->checkNoResultsForGlobalUser($data, $filters);
+
+        // 6. Calcular totales generales
+        $totals = $this->calculateTotals();
+
+        // 7. Obtener reglas de precios
+        $pricingRules = $this->getPricingRules();
+
+        // 8. Calcular estadísticas de filtro global
+        $globalFilterStats = $this->calculateGlobalFilterStats($data, $filters);
+
+        return view('admin.generations', compact(
+            'data', 'totals', 'resourcePacks', 'filters', 
+            'activeSection', 'pricingRules', 'globalFilterStats', 'noResultsForGlobalUser'
+        ));
+    }
+
+    private function getResourcePacks(): array
+    {
         try {
             $apiConsumption = $this->klingService->getApiConsumption();
             $resourcePacks = $this->processApiConsumption($apiConsumption['data']['resource_pack_subscribe_infos'] ?? []);
@@ -33,33 +67,135 @@ class AdminGenerationsController extends Controller
             if (empty($resourcePacks)) {
                 session()->flash('info_message', 'No hay paquetes de recursos activos o disponibles en su cuenta.');
             }
+
+            return $resourcePacks;
         } catch (\Exception $e) {
             Log::error("Error obteniendo consumo de API: " . $e->getMessage());
-            $resourcePacks = [];
             session()->flash('api_error', 'Error de la API: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    private function processFilters(Request $request, string $activeSection): array
+    {
+        $filters = [
+            'active_section' => $activeSection,
+            'global_user_id' => $request->input('global_user_id'),
+        ];
+
+        // Filtros específicos por sección
+        $sectionMap = [
+            'videos' => 'video',
+            'tryons' => 'tryon', 
+            'models' => 'model'
+        ];
+        
+        if ($activeSection === 'all') {
+            // Para sección "all", incluir todos los filtros individuales
+            foreach ($sectionMap as $sectionKey => $filterKey) {
+                $filters["{$filterKey}_user_id"] = $request->input("{$filterKey}_user_id");
+            }
+        } else {
+            // Para secciones individuales, usar la clave correcta
+            $filterKey = $sectionMap[$activeSection] ?? $activeSection;
+            $filters["{$filterKey}_user_id"] = $request->input("{$filterKey}_user_id");
         }
 
-        // 3. Procesar filtros específicos por sección
-        $filters = $this->processFilters($request, $activeSection);
+        return $filters;
+    }
 
-        // 4. Obtener datos según la sección activa
-        $data = $this->getData($filters, $activeSection);
+    private function getSectionData(array $filters, string $activeSection): array
+    {
+        $globalUserId = $filters['global_user_id'] ?? null;
+        $data = [];
 
-        $noResultsForGlobalUser = false;
-        if ($filters['global_user_id']) {
-            $noResultsForGlobalUser = 
-                ($data['videos']['count'] === 0) &&
-                ($data['tryons']['count'] === 0) &&
-                ($data['models']['count'] === 0);
+        $sectionMap = [
+            'videos' => 'video',
+            'tryons' => 'tryon',
+            'models' => 'model'
+        ];
+
+        if ($activeSection === 'all') {
+            foreach ($sectionMap as $sectionKey => $type) {
+                $userIdFilter = $filters["{$type}_user_id"] ?? null;
+                $data[$sectionKey] = $this->getModelData($type, $userIdFilter, $globalUserId);
+            }
+        } else {
+            $type = $sectionMap[$activeSection] ?? rtrim($activeSection, 's');
+            $userIdFilter = $filters["{$type}_user_id"] ?? null;
+            $data[$activeSection] = $this->getModelData($type, $userIdFilter, $globalUserId);
         }
 
-        // 5. Calcular totales generales (siempre sin filtros para el resumen)
-        $videoData = $this->getVideoData();
-        $tryOnData = $this->getTryOnData();
-        $modelData = $this->getModelData();
+        return $data;
+    }
 
-        // 6. Cargar reglas de precios
-            $pricingMap = [
+    private function getModelData(string $type, ?string $userId = null, ?string $globalUserId = null): array
+    {
+        $modelClass = self::MODEL_CLASSES[$type] ?? null;
+        
+        if (!$modelClass) {
+            return ['items' => collect(), 'count' => 0, 'tokens' => 0, 'price' => 0];
+        }
+
+        $query = $modelClass::query()
+            ->when($userId, fn($q) => $q->where('user_id', $userId))
+            ->when($globalUserId, fn($q) => $q->where('user_id', $globalUserId));
+
+        $itemsQuery = (clone $query)
+            ->where('status', '!=', 'failed')
+            ->latest();
+
+        $countQuery = (clone $query)
+            ->where('status', 'completed');
+
+        $pageName = "{$type}s_page";
+
+        return [
+            'items'  => $itemsQuery->paginate(10, ['*'], $pageName),
+            'count'  => $countQuery->count(),
+            'tokens' => $query->sum('tokens'),
+            'price'  => $query->sum('price'),
+        ];
+    }
+
+    private function checkNoResultsForGlobalUser(array $data, array $filters): bool
+    {
+        if (!$filters['global_user_id']) {
+            return false;
+        }
+
+        $totalCount = 0;
+        foreach ($data as $sectionData) {
+            $totalCount += $sectionData['count'] ?? 0;
+        }
+
+        return $totalCount === 0;
+    }
+
+    private function calculateTotals(): array
+    {
+        $totals = ['all' => ['count' => 0, 'tokens' => 0, 'price' => 0]];
+
+        foreach (self::MODEL_TYPES as $type) {
+            $modelClass = self::MODEL_CLASSES[$type];
+            $totals[$type . 's'] = [
+                'count'  => $modelClass::where('status', 'completed')->count(),
+                'tokens' => $modelClass::sum('tokens'),
+                'price'  => $modelClass::sum('price'),
+            ];
+
+            // Sumar al total general
+            $totals['all']['count'] += $totals[$type . 's']['count'];
+            $totals['all']['tokens'] += $totals[$type . 's']['tokens'];
+            $totals['all']['price'] += $totals[$type . 's']['price'];
+        }
+
+        return $totals;
+    }
+
+    private function getPricingRules()
+    {
+        $pricingMap = [
             ['model' => 'kling-v1-6', 'duration' => 5,  'mode' => 'std'],
             ['model' => 'kling-v1-6', 'duration' => 10, 'mode' => 'std'],
             ['model' => 'kling-v1-6', 'duration' => 5,  'mode' => 'pro'],
@@ -68,107 +204,29 @@ class AdminGenerationsController extends Controller
             ['model' => 'kolors-v1-5',   'duration' => null, 'mode' => 'text-to-image'],
         ];
 
-        //7. Filtrado Global
-        if ($filters['global_user_id']) {
-            $globalFilterStats = [
-                'count'  => $data['videos']['count'] + $data['tryons']['count'] + $data['models']['count'],
-                'tokens' => $data['videos']['tokens'] + $data['tryons']['tokens'] + $data['models']['tokens'],
-                'price'  => $data['videos']['price'] + $data['tryons']['price'] + $data['models']['price'],
-            ];
-        } else {
-            $globalFilterStats = null;
-        }
-
-        // Buscar solo esos registros
-        $pricingRules = collect($pricingMap)->map(function ($map) {
+        return collect($pricingMap)->map(function ($map) {
             return PricingRule::where('model_name', $map['model'])
                 ->when($map['duration'], fn($q) => $q->where('duration', $map['duration']))
                 ->when($map['mode'], fn($q) => $q->where('mode', $map['mode']))
                 ->first();
-        })->filter(); // quitamos nulls por si algo no existe
-
-        $totals = [
-            'videos' => [
-                'count'  => $videoData['count'],
-                'tokens' => $videoData['tokens'],
-                'price'  => $videoData['price'],
-            ],
-            'tryons' => [
-                'count'  => $tryOnData['count'],
-                'tokens' => $tryOnData['tokens'],
-                'price'  => $tryOnData['price'],
-            ],
-            'models' => [
-                'count'  => $modelData['count'],
-                'tokens' => $modelData['tokens'],
-                'price'  => $modelData['price'],
-            ],
-            'all' => [
-                'count'  => $videoData['count'] + $tryOnData['count'] + $modelData['count'],
-                'tokens' => $videoData['tokens'] + $tryOnData['tokens'] + $modelData['tokens'],
-                'price'  => $videoData['price'] + $tryOnData['price'] + $modelData['price'],
-            ],
-        ];
-        return view('admin.generations', compact('data', 'totals', 'resourcePacks', 'filters', 'activeSection','pricingRules','globalFilterStats','noResultsForGlobalUser'));
+        })->filter();
     }
 
-    private function processFilters(Request $request, string $activeSection): array
+    private function calculateGlobalFilterStats(array $data, array $filters): ?array
     {
-        $filters = [
-            'active_section' => $activeSection,
-            // Filtro global siempre presente
-            'global_user_id' => $request->input('global_user_id'),
-        ];
-
-        // Filtros específicos por sección
-        switch ($activeSection) {
-            case 'videos':
-                $filters['video_user_id'] = $request->input('video_user_id');
-                break;
-            case 'tryons':
-                $filters['tryon_user_id'] = $request->input('tryon_user_id');
-                break;
-            case 'models':
-                $filters['model_user_id'] = $request->input('model_user_id');
-                break;
-            case 'all':
-            default:
-                $filters['video_user_id'] = $request->input('video_user_id');
-                $filters['tryon_user_id'] = $request->input('tryon_user_id');
-                $filters['model_user_id'] = $request->input('model_user_id');
-                break;
+        if (!$filters['global_user_id']) {
+            return null;
         }
 
-        return $filters;
-    }
+        $stats = ['count' => 0, 'tokens' => 0, 'price' => 0];
 
-
-    private function getData(array $filters, string $activeSection): array
-    {
-        $data = [];
-        $globalUserId = $filters['global_user_id'] ?? null;
-
-        switch ($activeSection) {
-            case 'videos':
-                $data['videos'] = $this->getVideoData($filters['video_user_id'] ?? null, $globalUserId);
-                break;
-            case 'tryons':
-                $data['tryons'] = $this->getTryOnData($filters['tryon_user_id'] ?? null, $globalUserId);
-                break;
-            case 'models':
-                $data['models'] = $this->getModelData($filters['model_user_id'] ?? null, $globalUserId);
-                break;
-            case 'all':
-            default:
-                $data = [
-                    'videos' => $this->getVideoData(null, $globalUserId),
-                    'tryons' => $this->getTryOnData(null, $globalUserId),
-                    'models' => $this->getModelData(null, $globalUserId),
-                ];
-                break;
+        foreach ($data as $sectionData) {
+            $stats['count'] += $sectionData['count'] ?? 0;
+            $stats['tokens'] += $sectionData['tokens'] ?? 0;
+            $stats['price'] += $sectionData['price'] ?? 0;
         }
 
-        return $data;
+        return $stats;
     }
 
     private function processApiConsumption(array $packs): array
@@ -192,111 +250,6 @@ class AdminGenerationsController extends Controller
         }
 
         return $packs;
-    }
-
-    private function getVideoData(?string $userId = null, ?string $globalUserId = null): array
-    {
-        // Query base con filtros
-        $baseQuery = ImageToVideo::query()
-            ->when($userId, fn($q) => $q->where('user_id', $userId))
-            ->when($globalUserId, fn($q) => $q->where('user_id', $globalUserId));
-
-        // Paginación de items (solo los que no fallaron)
-        $itemsQuery = ImageToVideo::query()
-            ->when($userId, fn($q) => $q->where('user_id', $userId))
-            ->when($globalUserId, fn($q) => $q->where('user_id', $globalUserId))
-            ->where('status', '!=', 'failed')
-            ->latest();
-
-        // Conteo solo de completados
-        $countQuery = ImageToVideo::query()
-            ->when($userId, fn($q) => $q->where('user_id', $userId))
-            ->when($globalUserId, fn($q) => $q->where('user_id', $globalUserId))
-            ->where('status', 'completed');
-
-        // Tokens (suma general)
-        $tokensQuery = ImageToVideo::query()
-            ->when($userId, fn($q) => $q->where('user_id', $userId))
-            ->when($globalUserId, fn($q) => $q->where('user_id', $globalUserId));
-
-        // Precio (suma general)
-        $priceQuery = ImageToVideo::query()
-            ->when($userId, fn($q) => $q->where('user_id', $userId))
-            ->when($globalUserId, fn($q) => $q->where('user_id', $globalUserId));
-
-        return [
-            'items'  => $itemsQuery->paginate(3, ['*'], 'videos_page'), // 🔹 Paginación aquí
-            'count'  => $countQuery->count(),
-            'tokens' => $tokensQuery->sum('tokens'),
-            'price'  => $priceQuery->sum('price'),
-        ];
-    }
-
-
-    private function getTryOnData(?string $userId = null, ?string $globalUserId = null): array
-    {
-        // Items paginados (excepto los fallidos)
-        $itemsQuery = VirtualTryOn::query()
-            ->when($userId, fn($q) => $q->where('user_id', $userId))
-            ->when($globalUserId, fn($q) => $q->where('user_id', $globalUserId))
-            ->where('status', '!=', 'failed')
-            ->latest();
-
-        // Conteo de completados
-        $countQuery = VirtualTryOn::query()
-            ->when($userId, fn($q) => $q->where('user_id', $userId))
-            ->when($globalUserId, fn($q) => $q->where('user_id', $globalUserId))
-            ->where('status', 'completed');
-
-        // Tokens
-        $tokensQuery = VirtualTryOn::query()
-            ->when($userId, fn($q) => $q->where('user_id', $userId))
-            ->when($globalUserId, fn($q) => $q->where('user_id', $globalUserId));
-
-        // Precio
-        $priceQuery = VirtualTryOn::query()
-            ->when($userId, fn($q) => $q->where('user_id', $userId))
-            ->when($globalUserId, fn($q) => $q->where('user_id', $globalUserId));
-
-        return [
-            'items'  => $itemsQuery->paginate(3, ['*'], 'tryons_page'), // 🔹 Paginación
-            'count'  => $countQuery->count(),
-            'tokens' => $tokensQuery->sum('tokens'),
-            'price'  => $priceQuery->sum('price'),
-        ];
-    }
-
-    private function getModelData(?string $userId = null, ?string $globalUserId = null): array
-    {
-        // Items paginados (excepto los fallidos)
-        $itemsQuery = VirtualModel::query()
-            ->when($userId, fn($q) => $q->where('user_id', $userId))
-            ->when($globalUserId, fn($q) => $q->where('user_id', $globalUserId))
-            ->where('status', '!=', 'failed')
-            ->latest();
-
-        // Conteo de completados
-        $countQuery = VirtualModel::query()
-            ->when($userId, fn($q) => $q->where('user_id', $userId))
-            ->when($globalUserId, fn($q) => $q->where('user_id', $globalUserId))
-            ->where('status', 'completed');
-
-        // Tokens
-        $tokensQuery = VirtualModel::query()
-            ->when($userId, fn($q) => $q->where('user_id', $userId))
-            ->when($globalUserId, fn($q) => $q->where('user_id', $globalUserId));
-
-        // Precio
-        $priceQuery = VirtualModel::query()
-            ->when($userId, fn($q) => $q->where('user_id', $userId))
-            ->when($globalUserId, fn($q) => $q->where('user_id', $globalUserId));
-
-        return [
-            'items'  => $itemsQuery->paginate(3, ['*'], 'models_page'), // 🔹 Paginación
-            'count'  => $countQuery->count(),
-            'tokens' => $tokensQuery->sum('tokens'),
-            'price'  => $priceQuery->sum('price'),
-        ];
     }
 
     public function deleteGeneration(Request $request, $type, $id)
@@ -357,8 +310,8 @@ class AdminGenerationsController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => $message,
-                'user_id' => $userId, // Indicamos si se estaba filtrando por usuario
-                'reload' => !$userId // Solo recargamos completamente si no había filtro de usuario
+                'user_id' => $userId,
+                'reload' => !$userId
             ]);
 
         } catch (\Exception $e) {
@@ -377,23 +330,25 @@ class AdminGenerationsController extends Controller
 
     private function findGenerationItem(string $type, int $id)
     {
-        return match($type) {
-            'video' => ImageToVideo::findOrFail($id),
-            'tryon' => VirtualTryOn::findOrFail($id),
-            'model' => VirtualModel::findOrFail($id),
-            default => throw new \Exception('Tipo de generación no válido'),
-        };
+        $modelClass = self::MODEL_CLASSES[$type] ?? null;
+        
+        if (!$modelClass) {
+            throw new \Exception('Tipo de generación no válido');
+        }
+
+        return $modelClass::findOrFail($id);
     }
 
     private function deleteGenerationsByType(string $type, ?string $userId = null): void
     {
-        $query = match($type) {
-            'video' => ImageToVideo::query(),
-            'tryon' => VirtualTryOn::query(),
-            'model' => VirtualModel::query(),
-            default => throw new \Exception('Tipo de generación no válido'),
-        };
+        $modelClass = self::MODEL_CLASSES[$type] ?? null;
+        
+        if (!$modelClass) {
+            throw new \Exception('Tipo de generación no válido');
+        }
 
+        $query = $modelClass::query();
+        
         if ($userId) {
             $query->where('user_id', $userId);
         }
@@ -406,8 +361,8 @@ class AdminGenerationsController extends Controller
 
     private function deleteAllTypes(?string $userId = null): void
     {
-        $this->deleteGenerationsByType('video', $userId);
-        $this->deleteGenerationsByType('tryon', $userId);
-        $this->deleteGenerationsByType('model', $userId);
+        foreach (self::MODEL_TYPES as $type) {
+            $this->deleteGenerationsByType($type, $userId);
+        }
     }
 }
