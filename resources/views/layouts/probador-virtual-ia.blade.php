@@ -193,11 +193,11 @@
             gap: 8px;
         }
 
-        .tooltip-content p strong {
+        .probador-virtual-container .tooltip-content p strong {
             color: rgb(0, 0, 0);
         }
 
-        .card-img-top {
+        .probador-virtual-container .card-img-top {
             height: 125px !important; /* Aumentamos la altura */
             object-fit: contain !important; /* Cambiamos a contain para mostrar imagen completa */
             background-color: #fff; /* Fondo blanco para mejor visualización */
@@ -243,7 +243,7 @@
         }
         .probador-virtual-container  .image-viewer-container.dragging {cursor: grabbing !important;}
 
-        #modalImage {
+        .probador-virtual-container #modalImage {
             max-width: 90%;
             max-height: 90%;
             object-fit: contain;
@@ -284,7 +284,7 @@
             justify-content: center;
         }
 
-        #zoomLevel {
+        .probador-virtual-container #zoomLevel {
             min-width: 60px;
             text-align: center;
             font-weight: bold;
@@ -415,6 +415,7 @@
             grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
             gap: 1rem;
             padding: 1rem;
+            width: 30rem;
         }
 
         .probador-virtual-container .video-item {
@@ -615,19 +616,19 @@
 
     /*Estilos Panel Admin */
     /* Hover para todas las cards-enlace */
-    .card-link .card {
+    .probador-virtual-container .card-link .card {
         transition: transform 0.15s ease, box-shadow 0.15s ease;
     }
 
     /* Efecto hover */
-    .card-link:hover .card {
+    .probador-virtual-container .card-link:hover .card {
         transform: translateY(-3px);
         box-shadow: 0 6px 12px rgba(0,0,0,0.2);
         cursor: pointer;
     }
 
     /* Estado activo */
-    .card-link.active .card {
+    .probador-virtual-container .card-link.active .card {
         transform: translateY(-3px);
         box-shadow: 0 6px 12px rgba(0,0,0,0.25);
         border: 2px solid #fff;

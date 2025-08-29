@@ -62,9 +62,4 @@ class User extends Authenticatable
         return $this->hasMany(VirtualTryOn::class);
     }
 
-    public function logs()
-    {
-        return $this->hasMany(KlingUserLog::class);
-    }
-
 }

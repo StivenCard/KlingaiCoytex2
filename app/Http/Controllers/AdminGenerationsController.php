@@ -11,21 +11,53 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Services\KlingAi\KlingApiService;
 
+/**
+ * Class AdminGenerationsController
+ *
+ * Controlador administrativo para gestionar las generaciones de la plataforma:
+ * - Videos
+ * - Try-Ons
+ * - Modelos virtuales
+ *
+ * Permite listar, filtrar, consultar estadísticas y eliminar generaciones.
+ */
 class AdminGenerationsController extends Controller
 {
+    /**
+     * Servicio para interactuar con la API de KlingAI.
+     *
+     * @var KlingApiService
+     */
     private $klingService;
+    /**
+     * Tipos de modelo soportados.
+     */
     private const MODEL_TYPES = ['video', 'tryon', 'model'];
+    /**
+     * Mapeo de tipo de modelo a clase Eloquent correspondiente.
+     */
     private const MODEL_CLASSES = [
         'video' => ImageToVideo::class,
         'tryon' => VirtualTryOn::class,
         'model' => VirtualModel::class
     ];
 
+     /**
+     * Constructor con inyección de dependencias.
+     *
+     * @param KlingApiService $klingService
+     */
     public function __construct(KlingApiService $klingService)
     {
         $this->klingService = $klingService;
     }
 
+    /**
+     * Vista principal de generaciones administrativas.
+     *
+     * @param Request $request
+     * @return \Illuminate\View\View
+     */
     public function index(Request $request)
     {
         // 1. Determinar la sección activa
@@ -58,6 +90,11 @@ class AdminGenerationsController extends Controller
         ));
     }
 
+    /**
+     * Obtiene el consumo de API y procesa los paquetes de recursos.
+     *
+     * @return array
+     */
     private function getResourcePacks(): array
     {
         try {
@@ -75,7 +112,14 @@ class AdminGenerationsController extends Controller
             return [];
         }
     }
-
+    
+    /**
+     * Procesa filtros globales y específicos por sección.
+     *
+     * @param Request $request
+     * @param string $activeSection
+     * @return array
+     */
     private function processFilters(Request $request, string $activeSection): array
     {
         $filters = [
@@ -104,6 +148,13 @@ class AdminGenerationsController extends Controller
         return $filters;
     }
 
+    /**
+     * Obtiene datos de generaciones según sección activa.
+     *
+     * @param array $filters
+     * @param string $activeSection
+     * @return array
+     */
     private function getSectionData(array $filters, string $activeSection): array
     {
         $globalUserId = $filters['global_user_id'] ?? null;
@@ -129,6 +180,14 @@ class AdminGenerationsController extends Controller
         return $data;
     }
 
+    /**
+     * Consulta y resume datos de un modelo específico.
+     *
+     * @param string $type
+     * @param string|null $userId
+     * @param string|null $globalUserId
+     * @return array{items: \Illuminate\Contracts\Pagination\Paginator, count:int, tokens:int, price:float}
+     */
     private function getModelData(string $type, ?string $userId = null, ?string $globalUserId = null): array
     {
         $modelClass = self::MODEL_CLASSES[$type] ?? null;
@@ -157,7 +216,14 @@ class AdminGenerationsController extends Controller
             'price'  => $query->sum('price'),
         ];
     }
-
+    
+    /**
+     * Verifica si no hay resultados para un filtro global de usuario.
+     *
+     * @param array $data
+     * @param array $filters
+     * @return bool
+     */
     private function checkNoResultsForGlobalUser(array $data, array $filters): bool
     {
         if (!$filters['global_user_id']) {
@@ -172,6 +238,11 @@ class AdminGenerationsController extends Controller
         return $totalCount === 0;
     }
 
+    /**
+     * Calcula los totales generales y por tipo.
+     *
+     * @return array
+     */
     private function calculateTotals(): array
     {
         $totals = ['all' => ['count' => 0, 'tokens' => 0, 'price' => 0]];
@@ -193,6 +264,11 @@ class AdminGenerationsController extends Controller
         return $totals;
     }
 
+    /**
+     * Obtiene las reglas de precios disponibles.
+     *
+     * @return \Illuminate\Support\Collection
+     */
     private function getPricingRules()
     {
         $pricingMap = [
@@ -212,6 +288,14 @@ class AdminGenerationsController extends Controller
         })->filter();
     }
 
+    
+    /**
+     * Calcula estadísticas cuando se aplica un filtro global de usuario.
+     *
+     * @param array $data
+     * @param array $filters
+     * @return array|null
+     */
     private function calculateGlobalFilterStats(array $data, array $filters): ?array
     {
         if (!$filters['global_user_id']) {
@@ -229,6 +313,12 @@ class AdminGenerationsController extends Controller
         return $stats;
     }
 
+    /**
+     * Procesa los paquetes de recursos y calcula métricas de uso.
+     *
+     * @param array $packs
+     * @return array
+     */
     private function processApiConsumption(array $packs): array
     {
         foreach ($packs as &$pack) {
@@ -252,6 +342,14 @@ class AdminGenerationsController extends Controller
         return $packs;
     }
 
+    /**
+     * Elimina una generación individual.
+     *
+     * @param Request $request
+     * @param string $type
+     * @param int $id
+     * @return \Illuminate\Http\JsonResponse
+     */
     public function deleteGeneration(Request $request, $type, $id)
     {
         try {
@@ -287,6 +385,12 @@ class AdminGenerationsController extends Controller
         }
     }
 
+    /**
+     * Elimina todas las generaciones (global o por usuario).
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
     public function deleteAllGenerations(Request $request)
     {
         try {
@@ -328,6 +432,15 @@ class AdminGenerationsController extends Controller
         }
     }
 
+    
+    /**
+     * Busca un ítem de generación por tipo e ID.
+     *
+     * @param string $type
+     * @param int $id
+     * @return \Illuminate\Database\Eloquent\Model
+     * @throws \Exception
+     */
     private function findGenerationItem(string $type, int $id)
     {
         $modelClass = self::MODEL_CLASSES[$type] ?? null;
@@ -339,6 +452,13 @@ class AdminGenerationsController extends Controller
         return $modelClass::findOrFail($id);
     }
 
+    /**
+     * Elimina todas las generaciones de un tipo específico.
+     *
+     * @param string $type
+     * @param string|null $userId
+     * @return void
+     */
     private function deleteGenerationsByType(string $type, ?string $userId = null): void
     {
         $modelClass = self::MODEL_CLASSES[$type] ?? null;
@@ -359,6 +479,12 @@ class AdminGenerationsController extends Controller
         }
     }
 
+    /**
+     * Elimina todas las generaciones de todos los tipos.
+     *
+     * @param string|null $userId
+     * @return void
+     */
     private function deleteAllTypes(?string $userId = null): void
     {
         foreach (self::MODEL_TYPES as $type) {
