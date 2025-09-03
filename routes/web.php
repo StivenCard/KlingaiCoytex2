@@ -5,6 +5,7 @@ use App\Http\Controllers\ImageToVideoController;
 use App\Http\Controllers\VirtualModelController;
 use App\Http\Controllers\VirtualTryOnController;
 use App\Http\Controllers\AdminGenerationsController;
+use App\Http\Controllers\ChatAi\ChatAiController;
 use App\Http\Controllers\Servientrega\ServiEntregaController;
 
 Route::get('/', function () {
@@ -38,3 +39,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
 //RUTAS PARA SERVIENTREGA
 Route::get('/consultar-guia', [ServiEntregaController::class, 'consultaGuia'])->name('consultar-guia');
+
+//RUTAS PARA CHAT CON AI
+Route::get('/chat', [ChatAiController::class, 'index'])->name('openai.chat');
+Route::post('/chat/send', [ChatAiController::class, 'send'])->name('openai.send');

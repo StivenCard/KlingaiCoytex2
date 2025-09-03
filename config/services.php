@@ -45,5 +45,11 @@ return [
         'api_url' => env('SERVIENTREGA_API_URL', 'https://wssismilenio.servientrega.com/wsrastreoenvios/wsrastreoenvios.asmx/ConsultarGuia'),
         'username' => env('USERNAME'),
         'password' => env('PASSWORD')
+    ],
+
+    'chatai' => [
+        'api_key' => env('CHAT_AI_API_KEY'),
+        'model' => env('CHAT_AI_MODEL', 'gemini-2.5-flash'),
+        'api_url' => env('CHAT_AI_ENDPOINT', 'https://generativelanguage.googleapis.com/v1beta')
     ]
 ];

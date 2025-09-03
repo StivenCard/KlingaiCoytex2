@@ -272,10 +272,10 @@ class AdminGenerationsController extends Controller
     private function getPricingRules()
     {
         $pricingMap = [
-            ['model' => 'kling-v1-6', 'duration' => 5,  'mode' => 'std'],
-            ['model' => 'kling-v1-6', 'duration' => 10, 'mode' => 'std'],
-            ['model' => 'kling-v1-6', 'duration' => 5,  'mode' => 'pro'],
-            ['model' => 'kling-v1-6', 'duration' => 10, 'mode' => 'pro'],
+            ['model' => 'kling-v1-6-multi-image', 'duration' => 5,  'mode' => 'std'],
+            ['model' => 'kling-v1-6-multi-image', 'duration' => 10, 'mode' => 'std'],
+            ['model' => 'kling-v1-6-multi-image', 'duration' => 5,  'mode' => 'pro'],
+            ['model' => 'kling-v1-6-multi-image', 'duration' => 10, 'mode' => 'pro'],
             ['model' => 'kolors-virtual-try-on-v1-5',  'duration' => null, 'mode' => 'default'],
             ['model' => 'kolors-v1-5',   'duration' => null, 'mode' => 'text-to-image'],
         ];

@@ -634,6 +634,18 @@
         border: 2px solid #fff;
     }
 
+    /* Para Chrome, Safari, Edge, Opera */
+    .probador-virtual-container  input[type=number]::-webkit-inner-spin-button, 
+    .probador-virtual-container  input[type=number]::-webkit-outer-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+
+    /* Para Firefox */
+    .probador-virtual-container  input[type=number] {
+        -moz-appearance: textfield;
+    }
+
 </style>
 </head>
 <body>
