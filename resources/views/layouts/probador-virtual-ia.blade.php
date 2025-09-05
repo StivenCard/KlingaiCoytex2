@@ -614,39 +614,38 @@
             transform: scale(1.05);
         }
 
-    /*Estilos Panel Admin */
-    /* Hover para todas las cards-enlace */
-    .probador-virtual-container .card-link .card {
-        transition: transform 0.15s ease, box-shadow 0.15s ease;
-    }
+        /*Estilos Panel Admin */
+        /* Hover para todas las cards-enlace */
+        .probador-virtual-container .card-link .card {
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
 
-    /* Efecto hover */
-    .probador-virtual-container .card-link:hover .card {
-        transform: translateY(-3px);
-        box-shadow: 0 6px 12px rgba(0,0,0,0.2);
-        cursor: pointer;
-    }
+        /* Efecto hover */
+        .probador-virtual-container .card-link:hover .card {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.2);
+            cursor: pointer;
+        }
 
-    /* Estado activo */
-    .probador-virtual-container .card-link.active .card {
-        transform: translateY(-3px);
-        box-shadow: 0 6px 12px rgba(0,0,0,0.25);
-        border: 2px solid #fff;
-    }
+        /* Estado activo */
+        .probador-virtual-container .card-link.active .card {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.25);
+            border: 2px solid #fff;
+        }
 
-    /* Para Chrome, Safari, Edge, Opera */
-    .probador-virtual-container  input[type=number]::-webkit-inner-spin-button, 
-    .probador-virtual-container  input[type=number]::-webkit-outer-spin-button {
-        -webkit-appearance: none;
-        margin: 0;
-    }
+        /* Para Chrome, Safari, Edge, Opera */
+        .probador-virtual-container  input[type=number]::-webkit-inner-spin-button, 
+        .probador-virtual-container  input[type=number]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
 
-    /* Para Firefox */
-    .probador-virtual-container  input[type=number] {
-        -moz-appearance: textfield;
-    }
-
-</style>
+        /* Para Firefox */
+        .probador-virtual-container  input[type=number] {
+            -moz-appearance: textfield;
+        }
+    </style>
 </head>
 <body>
     <div class="probador-virtual-container">

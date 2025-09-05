@@ -41,5 +41,5 @@ Route::prefix('admin')->name('admin.')->group(function () {
 Route::get('/consultar-guia', [ServiEntregaController::class, 'consultaGuia'])->name('consultar-guia');
 
 //RUTAS PARA CHAT CON AI
-Route::get('/chat', [ChatAiController::class, 'index'])->name('openai.chat');
-Route::post('/chat/send', [ChatAiController::class, 'send'])->name('openai.send');
+Route::get('/chat', [ChatAiController::class, 'index'])->name('chatai.chat');
+Route::post('/chat/send', [ChatAiController::class, 'send'])->name('chatai.send');
