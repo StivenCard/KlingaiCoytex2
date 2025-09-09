@@ -221,10 +221,28 @@
             <div class="message assistant-message">
                 <span class="icon"><i class="fas fa-robot"></i></span>
                 <div>
-                    ¡Hola! 👋 Soy tu <b>asistente empresarial</b>. Estoy aquí para ayudarte con cualquier consulta relacionada con tu negocio.
+                    ¡Hola! 👋 Soy tu <b>SIO BOT</b>. Tu asistente virtual inteligente estoy aquí para ayudarte con cualquier consulta.
                     <small id="welcome-time"></small>
                 </div>
             </div>
+
+            @foreach ($historial as $registro)
+                <div class="message user-message">
+                    <span class="icon"><i class="fas fa-user"></i></span>
+                    <div>
+                        {!!$registro->user_message!!}
+                        <small>{{ $registro->created_at->format('H:i') }}</small>
+                    </div>
+                </div>
+
+                <div class="message assistant-message">
+                    <span class="icon"><i class="fas fa-robot"></i></span>
+                    <div>
+                        {!!$registro->ai_response!!}
+                        <small>{{ $registro->created_at->format('H:i') }}</small>
+                    </div>
+                </div>
+            @endforeach
         </div>
         <div id="typing">El asistente está escribiendo...</div>
         <div id="chat-input">

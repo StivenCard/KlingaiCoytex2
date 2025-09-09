@@ -20,9 +20,27 @@ class ChatAiService
         $this->endpoint = "{$this->api_url}/models/{$this->model}:generateContent";
     }
 
-    public function enviarMensaje(string $mensaje)
+    public function enviarMensaje(string $mensaje, array $historial=[])
     {
         try {
+
+            $contents = array_merge($historial,[
+                [
+                    'role' => 'user',
+                    'parts' => [
+                        [
+                            'text' => $mensaje
+                        ]
+                    ]
+                ]
+            ]);
+
+            $tools = [
+                [
+                    'function_declarations' => ProcedimientosService::allProcedimientos()
+                ]
+            ];
+
             $response = Http::withHeaders([
                 'Content-Type' => 'application/json',
                 'X-goog-api-key' => $this->api_key,
@@ -32,13 +50,8 @@ class ChatAiService
                         ["text" => "Eres un asistente empresarial. Responde siempre en español, breve y claro. Usa <b>HTML</b> para negritas en lugar de **."]
                     ]
                 ],
-                "contents" => [
-                    [
-                        "parts" => [
-                            ["text" => $mensaje]
-                        ]
-                    ]
-                ],
+                "contents" => $contents,
+                "tools" => $tools,
                 "generationConfig" => [
                     "temperature" => 0.4,
                     "thinkingConfig" => [
@@ -55,15 +68,30 @@ class ChatAiService
 
             $json = $response->json();
             
-            // Validar la estructura de la respuesta de la API
-            if (!isset($json['candidates'][0]['content']['parts'][0]['text'])) {
-                Log::error('Respuesta de la API con formato inesperado: ' . json_encode($json));
+            $candidate = $json['candidates'][0] ?? null;
+            if (!$candidate) {
+                Log::error('Respuesta de la API sin candidatos: ' . json_encode($json));
                 return ['error' => 'Respuesta inesperada de la API.'];
             }
 
-            // Devolver un array con los datos correctos
+            // Manejar la respuesta que incluye una llamada a una función
+            if (isset($candidate['content']['parts'][0]['functionCall'])) {
+                $call = $candidate['content']['parts'][0]['functionCall'];
+                return [
+                    'tool_call' => [
+                        'name' => $call['name'],
+                        'args' => (array) $call['args'],
+                    ],
+                    'tokens_prompt' => $json['usageMetadata']['promptTokenCount'] ?? 0,
+                    'tokens_response' => $json['usageMetadata']['candidatesTokenCount'] ?? 0,
+                    'tokens_thought' => $json['usageMetadata']['thoughtsTokenCount'] ?? 0,
+                    'tokens_total' => $json['usageMetadata']['totalTokenCount'] ?? 0,
+                ];
+            }
+            
+            // Respuesta de texto normal
             return [
-                'texto' => $json['candidates'][0]['content']['parts'][0]['text'],
+                'texto' => $candidate['content']['parts'][0]['text'] ?? 'No se pudo generar una respuesta.',
                 'tokens_prompt' => $json['usageMetadata']['promptTokenCount'] ?? 0,
                 'tokens_response' => $json['usageMetadata']['candidatesTokenCount'] ?? 0,
                 'tokens_thought' => $json['usageMetadata']['thoughtsTokenCount'] ?? 0,
