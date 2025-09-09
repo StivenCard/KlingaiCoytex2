@@ -20,11 +20,10 @@ class ChatAiService
         $this->endpoint = "{$this->api_url}/models/{$this->model}:generateContent";
     }
 
-    public function enviarMensaje(string $mensaje, array $historial=[])
+    public function enviarMensaje(string $mensaje, array $historial = [])
     {
         try {
-
-            $contents = array_merge($historial,[
+            $contents = array_merge($historial, [
                 [
                     'role' => 'user',
                     'parts' => [
@@ -37,15 +36,15 @@ class ChatAiService
 
             $tools = [
                 [
-                    'function_declarations' => ProcedimientosService::allProcedimientos()
+                    'functionDeclarations' => ProcedimientosService::allProcedimientos()
                 ]
             ];
 
             $response = Http::withHeaders([
                 'Content-Type' => 'application/json',
-                'X-goog-api-key' => $this->api_key,
+                'x-goog-api-key' => $this->api_key, // Cambié X-goog-api-key por x-goog-api-key
             ])->post($this->endpoint, [
-                "system_instruction" => [
+                "systemInstruction" => [ // Cambié system_instruction por systemInstruction
                     "parts" => [
                         ["text" => "Eres un asistente empresarial. Responde siempre en español, breve y claro. Usa <b>HTML</b> para negritas en lugar de **."]
                     ]

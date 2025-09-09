@@ -28,14 +28,16 @@ class ChatAiController extends Controller
 
         try {
             $user_id = Auth::id() ?? '123456';
-            $historial = ChatAiRegistro::where('user_id', $user_id)->orderBy('created_at', 'asc')->limit(10)->get();
+            $historial = ChatAiRegistro::where('user_id', $user_id)->orderBy('created_at', 'desc')->limit(10)->get();
 
+            // Construir historial de mensajes en formato correcto para Gemini
             $mensajesHistorial = [];
             foreach ($historial as $registro) {
                 $mensajesHistorial[] = ['role' => 'user', 'parts' => [['text' => $registro->user_message]]];
                 $mensajesHistorial[] = ['role' => 'model', 'parts' => [['text' => $registro->ai_response]]];
             }
 
+            // Primera llamada a la IA
             $reply = $chatAi->enviarMensaje($data['message'], $mensajesHistorial);
             
             if (isset($reply['tool_call'])) {
@@ -43,21 +45,35 @@ class ChatAiController extends Controller
                 $toolName = $toolCall['name'];
                 $toolArgs = $toolCall['args'];
                 
-                Log::info("La IA solicitó una llamada a la función: {$toolName}");
+                Log::info("La IA solicitó una llamada a la función: {$toolName}", $toolArgs);
                 
-                $dbReply = ProcedimientosService::ejecutarProcedimiento($toolName, $toolArgs);
+                // Ejecutar el procedimiento almacenado
+                $dbResult = ProcedimientosService::ejecutarProcedimiento($toolName, $toolArgs);
 
-                // 🟢 CAMBIO: Si la ejecución del procedimiento devuelve un error, lo mostramos directamente.
-                if (isset($dbReply['error'])) {
-                    return response()->json(['error' => $dbReply['error']], 500);
+                // Construir el historial completo con la función llamada
+                $mensajesCompleto = array_merge($mensajesHistorial, [
+                    // Mensaje del usuario
+                    ['role' => 'user', 'parts' => [['text' => $data['message']]]],
+                    
+                    // Respuesta de la IA con la llamada a función
+                    ['role' => 'model', 'parts' => [['functionCall' => ['name' => $toolName, 'args' => $toolArgs]]]],
+                    
+                    // Respuesta de la función
+                    ['role' => 'user', 'parts' => [['functionResponse' => [
+                        'name' => $toolName,
+                        'response' => $dbResult
+                    ]]]]
+                ]);
+                
+                // Segunda llamada a la IA con el resultado de la función
+                $finalReply = $chatAi->enviarMensaje("Por favor analiza y presenta la información de manera clara y útil.", $mensajesCompleto);
+                
+                if (isset($finalReply['error'])) {
+                    // Si hay error en la segunda llamada, usar la primera respuesta
+                    return response()->json(['error' => $finalReply['error']], 500);
                 }
-
-                $mensajesHistorial[] = ['role' => 'user', 'parts' => [['text' => $data['message']]]];
-                $mensajesHistorial[] = ['role' => 'model', 'parts' => [['functionCall' => ['name' => $toolName, 'args' => $toolArgs]]]];
-                $mensajesHistorial[] = ['role' => 'tool', 'parts' => [['functionResponse' => ['name' => $toolName, 'response' => json_encode($dbReply)]]]];
                 
-                $finalReply = $chatAi->enviarMensaje($data['message'], $mensajesHistorial);
-                $reply = $finalReply;
+                $reply = $finalReply; // Usar la respuesta final que incluye el análisis de los datos
             }
 
             if (isset($reply['error'])) {
@@ -66,8 +82,8 @@ class ChatAiController extends Controller
             
             $price = ChatAiRegistro::calculatePrice($reply['tokens_prompt'], $reply['tokens_response']);
             
-            $trasabilidad = [
-                'user_id' => Auth::id() ?? '123456',
+            $trazabilidad = [
+                'user_id' => $user_id,
                 'user_message' => $data['message'],
                 'ai_response' => $reply['texto'],
                 'tokens_prompt' => $reply['tokens_prompt'],
@@ -77,7 +93,7 @@ class ChatAiController extends Controller
                 'price' => $price
             ];
             
-            ChatAiRegistro::create($trasabilidad);
+            ChatAiRegistro::create($trazabilidad);
 
             return response()->json([
                 'user' => $data['message'],
