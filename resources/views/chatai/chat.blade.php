@@ -271,6 +271,8 @@
             chatBox.style.display = isVisible ? "none" : "flex";      
             if (!isVisible) {
                 messageInput.focus();
+                // 🟢 CAMBIO: Desplazar el chat al final al abrirlo
+                chatMessages.scrollTo({top: chatMessages.scrollHeight, behavior: "smooth"});
             }
         });
 
@@ -364,9 +366,11 @@
 
         // Focus automático cuando se abre el chat
         document.addEventListener('DOMContentLoaded', function() {
-            // Si el chat está visible al cargar la página, enfocar el input
+            // Si el chat está visible al cargar la página, enfocar el input y desplazarlo
             if (chatBox.style.display === "flex") {
                 messageInput.focus();
+                // 🟢 CAMBIO: Desplazar el chat al final al cargar la página
+                chatMessages.scrollTo({top: chatMessages.scrollHeight, behavior: "smooth"});
             }
         });
     </script>
