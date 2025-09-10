@@ -73,7 +73,7 @@
             background: #f9fafb;
         }
 
-        .message {  
+        .message {
             margin: 10px 0;
             padding: 12px 14px;
             border-radius: 16px;
@@ -148,7 +148,7 @@
             cursor: pointer;
             border-radius: 0;
         }
-        
+
         #send-btn:hover {
             background: #2563eb;
         }
@@ -204,7 +204,7 @@
             <h1 class="hero-title">💬 Asistente Empresarial AI</h1>
             <p class="hero-subtitle">Tu compañero inteligente para consultas empresariales</p>
             <p class="hero-description">
-                Haz clic en el botón de chat flotante para comenzar una conversación con nuestro asistente AI. 
+                Haz clic en el botón de chat flotante para comenzar una conversación con nuestro asistente AI.
                 Obtén respuestas inmediatas sobre temas empresariales, estrategias y mucho más.
             </p>
         </div>
@@ -254,7 +254,7 @@
     <script>
         // Configurar CSRF token para todas las peticiones AJAX
         const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-        
+
         const chatToggle = document.getElementById("chat-toggle");
         const chatBox = document.getElementById("chat-box");
         const sendBtn = document.getElementById("send-btn");
@@ -268,7 +268,7 @@
         // Mostrar/Ocultar chat
         chatToggle.addEventListener("click", () => {
             const isVisible = chatBox.style.display === "flex";
-            chatBox.style.display = isVisible ? "none" : "flex";      
+            chatBox.style.display = isVisible ? "none" : "flex";
             if (!isVisible) {
                 messageInput.focus();
                 // 🟢 CAMBIO: Desplazar el chat al final al abrirlo
@@ -283,7 +283,7 @@
                 sendMessage();
             }
         });
-        
+
         sendBtn.addEventListener("click", sendMessage);
 
         // Función para agregar mensajes
@@ -294,8 +294,8 @@
             // Crear ícono con Font Awesome
             const icon = document.createElement("span");
             icon.classList.add("icon");
-            icon.innerHTML = type === "user" 
-                ? '<i class="fas fa-user"></i>' 
+            icon.innerHTML = type === "user"
+                ? '<i class="fas fa-user"></i>'
                 : '<i class="fas fa-robot"></i>';
 
             // Crear contenedor de texto
@@ -345,13 +345,13 @@
 
                 const data = await response.json();
                 typing.style.display = "none";
-                
+
                 if (data.error) {
                     appendMessage("⚠️ " + data.error, "assistant");
                 } else {
                     appendMessage(data.assistant, "assistant");
                 }
-                
+
             } catch (error) {
                 typing.style.display = "none";
                 console.error('Error:', error);
@@ -369,7 +369,7 @@
             // Si el chat está visible al cargar la página, enfocar el input y desplazarlo
             if (chatBox.style.display === "flex") {
                 messageInput.focus();
-                // 🟢 CAMBIO: Desplazar el chat al final al cargar la página
+                //Desplazar el chat al final al cargar la página
                 chatMessages.scrollTo({top: chatMessages.scrollHeight, behavior: "smooth"});
             }
         });

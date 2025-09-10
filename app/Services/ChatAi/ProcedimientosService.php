@@ -11,8 +11,22 @@ class ProcedimientosService
     {
         return [
             [
+                'name' => 'virtual_try_on2.consultar_historial_chat',
+                'description' => 'Consulta el historial de conversaciones de un usuario en el chat.',
+                'parameters' => [
+                    'type' => 'object',
+                    'properties' => [
+                        'p_user_id' => [
+                            'type' => 'string',
+                            'description' => 'El ID del usuario cuyo historial se quiere consultar.'
+                        ]
+                    ],
+                    'required' => ['p_user_id']
+                ]
+            ],
+            [
                 'name' => 'virtual_try_on2.consultar_estado_tarea',
-                'description' => 'Consulta el estado actual de una tarea que está realizando un modelo.',
+                'description' => 'Consulta el estado actual de una tarea en image_to_videos.',
                 'parameters' => [
                     'type' => 'object',
                     'properties' => [
@@ -25,20 +39,61 @@ class ProcedimientosService
                 ]
             ],
             [
-                'name' => 'virtual_try_on2.obtener_historial_usuario',
-                'description' => 'Consulta el historial de conversaciones de un usuario específico.',
+                'name' => 'virtual_try_on2.consultar_precio_modelo',
+                'description' => 'Devuelve la configuración de precios y tokens de un modelo específico.',
+                'parameters' => [
+                    'type' => 'object',
+                    'properties' => [
+                        'p_model_name' => [
+                            'type' => 'string',
+                            'description' => 'El nombre del modelo (ej. kling-v1-6, kolors-v1-5).'
+                        ]
+                    ],
+                    'required' => ['p_model_name']
+                ]
+            ],
+            [
+                'name' => 'virtual_try_on2.consultar_api_logs',
+                'description' => 'Consulta los últimos registros de llamadas a la API.',
+                'parameters' => [
+                    'type' => 'object',
+                    'properties' => [
+                        'p_limit' => [
+                            'type' => 'integer',
+                            'description' => 'Número de registros a recuperar.'
+                        ]
+                    ],
+                    'required' => ['p_limit']
+                ]
+            ],
+            [
+                'name' => 'virtual_try_on2.obtener_virtual_tryons_usuario',
+                'description' => 'Obtiene los últimos virtual try-on realizados por un usuario.',
                 'parameters' => [
                     'type' => 'object',
                     'properties' => [
                         'p_user_id' => [
                             'type' => 'string',
-                            'description' => 'El ID del usuario cuyo historial queremos revisar.'
+                            'description' => 'El ID del usuario a consultar.'
                         ]
                     ],
                     'required' => ['p_user_id']
                 ]
             ],
-            // Agrega más procedimientos aquí
+            [
+                'name' => 'virtual_try_on2.obtener_virtual_models_usuario',
+                'description' => 'Obtiene los modelos virtuales generados por un usuario.',
+                'parameters' => [
+                    'type' => 'object',
+                    'properties' => [
+                        'p_user_id' => [
+                            'type' => 'string',
+                            'description' => 'El ID del usuario a consultar.'
+                        ]
+                    ],
+                    'required' => ['p_user_id']
+                ]
+            ]
         ];
     }
 

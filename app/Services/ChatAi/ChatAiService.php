@@ -40,7 +40,7 @@ class ChatAiService
             ])->post($this->endpoint, [
                 "systemInstruction" => [
                     "parts" => [
-                        ["text" => "Eres un asistente empresarial. Responde en español, breve y claro. Usa <b>HTML</b> para negritas. Usa <ul><li>HTML</li></ul> para listas. Si no sabes la respuesta, di que no lo sabes. Y si requieres mas información, pide que el usuario la proporcione."],
+                        ["text" => "Eres un asistente. Responde en español, breve y claro. Usa <b>HTML</b> para negritas en vez de **.**. Usa <ul><li>HTML</li></ul> para listas. Si requieres mas información, pide que el usuario la proporcione. Si la pregunta corresponde a un procedimiento de base de datos, usa las herramientas declaradas. Si no corresponde a un procedimiento, responde con tu conocimiento general de forma natural, breve y clara."],
                     ]
                 ],
                 "contents" => $contents,
