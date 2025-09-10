@@ -1,62 +1,70 @@
-<?php 
+<?php
 
 namespace App\Services\ChatAi;
+
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
-
 class ProcedimientosService
 {
-    public static function allProcedimientos(){
-       return [
-            // Procedimiento para la BD "sio"
+    public static function allProcedimientos()
+    {
+        return [
             [
                 'name' => 'virtual_try_on2.consultar_estado_tarea',
-                'description' => 'Consulta el estado actual de una tarea que esta realizando algun modelo.',
+                'description' => 'Consulta el estado actual de una tarea que está realizando un modelo.',
                 'parameters' => [
                     'type' => 'object',
                     'properties' => [
                         'p_task_id' => [
-                            'type' => 'string', 
+                            'type' => 'string',
                             'description' => 'El ID de la tarea a revisar.'
-                        ],
+                        ]
                     ],
                     'required' => ['p_task_id']
                 ]
             ],
-            // Procedimiento para la BD "sit"
             [
                 'name' => 'virtual_try_on2.obtener_historial_usuario',
-                'description' => 'Consulta el historial de conversasiones de un usuario especifico',
+                'description' => 'Consulta el historial de conversaciones de un usuario específico.',
                 'parameters' => [
                     'type' => 'object',
                     'properties' => [
                         'p_user_id' => [
-                            'type' => 'string', 
-                            'description' => 'El ID del usuario al que queremos revisar su historial.'
+                            'type' => 'string',
+                            'description' => 'El ID del usuario cuyo historial queremos revisar.'
                         ]
                     ],
                     'required' => ['p_user_id']
                 ]
             ],
-            // Agrega más procedimientos según sea necesario
+            // Agrega más procedimientos aquí
         ];
     }
 
-
-    public static function ejecutarProcedimiento($nombre, $args) {
-        // Aquí puedes implementar la lógica para ejecutar el procedimiento almacenado
-        // según el nombre y los argumentos proporcionados.
-        // Por ejemplo, podrías usar DB::select o DB::statement para llamar al procedimiento.
-
-        // Ejemplo básico (ajusta según tu configuración de base de datos):
+    public static function ejecutarProcedimiento(string $nombre, array $args)
+    {
         try {
+            //Validar que el procedimiento exista en la whitelist
+            $procedimientos = collect(self::allProcedimientos())->pluck('name')->toArray();
+            if (!in_array($nombre, $procedimientos)) {
+                throw new \Exception("Procedimiento no permitido: {$nombre}");
+            }
+
+            //Separar BD y SP
+            [$bd, $sp] = explode('.', $nombre, 2);
+            if (!preg_match('/^[a-zA-Z0-9_]+$/', $bd) || !preg_match('/^[a-zA-Z0-9_]+$/', $sp)) {
+                throw new \Exception("Nombre de BD o SP inválido.");
+            }
+
+            //Construir query segura con bindings
             $placeholders = implode(',', array_fill(0, count($args), '?'));
-            $query = "CALL {$nombre}({$placeholders})";
-            $result = DB::select($query, array_values($args));
-            return $result;
+            $query = "CALL {$bd}.{$sp}({$placeholders})";
+
+            return DB::select($query, array_values($args));
+
         } catch (\Exception $e) {
-            Log::error("Error al ejecutar el procedimiento {$nombre}: " . $e->getMessage());
+            Log::error("Error ejecutando {$nombre}: " . $e->getMessage());
             return ['error' => 'Error al ejecutar el procedimiento.'];
         }
     }

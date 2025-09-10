@@ -12,11 +12,11 @@ class ChatAiService
     protected $api_url;
     protected $endpoint;
 
-    public function __construct() {
+    public function __construct()
+    {
         $this->model = config('services.chatai.model');
         $this->api_key = config('services.chatai.api_key');
         $this->api_url = config('services.chatai.api_url');
-        
         $this->endpoint = "{$this->api_url}/models/{$this->model}:generateContent";
     }
 
@@ -26,54 +26,43 @@ class ChatAiService
             $contents = array_merge($historial, [
                 [
                     'role' => 'user',
-                    'parts' => [
-                        [
-                            'text' => $mensaje
-                        ]
-                    ]
+                    'parts' => [['text' => $mensaje]]
                 ]
             ]);
 
             $tools = [
-                [
-                    'functionDeclarations' => ProcedimientosService::allProcedimientos()
-                ]
+                ['functionDeclarations' => ProcedimientosService::allProcedimientos()]
             ];
 
             $response = Http::withHeaders([
                 'Content-Type' => 'application/json',
-                'x-goog-api-key' => $this->api_key, // Cambié X-goog-api-key por x-goog-api-key
+                'x-goog-api-key' => $this->api_key,
             ])->post($this->endpoint, [
-                "systemInstruction" => [ // Cambié system_instruction por systemInstruction
+                "systemInstruction" => [
                     "parts" => [
-                        ["text" => "Eres un asistente empresarial. Responde siempre en español, breve y claro. Usa <b>HTML</b> para negritas en lugar de **."]
+                        ["text" => "Eres un asistente empresarial. Responde en español, breve y claro. Usa <b>HTML</b> para negritas. Usa <ul><li>HTML</li></ul> para listas. Si no sabes la respuesta, di que no lo sabes. Y si requieres mas información, pide que el usuario la proporcione."],
                     ]
                 ],
                 "contents" => $contents,
                 "tools" => $tools,
                 "generationConfig" => [
                     "temperature" => 0.4,
-                    "thinkingConfig" => [
-                        "thinkingBudget" => 0
-                    ]
+                    "thinkingConfig" => ["thinkingBudget" => 0]
                 ]
             ]);
 
-            // Si la respuesta de la API no es exitosa (ej. 400, 500)
             if ($response->failed()) {
-                Log::error('Error de la API de Gemini: ' . $response->body());
-                return ['error' => 'Error de la API de Gemini: ' . $response->status()];
+                Log::error('Error API Gemini: ' . $response->body());
+                return ['error' => 'Error de la API de Gemini'];
             }
 
             $json = $response->json();
-            
             $candidate = $json['candidates'][0] ?? null;
             if (!$candidate) {
-                Log::error('Respuesta de la API sin candidatos: ' . json_encode($json));
                 return ['error' => 'Respuesta inesperada de la API.'];
             }
 
-            // Manejar la respuesta que incluye una llamada a una función
+            //Si es llamada a función
             if (isset($candidate['content']['parts'][0]['functionCall'])) {
                 $call = $candidate['content']['parts'][0]['functionCall'];
                 return [
@@ -87,18 +76,18 @@ class ChatAiService
                     'tokens_total' => $json['usageMetadata']['totalTokenCount'] ?? 0,
                 ];
             }
-            
-            // Respuesta de texto normal
+
+            // Respuesta de texto
             return [
-                'texto' => $candidate['content']['parts'][0]['text'] ?? 'No se pudo generar una respuesta.',
+                'texto' => $candidate['content']['parts'][0]['text'] ?? 'No se pudo generar respuesta.',
                 'tokens_prompt' => $json['usageMetadata']['promptTokenCount'] ?? 0,
                 'tokens_response' => $json['usageMetadata']['candidatesTokenCount'] ?? 0,
                 'tokens_thought' => $json['usageMetadata']['thoughtsTokenCount'] ?? 0,
                 'tokens_total' => $json['usageMetadata']['totalTokenCount'] ?? 0,
             ];
 
-        } catch (\Exception $error) {
-            Log::error('Excepción al conectar con la API de Gemini: ' . $error->getMessage());
+        } catch (\Exception $e) {
+            Log::error('Excepción API Gemini: ' . $e->getMessage());
             return ['error' => 'Error de conexión con la API.'];
         }
     }
