@@ -15,8 +15,9 @@ class ChatAiController extends Controller
     public function index()
     {
         $user_id = Auth::id() ?? '123456';
-        $historial = ChatAiRegistro::where('user_id', $user_id)->orderBy('created_at', 'asc')->limit(10)->get();
+        $historial = ChatAiRegistro::where('user_id', $user_id)->orderBy('created_at', 'desc')->limit(10)->get();
 
+        $historial = $historial->reverse();
         return view('chatai.chat', compact('historial'));
     }
 
