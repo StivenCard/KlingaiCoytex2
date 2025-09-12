@@ -34,7 +34,7 @@ class ChatAiController extends Controller
             $user_id = Auth::id() ?? '123456';
             $historial = ChatAiRegistro::where('user_id', $user_id)
                 ->orderBy('created_at', 'desc')
-                ->limit(10)
+                ->limit(5)
                 ->get();
 
             $mensajesHistorial = [];

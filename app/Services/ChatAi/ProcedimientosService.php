@@ -11,20 +11,6 @@ class ProcedimientosService
     {
         return [
             [
-                'name' => 'virtual_try_on2.consultar_historial_chat',
-                'description' => 'Consulta el historial de conversaciones de un usuario en el chat.',
-                'parameters' => [
-                    'type' => 'object',
-                    'properties' => [
-                        'p_user_id' => [
-                            'type' => 'string',
-                            'description' => 'El ID del usuario cuyo historial se quiere consultar.'
-                        ]
-                    ],
-                    'required' => ['p_user_id']
-                ]
-            ],
-            [
                 'name' => 'virtual_try_on2.consultar_estado_tarea',
                 'description' => 'Consulta el estado actual de una tarea en image_to_videos.',
                 'parameters' => [
