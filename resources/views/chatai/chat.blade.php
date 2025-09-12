@@ -271,7 +271,7 @@
     <button id="chat-toggle" aria-label="Abrir chat"><i class="fas fa-comment-dots"></i></button>
 
     <div id="chat-box">
-        <div id="chat-header">💬 Asistente Empresarial - Conectado a BD</div>
+        <div id="chat-header">💬 Asistente Empresarial</div>
         <div id="chat-messages">
             <div class="message assistant-message">
                 <span class="icon"><i class="fas fa-robot"></i></span>
@@ -378,37 +378,7 @@
             content.classList.add("content");
 
             // Procesar el texto para mejor formato (Markdown básico a HTML)
-            let formattedText = text;
-            // Reemplazar saltos de línea por <br>
-            formattedText = formattedText.replace(/\n/g, "<br>");
-            // Negritas **texto**
-            formattedText = formattedText.replace(/\*\*(.*?)\*\*/g, "<b>$1</b>");
-            // Cursivas *texto* o _texto_
-            formattedText = formattedText.replace(/(\*|_)(.*?)\1/g, "<i>$2</i>");
-            // Títulos h1 # título
-            formattedText = formattedText.replace(/^# (.*)$/gm, "<h1>$1</h1>");
-            // Títulos h2 ## título
-            formattedText = formattedText.replace(/^## (.*)$/gm, "<h2>$1</h2>");
-            // Títulos h3 ### título
-            formattedText = formattedText.replace(/^### (.*)$/gm, "<h3>$1</h3>");
-            // Lista con guion, asterisco o más - o * o +
-            formattedText = formattedText.replace(/^\s*[-*+] (.*)$/gm, "<li>$1</li>");
-            // También reconocer lista con viñeta '• ' (similar al original)
-            formattedText = formattedText.replace(/• (.*)/g, "<li>$1</li>");
-            // Lista con solo asteriscos * (espacio después)
-            formattedText = formattedText.replace(/^\s*\* (.*)$/gm, "<li>$1</li>");
-            // Si hay elementos <li>, envolver en un <ul> para formar la lista correctamente
-            if (formattedText.includes('<li>')) {
-                formattedText = `<ul style="list-style-type: none; padding-left: 0;">${formattedText}</ul>`;
-            }
-            // Convertir enlaces [texto](url)
-            formattedText = formattedText.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
-            // Código en línea con `codigo`
-            formattedText = formattedText.replace(/`([^`]+)`/g, '<code>$1</code>');
-            // Bloques de código con triple backtick ``````
-            formattedText = formattedText.replace(/``````/g, '<pre><code>$1</code></pre>');
-            // Renderiza el texto formateado dentro del contenedor HTML
-            content.innerHTML = formattedText;
+            content.innerHTML = text;
 
             // Timestamp
             const time = document.createElement("small");

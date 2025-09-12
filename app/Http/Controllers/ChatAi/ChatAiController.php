@@ -94,8 +94,8 @@ class ChatAiController extends Controller
 
             ChatAiRegistro::create([
                 'user_id' => $user_id,
-                'user_message' => $data['message'],
-                'ai_response' => $reply['texto'] ?? '',
+                'user_message' => $this->markdownToHtml($data['message']),
+                'ai_response' => $this->markdownToHtml($reply['texto'] ?? ''),
                 'tokens_prompt' => $reply['tokens_prompt'],
                 'tokens_thought' => $reply['tokens_thought'],
                 'tokens_response' => $reply['tokens_response'],
@@ -104,8 +104,8 @@ class ChatAiController extends Controller
             ]);
 
             return response()->json([
-                'user' => $data['message'],
-                'assistant' => $reply['texto'] ?? ''
+                'user' => $this->markdownToHtml($data['message']),
+                'assistant' => $this->markdownToHtml($reply['texto'] ?? '')
             ]);
 
         } catch (\Exception $e) {
@@ -116,4 +116,52 @@ class ChatAiController extends Controller
             ], 500);
         }
     }
+
+    private function markdownToHtml(string $text): string
+    {
+        // Saltos de línea por <br>
+        $text = nl2br($text);
+        // Negritas **texto**
+        $text = preg_replace('/\*\*(.*?)\*\*/', '<b>$1</b>', $text);
+        // Cursivas *texto* o _texto_
+        $text = preg_replace('/(\*|_)(.*?)\1/', '<i>$2</i>', $text);
+        // Títulos h1 # título (linea que inicia con # )
+        $text = preg_replace('/^# (.*)$/m', '<h1>$1</h1>', $text);
+        // Títulos h2 ## título
+        $text = preg_replace('/^## (.*)$/m', '<h2>$1</h2>', $text);
+        // Títulos h3 ### título
+        $text = preg_replace('/^### (.*)$/m', '<h3>$1</h3>', $text);
+        // Listas con guion, asterisco o más (-, * o +)
+        $text = preg_replace_callback('/(^|\n)(\s*[-*+] .+(\n|$))+/m', function ($matches) {
+            $lines = preg_split('/\n/', trim($matches[0]));
+            $html = '<ul style="list-style-type: none; padding-left: 0;">';
+            foreach ($lines as $line) {
+                $line = preg_replace('/^\s*[-*+] /', '', $line);
+                $html .= '<li>' . trim($line) . '</li>';
+            }
+            $html .= '</ul>';
+            return $html;
+        }, $text);
+        // Lista con viñeta •
+        $text = preg_replace_callback('/(^|\n)(• .+(\n|$))+/m', function ($matches) {
+            $lines = preg_split('/\n/', trim($matches[0]));
+            $html = '<ul style="list-style-type: none; padding-left: 0;">';
+            foreach ($lines as $line) {
+                $line = preg_replace('/^• /', '', $line);
+                $html .= '<li>' . trim($line) . '</li>';
+            }
+            $html .= '</ul>';
+            return $html;
+        }, $text);
+        // Convertir enlaces [texto](url)
+        $text = preg_replace('/\[([^\]]+)\]\(([^)]+)\)/', '<a href="$2">$1</a>', $text);
+        // Código en línea `codigo`
+        $text = preg_replace('/`([^`]+)`/', '<code>$1</code>', $text);
+        // Bloques de código con triple backtick ``````
+        $text = preg_replace('/``````/s', '<pre><code>$1</code></pre>', $text);
+
+        return $text;
+    }
+
 }
+
