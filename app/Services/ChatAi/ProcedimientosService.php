@@ -4,6 +4,7 @@ namespace App\Services\ChatAi;
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use stdClass;
 
 class ProcedimientosService
 {
@@ -79,7 +80,16 @@ class ProcedimientosService
                     ],
                     'required' => ['p_user_id']
                 ]
-            ]
+            ],
+            [
+                'name' => 'virtual_try_on2.obtener_todos_los_precios',
+                'description' => 'Obtiene la lista de precios de todos los modelos y puede identificar el modelo más caro y el más barato.',
+                'parameters' => [
+                    'type' => 'object',
+                    'properties' => new stdClass,
+                    'required' => []
+                ]
+            ],
         ];
     }
 

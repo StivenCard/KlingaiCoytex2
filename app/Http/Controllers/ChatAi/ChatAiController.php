@@ -9,6 +9,7 @@ use App\Services\ChatAi\ProcedimientosService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use stdClass;
 
 class ChatAiController extends Controller
 {
@@ -65,7 +66,7 @@ class ChatAiController extends Controller
                 $mensajesCompleto = array_merge($mensajesHistorial, [
                     ['role' => 'user', 'parts' => [['text' => $data['message']]]],
                     ['role' => 'model', 'parts' => [[
-                        'functionCall' => ['name' => $toolName, 'args' => $toolArgs]
+                        'functionCall' => ['name' => $toolName, 'args' => empty($toolArgs) ? new stdClass() : $toolArgs]
                     ]]],
                     ['role' => 'tool', 'parts' => [[
                         'functionResponse' => [
