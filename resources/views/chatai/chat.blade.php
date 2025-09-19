@@ -8,258 +8,257 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <title>Chat Empresarial</title>
     <style>
-        /* Estilos generales */
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-        }
+    /* Estilos generales */
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        background: #f5f5f5;
+        color: #1f1f1f;
+    }
 
-        /* Botón flotante */
-        #chat-toggle {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: #3b82f6;
-            color: white;
-            border: none;
-            border-radius: 50%;
-            width: 60px;
-            height: 60px;
-            font-size: 26px;
-            cursor: pointer;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
-            z-index: 1000;
-            transition: all 0.3s ease-in-out;
-        }
+    /* Botón flotante */
+    #chat-toggle {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background: #4b4b4b;
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 60px;
+        height: 60px;
+        font-size: 26px;
+        cursor: pointer;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+        z-index: 1000;
+        transition: all 0.3s ease-in-out;
+    }
 
-        #chat-toggle:hover {
-            background: #2563eb;
-            transform: scale(1.1);
-        }
+    #chat-toggle:hover {
+        background: #7a7a7a;
+        transform: scale(0.95);
+    }
 
-        /* Ventana de chat */
-        #chat-box {
-            position: fixed;
-            bottom: 90px;
-            right: 20px;
-            width: 600px;
-            height: 600px;
-            max-width: 95%;
-            background: #fff;
-            border: 1px solid #ddd;
-            border-radius: 14px;
-            display: none;
-            flex-direction: column;
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25);
-            z-index: 999;
-            overflow: hidden;
-            animation: fadeIn 0.3s ease;
-        }
+    /* Ventana de chat */
+    #chat-box {
+        position: fixed;
+        bottom: 90px;
+        right: 20px;
+        width: 600px;
+        height: 600px;
+        max-width: 95%;
+        background: #ffffff;
+        border: 1px solid #d1d5db;
+        border-radius: 14px;
+        display: none;
+        flex-direction: column;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25);
+        z-index: 999;
+        overflow: hidden;
+        animation: fadeIn 0.3s ease;
+    }
 
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(10px);
-            }
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
 
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
+    /* Header */
+    #chat-header {
+        background: #4b4b4b;
+        color: white;
+        padding: 14px;
+        font-weight: bold;
+        text-align: center;
+        font-size: 16px;
+    }
 
-        /* Header */
-        #chat-header {
-            background: #3b82f6;
-            color: white;
-            padding: 14px;
-            font-weight: bold;
-            text-align: center;
-            font-size: 16px;
-        }
+    /* Mensajes */
+    #chat-messages {
+        flex: 1;
+        padding: 15px;
+        overflow-y: auto;
+        font-size: 15px;
+        line-height: 1.5;
+        background: #f9fafb;
+    }
 
-        /* Mensajes */
-        #chat-messages {
-            flex: 1;
-            padding: 15px;
-            overflow-y: auto;
-            font-size: 15px;
-            line-height: 1.5;
-            background: #f9fafb;
-        }
+    .message {
+        margin: 10px 0;
+        padding: 12px 14px;
+        border-radius: 16px;
+        max-width: 80%;
+        clear: both;
+        position: relative;
+        word-wrap: break-word;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+    }
 
-        .message {
-            margin: 10px 0;
-            padding: 12px 14px;
-            border-radius: 16px;
-            max-width: 80%;
-            clear: both;
-            position: relative;
-            word-wrap: break-word;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-            display: flex;
-            align-items: flex-start;
-            gap: 8px;
-        }
+    .message .icon {
+        font-size: 18px;
+        margin-top: 2px;
+        min-width: 20px;
+    }
 
-        .message .icon {
-            font-size: 18px;
-            margin-top: 2px;
-            min-width: 20px;
-        }
+    .message .content {
+        flex: 1;
+    }
 
-        .message .content {
-            flex: 1;
-        }
+    .message small {
+        display: block;
+        font-size: 11px;
+        margin-top: 6px;
+        opacity: 0.6;
+    }
 
-        .message small {
-            display: block;
-            font-size: 11px;
-            margin-top: 6px;
-            opacity: 0.7;
-        }
+    .user-message {
+        background: #6b7280;
+        color: white;
+        float: right;
+        border-bottom-right-radius: 4px;
+        flex-direction: row-reverse;
+    }
 
-        .user-message {
-            background: #3b82f6;
-            color: white;
-            float: right;
-            border-bottom-right-radius: 4px;
-            flex-direction: row-reverse;
-        }
+    .user-message .icon {
+        color: #fff;
+    }
 
-        .user-message .icon {
-            color: #fff;
-        }
+    .assistant-message {
+        background: #f3f4f6;
+        border: 1px solid #e5e7eb;
+        float: left;
+        border-bottom-left-radius: 4px;
+        color: #1f2937;
+    }
 
-        .assistant-message {
-            background: #ffffff;
-            border: 1px solid #eee;
-            float: left;
-            border-bottom-left-radius: 4px;
-        }
+    .assistant-message .icon {
+        color: #4b5563;
+    }
 
-        .assistant-message .icon {
-            color: #3b82f6;
-        }
+    /* Mensaje de sistema (datos BD) */
+    .system-data {
+        background: #e5e7eb;
+        border: 1px solid #9ca3af;
+        color: #374151;
+    }
 
-        /* Mensaje de sistema para datos de BD */
-        .system-data {
-            background: #e8f5e8;
-            border: 1px solid #4caf50;
-            color: #2e7d32;
-        }
+    .system-data .icon {
+        color: #4b5563;
+    }
 
-        .system-data .icon {
-            color: #4caf50;
-        }
+    /* Input */
+    #chat-input {
+        display: flex;
+        border-top: 1px solid #ddd;
+        background: white;
+    }
 
-        /* Input */
-        #chat-input {
-            display: flex;
-            border-top: 1px solid #ddd;
-            background: white;
-        }
+    #message {
+        flex: 1;
+        border: none;
+        padding: 12px;
+        font-size: 15px;
+        outline: none;
+    }
 
-        #message {
-            flex: 1;
-            border: none;
-            padding: 12px;
-            font-size: 15px;
-            outline: none;
-        }
+    #send-btn {
+        background: #303030;
+        border: none;
+        color: white;
+        padding: 0 20px;
+        font-size: 18px;
+        cursor: pointer;
+        border-radius: 0;
+        transition: background 0.2s;
+    }
 
-        #send-btn {
-            background: #3b82f6;
-            border: none;
-            color: white;
-            padding: 0 20px;
-            font-size: 18px;
-            cursor: pointer;
-            border-radius: 0;
-            transition: background 0.2s;
-        }
+    #send-btn:hover {
+        background: #606060;
+    }
 
-        #send-btn:hover {
-            background: #2563eb;
-        }
+    #send-btn:disabled {
+        background: #9ca3af;
+        cursor: not-allowed;
+    }
 
-        #send-btn:disabled {
-            background: #6b7280;
-            cursor: not-allowed;
-        }
+    /* "Escribiendo..." */
+    #typing {
+        font-size: 13px;
+        color: #6b7280;
+        font-style: italic;
+        margin: 10px;
+        display: none;
+    }
 
-        /* "Escribiendo..." */
-        #typing {
-            font-size: 13px;
-            color: #666;
-            font-style: italic;
-            margin: 10px;
-            display: none;
-        }
+    /* Estilos para tablas de datos */
+    .data-table {
+        max-width: 100%;
+        overflow-x: auto;
+        margin: 10px 0;
+    }
 
-        /* Estilos para tablas de datos */
-        .data-table {
-            max-width: 100%;
-            overflow-x: auto;
-            margin: 10px 0;
-        }
+    .data-table table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 12px;
+    }
 
-        .data-table table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 12px;
-        }
+    .data-table th,
+    .data-table td {
+        padding: 6px 8px;
+        text-align: left;
+        border: 1px solid #d1d5db;
+    }
 
-        .data-table th,
-        .data-table td {
-            padding: 6px 8px;
-            text-align: left;
-            border: 1px solid #ddd;
-        }
+    .data-table th {
+        background: #e5e7eb;
+        font-weight: bold;
+    }
 
-        .data-table th {
-            background: #f1f5f9;
-            font-weight: bold;
-        }
+    /* Contenido principal */
+    .main-content {
+        min-height: 100vh;
+        background: linear-gradient(135deg, #f9f9f9 0%, #c7c7c7 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #111;
+    }
 
-        /* Contenido principal de la página */
-        .main-content {
-            min-height: 100vh;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-        }
+    .hero-section {
+        text-align: center;
+        padding: 50px 20px;
+    }
 
-        .hero-section {
-            text-align: center;
-            padding: 50px 20px;
-        }
+    .hero-title {
+        font-size: 3rem;
+        font-weight: bold;
+        margin-bottom: 1rem;
+    }
 
-        .hero-title {
-            font-size: 3rem;
-            font-weight: bold;
-            margin-bottom: 1rem;
-        }
+    .hero-subtitle {
+        font-size: 1.2rem;
+        opacity: 0.85;
+        margin-bottom: 2rem;
+    }
 
-        .hero-subtitle {
-            font-size: 1.2rem;
-            opacity: 0.9;
-            margin-bottom: 2rem;
-        }
-
-        .hero-description {
-            font-size: 1rem;
-            opacity: 0.8;
-            max-width: 600px;
-            margin: 0 auto;
-        }
-    </style>
+    .hero-description {
+        font-size: 1rem;
+        opacity: 0.75;
+        max-width: 600px;
+        margin: 0 auto;
+    }
+</style>
 </head>
 <body>
     <div class="main-content">
         <div class="hero-section">
-            <h1 class="hero-title">💬 Asistente Empresarial AI</h1>
+            <div style="text-align: center; margin-top: 20px; margin-bottom: 20px;">
+                <img src="{{ asset('images/logo_sio.png') }}" alt="Logo de SIO" style="width: 250px; height: auto;">
+            </div>
+            <h1 class="hero-title">Asistente Empresarial AI</h1>
             <p class="hero-subtitle">Tu compañero inteligente para consultas empresariales</p>
             <p class="hero-description">
                 Haz clic en el botón de chat flotante para comenzar una conversación con nuestro asistente AI.
@@ -267,22 +266,15 @@
             </p>
         </div>
     </div>
-
     <button id="chat-toggle" aria-label="Abrir chat"><i class="fas fa-comment-dots"></i></button>
-
     <div id="chat-box">
         <div id="chat-header">💬 Asistente Empresarial</div>
         <div id="chat-messages">
             <div class="message assistant-message">
                 <span class="icon"><i class="fas fa-robot"></i></span>
                 <div class="content">
-                    ¡Hola! 👋 Soy tu <b>SIO BOT</b>. tu asistente virtual inteligente puedo ayudarte con:
+                    ¡Hola! 👋 Soy tu <b>SIO BOT</b>. tu asistente virtual inteligente.
                     <br><br>
-                    • Consultar el estado de tareas<br>
-                    • Revisar historiales de usuarios<br>
-                    • Ver usuarios activos<br>
-                    • Generar estadísticas de uso<br>
-                    <br>
                     ¿En qué puedo ayudarte hoy?
                     <small id="welcome-time"></small>
                 </div>
@@ -306,7 +298,7 @@
             </div>
             @endforeach
         </div>
-        <div id="typing">El asistente está analizando datos...</div>
+        <div id="typing">El asistente está analizando la información...</div>
         <div id="chat-input">
             <input type="text" id="message" placeholder="Ejemplo: ¿Cuáles son las estadísticas de uso?"
                 aria-label="Mensaje">

@@ -55,7 +55,7 @@ class ProcedimientosService
             ],
             [
                 'name' => 'virtual_try_on2.obtener_virtual_tryons_usuario',
-                'description' => 'Obtiene los últimos virtual try-on realizados por un usuario.',
+                'description' => 'Obtiene los últimos virtual try-on realizados por un usuario y permite preguntar por sus características.',
                 'parameters' => [
                     'type' => 'object',
                     'properties' => [
@@ -69,7 +69,7 @@ class ProcedimientosService
             ],
             [
                 'name' => 'virtual_try_on2.obtener_virtual_models_usuario',
-                'description' => 'Obtiene los modelos virtuales generados por un usuario.',
+                'description' => 'Obtiene los modelos virtuales generados por un usuario y permite preguntar por sus características.',
                 'parameters' => [
                     'type' => 'object',
                     'properties' => [
@@ -88,6 +88,65 @@ class ProcedimientosService
                     'type' => 'object',
                     'properties' => new stdClass,
                     'required' => []
+                ]
+            ],
+
+            //Procedimientos para tabla eficiencia talleres
+            [
+                'name' => 'virtual_try_on2.calcular_eficiencia_taller_por_anio',
+                'description' => 'Calcula la eficiencia o promedio de eficiencia de un taller específico en un año determinado y permite preguntar por sus características.',
+                'parameters' => [
+                    'type' => 'object',
+                    'properties' => [
+                        'nombre_taller_param' => [
+                            'type' => 'string',
+                            'description' => 'El nombre del taller a consultar.'
+                        ],
+                        'anio_param' => [
+                            'type' => 'string',
+                            'description' => 'El año a consultar.'
+                        ]
+                    ],
+                    'required' => ['nombre_taller_param', 'anio_param']
+                ]
+            ],
+
+            [
+                'name' => 'virtual_try_on2.obtener_mejores_talleres_por_eficiencia',
+                'description' => 'Recupera los mejores talleres de un año específico, ordenados por su eficiencia promedio calculada a partir de registros anuales. '.
+                                'Agrupa los resultados por nombre de taller, calcula la eficiencia promedio para cada uno y limita la salida según el número máximo indicado.',
+                'parameters' => [
+                    'type' => 'object',
+                    'properties' => [
+                        'anio_param' => [
+                            'type' => 'string',
+                            'description' => 'El año para el cual se desea consultar la eficiencia de los talleres.'
+                        ],
+                        'limite' => [
+                            'type' => 'integer',
+                            'description' => 'Cantidad máxima de talleres que se retornarán en el resultado.'
+                        ]
+                    ],
+                    'required' => ['anio_param', 'limite_param']
+                ]
+            ],
+
+            [
+                'name' => 'virtual_try_on2.obtener_resumen_taller',
+                'description' => 'Proporciona un resumen detallado de un taller específico en un año determinado. Permite analizar el desempeño del taller en el período indicado. ',
+                'parameters' => [
+                    'type' => 'object',
+                    'properties' => [
+                        'nombre_taller_param' => [
+                            'type' => 'string',
+                            'description' => 'El nombre del taller a consultar.'
+                        ],
+                        'anio_param' => [
+                            'type' => 'string',
+                            'description' => 'El año a consultar.'
+                        ]
+                    ],
+                    'required' => ['nombre_taller_param', 'anio_param']
                 ]
             ],
         ];
