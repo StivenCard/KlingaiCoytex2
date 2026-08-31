@@ -2,12 +2,15 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use App\Services\KlingAi\KlingApiService;
-use App\Services\KlingAi\ImageProcessingService;
-use App\Services\HintsService;
-use App\Models\VirtualModel;
 use App\Models\PricingRule;
+use App\Models\VirtualModel;
+use App\Services\HintsService;
+use App\Services\KlingAi\ImageProcessingService;
+use App\Services\KlingAi\KlingApiService;
+use Illuminate\Contracts\View\View;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 
 class VirtualModelController extends Controller
@@ -78,14 +81,14 @@ class VirtualModelController extends Controller
             if ($taskId = $response['data']['task_id'] ?? null) {
 
                 // Obtener precios y tokens de la regla de precios
-                $pricing = PricingRule::where('model_name', 'kolors-v1-5')
+                $pricing = PricingRule::where('model_name', 'kolors-v3')
                 ->where('mode', 'text-to-image')
                 ->first();
 
                 VirtualModel::create([
                     'task_id' => $taskId,
-                    'user_id' => '123321',
-                    'model_name' => 'kling-v1-5',
+                    'user_id' => Auth::id() ?? '123321', //Posiblemente a futuro sea auth()->id() si se implementa login o Auth::user()->id
+                    'model_name' => 'kling-v3',
                     'prompt' => $prompt,
                     'gender' => $request->gender,
                     'age_group' => $request->age_group,
@@ -132,7 +135,9 @@ class VirtualModelController extends Controller
                 foreach ($response['data']['task_result']['images'] ?? [] as $image) {
                     try {
                         $results[] = $this->images->downloadAndSaveImage(
-                            $image['url'], 'klingai/virtual_models', 'model_'
+                            $image['url'],
+                            'klingai/virtual_models', //Directorio de almacenamiento en disco
+                            'model_'
                         );
                     } catch (\Exception $e) {
                         continue;
@@ -145,6 +150,7 @@ class VirtualModelController extends Controller
                         'status' => 'completed'
                     ]);
 
+                    //Agregamos el campo local_images al response para que el front pueda mostrar las imágenes descargadas
                     $response['data']['local_images'] = array_map(
                         fn($p) => Storage::url($p),
                         $results
@@ -169,8 +175,9 @@ class VirtualModelController extends Controller
      */
     private function buildPrompt(Request $request): string
     {
+        //Filled pregunta si el campo prompt fue llenado, y no es nulo ni vacío. Si es así, devuelve el prompt ingresado por el usuario.
         if ($request->filled('prompt')) {
-            return trim($request->prompt);
+            return trim($request->prompt); //Trim elimina espacios en blanco al inicio y final del prompt ingresado por el usuario.
         }
 
         return $this->buildBasePrompt($request);

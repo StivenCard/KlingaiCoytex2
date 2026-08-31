@@ -41,7 +41,7 @@ class ChatAiService
                     "thinkingConfig" => ["thinkingBudget" => 0]
                 ]
             ];
-            
+
             if (!empty($functionResponse)) {
                 $body['contents'][] = $functionResponse;
             }

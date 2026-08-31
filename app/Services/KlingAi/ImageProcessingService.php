@@ -67,7 +67,7 @@ class ImageProcessingService
         try {
             $response = Http::timeout(30)->get($url);
 
-            if (! $response->successful()) {
+            if (!$response->successful()) {
                 throw new \Exception('No se pudo descargar la imagen desde: '.$url);
             }
 
@@ -102,7 +102,7 @@ class ImageProcessingService
     {
         $model = VirtualModel::find($virtualModelId);
 
-        if (! $model || $model->status !== 'completed') {
+        if (!$model || $model->status !== 'completed') {
             throw new \Exception('Virtual model not found or not completed');
         }
 
@@ -178,7 +178,7 @@ class ImageProcessingService
     /**
      * Aplica logo de marca de agua con configuración fija.
      */
-    private function addHighQualityLogo($image): InterventionImage
+    private function addHighQualityLogo(InterventionImage $image): InterventionImage
     {
         $logoPath = public_path('images/logo_sio.png');
 
@@ -189,12 +189,13 @@ class ImageProcessingService
             $logoWidth = max(150, $image->width() * $sizeFactor);
 
             $logo->resize($logoWidth, null, function ($constraint) {
-                $constraint->aspectRatio();
-                $constraint->upsize();
+                $constraint->aspectRatio(); // Metodo que mantiene las proporciones de la imagen
+                $constraint->upsize(); // Evita que la imagen se haga más grande que su tamaño original
             });
 
             $margin = 25;
 
+            //Estas variables son para establecer la posición del logo y el texto, pero no se usan en la función insert de Intervention Image es mas para el texto
             $logoX = $image->width() - $logo->width() - $margin;
             $logoY = $image->height() - $logo->height() - $margin;
 
@@ -227,6 +228,10 @@ class ImageProcessingService
      * @param string $prefix Prefijo para el nombre del archivo.
      * @return string Ruta donde se guardó el video.
      */
+
+    private const WAIT_INTERVAL_US = 100000; // 100 ms
+    private const MAX_WAIT_US = 2000000;     // 2 s
+
     public function downloadAndSaveVideo(string $url, string $path, string $prefix = ''): string
     {
         try {
@@ -242,12 +247,12 @@ class ImageProcessingService
             // Usar el disco público para almacenar el video
             Storage::disk('public')->put($fullPath, $response->body());
 
-            // TODO: test if it works
-            // Wait until the file is truly available (max 2s)
+            // TODO: Prueba de que el archivo se haya guardado correctamente
+            //Esperar hasta que el archivo esté realmente disponible (máx. 2s)
             $waitTime = 0;
-            while (!Storage::disk('public')->exists($fullPath) && $waitTime < 2000000) {
-                usleep(100000); // 100ms
-                $waitTime += 100000;
+            while (!Storage::disk('public')->exists($fullPath) && $waitTime < self::MAX_WAIT_US) {
+                usleep(self::WAIT_INTERVAL_US); // 100ms
+                $waitTime += self::WAIT_INTERVAL_US;
             }
 
             return $fullPath;

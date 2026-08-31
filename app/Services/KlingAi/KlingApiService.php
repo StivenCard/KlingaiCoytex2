@@ -39,15 +39,16 @@ class KlingApiService
     private function generateJwtToken(): string
     {
         // Usa el accessKey para generar una clave de caché única
-        $cacheKey = 'klingai_token_' . md5($this->accessKey);
+        $cacheKey = 'klingai_token_' . md5($this->accessKey); //md5 es un hash para evitar problemas con caracteres especiales en la clave de caché
 
         return Cache::remember($cacheKey, now()->addMinutes(30), function () {
             $payload = [
-                'iss' => $this->accessKey,
-                'exp' => time() + 1800,
-                'nbf' => time() - 5,
+                'iss' => $this->accessKey, // Identificador de la aplicación (accessKey)
+                'exp' => time() + 1800, // Expira en 30 minutos
+                'nbf' => time() - 5, // Tiempo de no antes (5 segundos antes para evitar problemas de sincronización)
             ];
-            return JWT::encode($payload, $this->secretKey, 'HS256');
+            $token = JWT::encode($payload, $this->secretKey, 'HS256');
+            return $token;
         });
     }
 

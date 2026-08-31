@@ -340,6 +340,7 @@ function loadRandomHints() {
         usedHintIndices = [];
     } else {
         currentHints = [];
+        /*Crear un array de índices de todos los hints*/
         const tempIndices = [...Array(allHints.length).keys()];
 
         // Remover índices ya usados

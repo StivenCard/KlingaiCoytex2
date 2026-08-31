@@ -2,13 +2,15 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use App\Services\KlingAi\KlingApiService;
-use App\Services\KlingAi\ImageProcessingService;
-use App\Services\GuidelinesService;
-use App\Models\VirtualTryOn;
 use App\Models\PricingRule;
 use App\Models\VirtualModel;
+use App\Models\VirtualTryOn;
+use App\Services\GuidelinesService;
+use App\Services\KlingAi\ImageProcessingService;
+use App\Services\KlingAi\KlingApiService;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 
 class VirtualTryOnController extends Controller
@@ -51,6 +53,8 @@ class VirtualTryOnController extends Controller
             ->take(20)
             ->get();
 
+        /* $prendasGarment = TablGarmert::all(); // Obtener todas las prendas de la tabla TablGarmert*/
+
         $guidelines = $this->guidelines->getAllGuidelines();
 
         return view('virtual-try-on', [
@@ -61,6 +65,7 @@ class VirtualTryOnController extends Controller
             'invalidModels' => $guidelines['invalidModels'],
             'validGarments' => $guidelines['validGarments'],
             'invalidGarments' => $guidelines['invalidGarments'],
+            /* 'prendasGarment' => $guidelines['prendasGarment'] ?? [], // Asegurarse de que exista la clave */
         ]);
     }
 
@@ -108,7 +113,7 @@ class VirtualTryOnController extends Controller
 
                 VirtualTryOn::create([
                     'task_id' => $taskId,
-                    'user_id' => '321123',
+                    'user_id' => Auth::id() ?? '321123',
                     'model_name' => 'kolors-virtual-try-on-v1-5',
                     'model_type' => $request->model_source,
                     'human_image_path' => $humanImagePath,

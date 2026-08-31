@@ -17,14 +17,14 @@ return new class extends Migration
             $table->enum('status', ['submitted', 'processing', 'completed', 'failed']);
             $table->string('task_status')->nullable();
 
-            // 🔥 MANTENER request_data PARA virtual_model (metadatos)
+            //MANTENER request_data PARA virtual_model (metadatos)
             $table->json('request_data')->nullable();
 
-            // 🔥 AGREGAR rutas específicas PARA virtual_try_on
+            //AGREGAR rutas específicas PARA virtual_try_on
             $table->string('human_image_path')->nullable(); // Solo try-on
             $table->string('cloth_image_path')->nullable(); // Solo try-on
 
-            // 🔥 AGREGAR campos para multi_image_to_video
+            //AGREGAR campos para multi_image_to_video
             $table->json('input_image_paths')->nullable(); // Solo multi_image_to_video
 
             $table->json('response_data')->nullable();

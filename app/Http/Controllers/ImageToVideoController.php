@@ -2,14 +2,15 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 use App\Models\ImageToVideo;
-use App\Models\VirtualTryOn;
 use App\Models\PricingRule;
+use App\Models\VirtualTryOn;
 use App\Services\HintsService;
-use App\Services\KlingAi\KlingApiService;
 use App\Services\KlingAi\ImageProcessingService;
+use App\Services\KlingAi\KlingApiService;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 
 class ImageToVideoController extends Controller
 {
@@ -35,7 +36,9 @@ class ImageToVideoController extends Controller
     public function generate(Request $request)
     {
         $request->validate([
+            //images es un array de imágenes, mínimo 1 y máximo 4.
             'images' => 'required|array|min:1|max:4',
+            //images.* valida cada imagen individualmente
             'images.*' => 'required|image|mimes:jpg,jpeg,png|max:10240',
             'prompt' => 'required|string|max:2500',
             'negative_prompt' => 'nullable|string|max:2500',
@@ -66,12 +69,12 @@ class ImageToVideoController extends Controller
 
                 $pricing = PricingRule::where('model_name', 'kling-v1-6-multi-image')
                 ->where('mode', $payload['mode'])
-                ->where('duration', $payload['duration'])   
+                ->where('duration', $payload['duration'])
                 ->first();
 
                 ImageToVideo::create([
                     'task_id' => $taskId,
-                    'user_id' => '123456',
+                    'user_id' => Auth::id() ?? '123456',
                     'model_name' => 'kling-v1-6',
                     'prompt' => $request->prompt,
                     'negative_prompt' => $request->negative_prompt,

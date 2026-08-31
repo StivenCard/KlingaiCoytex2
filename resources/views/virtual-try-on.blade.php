@@ -518,7 +518,7 @@ window.existingTryOns = @json($existingTryOns);
             });
         });
 
-        // 🧹 GENERATE SIMPLIFICADO (SOLO ERRORES CRÍTICOS)
+        //GENERATE SIMPLIFICADO (SOLO ERRORES CRÍTICOS)
         $('#generateBtn').click(function() {
             const modelSource = $('#hiddenModelSource').val() || 'default';
             const garmentType = $('#hiddenGarmentType').val();
@@ -979,6 +979,7 @@ window.existingTryOns = @json($existingTryOns);
             const statusClass = `status ${result.status}`;
             const date = new Date(result.created_at).toLocaleString();
 
+            //Variable que contiene traduccion tipo de modelos
             let modelTypeText = result.model_type;
             if (result.model_type === 'default') {
                 modelTypeText = 'Predeterminado';
@@ -988,6 +989,7 @@ window.existingTryOns = @json($existingTryOns);
                 modelTypeText = 'Subido';
             }
 
+            //Variable que contiene traduccion tipo prenda
             let garmentTypeText = result.garments_type;
             if (result.garments_type === 'single') {
                 garmentTypeText = 'Prenda Única';
@@ -995,6 +997,7 @@ window.existingTryOns = @json($existingTryOns);
                 garmentTypeText = 'Múltiples Prendas';
             }
 
+            //Variable que contiene traduccion tipo de estado
             let statusText = result.status;
             if (result.status === 'processing') {
                 statusText = 'En Proceso';
@@ -1040,6 +1043,7 @@ window.existingTryOns = @json($existingTryOns);
             html += `</div></div>`;
         });
 
+        //accedemos al elemento con el contenedor y pintamos el html
         container.html(html);
 
         $('.item').hover(

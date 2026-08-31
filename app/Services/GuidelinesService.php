@@ -27,9 +27,10 @@ class GuidelinesService
      */
     public function getGuidelines(string $type): array
     {
-        $files = $this->getFiles(public_path(self::PATH . '/' . $type));
+        $files = $this->getFiles(public_path(self::PATH . '/' . $type)); // Obtiene los archivos de imagen válidos en la carpeta correspondiente
         $descriptions = $this->texts[$type] ?? [];
 
+        /* el formato que el frontend necesita para mostrar una galería de imágenes con su texto. */
         return array_map(fn($file, $i) => [
             'url' => asset(self::PATH . '/' . $type . '/' . $file),
             'description' => $descriptions[$i] ?? 'Ejemplo'
@@ -45,7 +46,7 @@ class GuidelinesService
     {
         return [
             'validModels'    => $this->getGuidelines('valid_model'),
-            'invalidModels'  => $this->getGuidelines('invalid_model'),  
+            'invalidModels'  => $this->getGuidelines('invalid_model'),
             'validGarments'  => $this->getGuidelines('valid_garment'),
             'invalidGarments'=> $this->getGuidelines('invalid_garment'),
         ];
@@ -80,10 +81,12 @@ class GuidelinesService
     {
         if (!is_dir($path)) return [];
 
+        //scandir obtiene todos los archivos y carpetas en la ruta, luego array_filter filtra solo los archivos con extensiones válidas (jpg, jpeg, png).
         $files = array_filter(scandir($path), fn($file) =>
             in_array(strtolower(pathinfo($file, PATHINFO_EXTENSION)), self::EXTS)
         );
 
+        //natsort ordena los archivos de manera natural (por ejemplo, "file2" antes de "file10").
         natsort($files);
         return array_values($files);
     }

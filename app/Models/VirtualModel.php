@@ -69,8 +69,9 @@ class VirtualModel extends Model
      */
     protected static function booted()
     {
-        static::deleting(function ($img) {
-            foreach ((array) $img->result_image_paths as $path) {
+        //En el callback se hace automaticamente un model::find
+        static::deleting(function ($model) {
+            foreach ((array) $model->result_image_paths as $path) {
                 Storage::disk('public')->delete(preg_replace('/^storage\//', '', $path));
             }
         });
