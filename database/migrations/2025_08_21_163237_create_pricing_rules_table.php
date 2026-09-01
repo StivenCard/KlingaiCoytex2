@@ -13,11 +13,20 @@ return new class extends Migration
     {
         Schema::create('pricing_rules', function (Blueprint $table) {
             $table->id();
-            $table->string('model_name');         // kling-v1-6, kolors-v1-5, kolors-virtual-try-on-v1-5
-            $table->string('mode')->nullable();   // std, pro, text-to-image, default
-            $table->string('duration')->nullable(); // 5, 10, default
+            // Campos originales
+            $table->string('model_name');
+            $table->string('mode')->nullable();
+            $table->string('duration')->nullable();
             $table->float('tokens')->nullable();
             $table->float('price')->nullable();
+            // Nuevos campos
+            $table->string('billing_type')->nullable();
+            // per_second, per_request, per_image, per_5_seconds
+            $table->string('feature')->nullable();
+            // native_audio, no_native_audio, motion_control,
+            // text_to_image, image_to_image, etc.
+            $table->string('resolution')->nullable();
+            // 720P, 1080P, 4K, 1K, 2K
             $table->timestamps();
         });
     }
