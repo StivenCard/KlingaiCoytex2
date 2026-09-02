@@ -166,7 +166,8 @@ class KlingApiService
         // Agregar datos específicos según el tipo de operación
         if ($type === 'virtual_model') {
             $logData['request_data'] = $data;
-        } elseif ($type === 'virtual_try_on') {
+
+        } elseif ($type === 'virtual_try_on' || $type === 'omni_image') {
             $logData['human_image_path'] = $humanPath;
             $logData['cloth_image_path'] = $clothPath;
         } elseif ($type === 'multi_image_to_video') {
@@ -286,5 +287,23 @@ class KlingApiService
     public function getMultiImageToVideoResult(string $taskId): array
     {
         return $this->get('/v1/videos/multi-image2video/' . $taskId, 'multi_image_to_video');
+    }
+
+    /**
+     * Consulta resultados de una tarea de omni-image.
+     *
+     * @param array $data Payload incluyendo imágenes base64.
+     * @param string|null $humanPath Ruta humana para logs.
+     * @param string|null $clothPath Ruta prenda para logs.
+     * @return array Respuesta de la API.
+     */
+    public function createOmniImage(array $data, ?string $humanPath = null, ?string $clothPath = null): array {
+
+        return $this->post('/v1/images/omni-image', $data, 'omni_image', $humanPath, $clothPath);
+    }
+
+    public function getOmniImageResult(string $taskId, ?string $humanPath = null, ?string $clothPath = null): array
+    {
+        return $this->get('/v1/images/omni-image/' . $taskId, 'omni_image', $humanPath, $clothPath);
     }
 }
