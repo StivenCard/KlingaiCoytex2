@@ -666,6 +666,12 @@
                                 <i class="fas fa-tshirt"></i> Probador Virtual
                             </a>
                             {{-- @endcan --}}
+                            {{-- @can("plm.diseno.probador-virtual-ia.omni-try-on") --}}
+                            <a class="nav-link {{ request()->routeIs('omni-try-on') ? 'active' : '' }}" href="{{ route('omni-try-on') }}">
+                                <i class="fas fa-tshirt"></i> Probador Virtual Omni
+                            </a>
+                            {{-- @endcan --}}
+                            
                             {{-- @can("plm.diseno.probador-virtual-ia.image-to-video") --}}
                             <a class="nav-link {{ request()->routeIs('image-to-video') ? 'active' : '' }}" href="{{ route('image-to-video') }}">
                                 <i class="fas fa-video"></i> Imagen a Video

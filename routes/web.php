@@ -1,12 +1,13 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\ImageToVideoController;
-use App\Http\Controllers\VirtualModelController;
-use App\Http\Controllers\VirtualTryOnController;
 use App\Http\Controllers\AdminGenerationsController;
 use App\Http\Controllers\ChatAi\ChatAiController;
+use App\Http\Controllers\ImageToVideoController;
+use App\Http\Controllers\OmniModelController;
 use App\Http\Controllers\Servientrega\ServiEntregaController;
+use App\Http\Controllers\VirtualModelController;
+use App\Http\Controllers\VirtualTryOnController;
+use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return redirect()->route('virtual-try-on');
@@ -16,6 +17,11 @@ Route::get('/', function () {
 Route::get('/virtual-try-on', [VirtualTryOnController::class, 'show'])->name('virtual-try-on');
 Route::post('/virtual-try-on/generate', [VirtualTryOnController::class, 'generate'])->name('virtual-try-on.generate');
 Route::get('/virtual-try-on/status/{taskId}', [VirtualTryOnController::class, 'taskStatus'])->name('virtual-try-on.status');
+
+//RUTAS OMNI TRY-ON
+Route::get('/omni-try-on', [OmniModelController::class, 'show'])->name('omni-try-on');
+Route::post('/omni-try-on/generate', [OmniModelController::class, 'generate'])->name('omni-try-on.generate');
+Route::get('/omni-try-on/status/{taskId}', [OmniModelController::class, 'taskStatus'])->name('omni-try-on.status');
 
 // RUTAS VIRTUAL MODEL
 Route::get('/virtual-model', [VirtualModelController::class, 'show'])->name('virtual-model');
@@ -31,7 +37,7 @@ Route::get('/image-to-video/status/{taskId}', [ImageToVideoController::class, 't
 Route::prefix('admin')->name('admin.')->group(function () {
     // Ruta principal con parámetro opcional de sección
     Route::get('/generations', [AdminGenerationsController::class, 'index'])->name('generations');
-    
+
     // Rutas para eliminación
     Route::delete('/generations/{type}/{id}', [AdminGenerationsController::class, 'deleteGeneration'])->name('generations.delete');
     Route::delete('/generations/all', [AdminGenerationsController::class, 'deleteAllGenerations'])->name('generations.delete-all');
