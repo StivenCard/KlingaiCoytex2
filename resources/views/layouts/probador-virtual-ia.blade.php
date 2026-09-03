@@ -536,6 +536,12 @@
             margin-bottom: 2rem;
         }
 
+        .probador-virtual-container .card-body .p-2 {
+            max-height: 450px;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+
         .probador-virtual-container .stat-card {
             background: var(--bg-2);
             border: 1px solid var(--border);
@@ -671,7 +677,7 @@
                                 <i class="fas fa-tshirt"></i> Probador Virtual Omni
                             </a>
                             {{-- @endcan --}}
-                            
+
                             {{-- @can("plm.diseno.probador-virtual-ia.image-to-video") --}}
                             <a class="nav-link {{ request()->routeIs('image-to-video') ? 'active' : '' }}" href="{{ route('image-to-video') }}">
                                 <i class="fas fa-video"></i> Imagen a Video

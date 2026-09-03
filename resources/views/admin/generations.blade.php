@@ -207,12 +207,7 @@
                                 </h6>
                             </div>
                             {{-- Contenedor con scroll interno --}}
-                            <div class="card-body p-2"
-                                style="
-                                max-height: 450px;
-                                overflow-y: auto;
-                                overflow-x: hidden;
-                            ">
+                            <div class="card-body p-2">
                                 @if ($pricingRules->isEmpty())
                                     <div class="alert alert-warning mb-0">
                                         <i class="fas fa-exclamation-triangle"></i>
