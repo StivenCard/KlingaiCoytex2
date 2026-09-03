@@ -77,7 +77,8 @@ class OmniModelController extends Controller
             $garmentImagePath = $this->getGarmentPath($request);
 
             // 2. Definir Prompt y parámetros Omni
-            $prompt = $request->input('prompt', 'Fit the outfit from <<<image_2>>> onto the model in <<<image_1>>> accurately while maintaining identity and realistic proportions.');
+            /* $prompt = $request->input('prompt', 'Fit the outfit from <<<image_2>>> onto the model in <<<image_1>>> accurately while maintaining identity and realistic proportions.'); */
+            $prompt = $this->getOmniPrompt($request);
             $aspectRatio = $request->input('aspect_ratio', 'auto');
             $resolution = $request->input('resolution', '1k');
 
@@ -85,10 +86,12 @@ class OmniModelController extends Controller
             $payload = [
                 'model_name'   => 'kling-v3-omni',
                 'prompt'       => $prompt,
-                'image_list'   => [
+                //Este usa las prendas combiandas
+                /* 'image_list'   => [
                     ['image' => $this->getHumanImage($request)],
                     ['image' => $this->getGarmentImage($request)],
-                ],
+                ], */
+                'image_list' => $this->getOmniImageList($request),
                 'resolution'   => $resolution,
                 'aspect_ratio' => $aspectRatio,
                 'n'            => (int) $request->output_count,
@@ -199,7 +202,8 @@ class OmniModelController extends Controller
         };
     }
 
-    private function getGarmentImage(Request $request): string
+    //Usado para combinar las prendas en una sola imagen para enviarlas al modelo Omni
+    /* private function getGarmentImage(Request $request): string
     {
         return match($request->garment_type) {
             'single'   => $this->images->convertToBase64($request->file('single_garment')),
@@ -209,7 +213,7 @@ class OmniModelController extends Controller
             ),
             default    => throw new \Exception('Invalid garment type')
         };
-    }
+    } */
 
     private function getHumanPath(Request $request): ?string
     {
@@ -247,5 +251,51 @@ class OmniModelController extends Controller
         }
 
         return null;
+    }
+
+    //Metodo para enviar las prendas de manera independiente para que el modelo pueda entenderlo mejor // Comentar si quieres usar prendas combinadas o no usar este metodo
+    private function getOmniImageList(Request $request): array
+    {
+        $images = [
+            ['image' => $this->getHumanImage($request)],
+        ];
+
+        if ($request->garment_type === 'single') {
+            $images[] = [
+                'image' => $this->images->convertToBase64(
+                    $request->file('single_garment')
+                ),
+            ];
+        }
+
+        if ($request->garment_type === 'multiple') {
+            $images[] = [
+                'image' => $this->images->convertToBase64(
+                    $request->file('top_garment')
+                ),
+            ];
+
+            $images[] = [
+                'image' => $this->images->convertToBase64(
+                    $request->file('bottom_garment')
+                ),
+            ];
+        }
+
+        return $images;
+    }
+
+    //MEOTODO PARA MANEJAR EL PROMPT DE MANERA DINAMICA
+    private function getOmniPrompt(Request $request): string
+    {
+        if ($request->filled('prompt')) {
+            return $request->input('prompt');
+        }
+
+        if ($request->garment_type === 'single') {
+            return 'Dress the person in <<<image_1>>> with the clothing item shown in <<<image_2>>>. Analyze the clothing item visually and determine its actual garment type and the appropriate area of the body where it should naturally be worn. Do not assume its placement based on image order, input field name, or any predefined garment category. The clothing item may be any type of garment, including upper-body, lower-body, full-body or other wearable clothing. Place it naturally and realistically according to its actual design and function. Preserve the person\'s identity, face, body proportions, pose and background. Preserve the garment\'s original color, texture, pattern, material, shape and design details. Make the garment fit naturally and realistically.';
+        }
+
+        return 'Dress the person in <<<image_1>>> using BOTH clothing items shown in <<<image_2>>> and <<<image_3>>>. Analyze each clothing item visually and determine its actual garment type, structure, design and the appropriate area of the body where it should naturally be worn. Do NOT assume that image_2 or image_3 represents a specific type of garment. Do NOT assign garment roles based on image order, input field name, or predefined categories. The garments may be any combination of clothing items, including but not limited to shirts, blouses, sweaters, jackets, pants, jeans, shorts, skirts, dresses or other garments. Determine independently where each garment belongs on the person\'s body and place it accordingly. Use BOTH garments together as one complete outfit, regardless of the order in which they are provided. Preserve the person\'s identity, face, body proportions, pose and background. Preserve the original color, texture, pattern, material, shape and design details of each garment. Make all garments fit naturally and realistically without changing their design.';
     }
 }
