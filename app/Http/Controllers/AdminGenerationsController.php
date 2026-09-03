@@ -7,7 +7,7 @@ use App\Models\VirtualModel;
 use App\Models\VirtualTryOn;
 use App\Models\PricingRule;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;  
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Services\KlingAi\KlingApiService;
 
@@ -62,7 +62,7 @@ class AdminGenerationsController extends Controller
     {
         // 1. Determinar la sección activa
         $activeSection = $request->input('section', 'all');
-        
+
         // 2. Obtener datos de consumo de API
         $resourcePacks = $this->getResourcePacks();
 
@@ -85,7 +85,7 @@ class AdminGenerationsController extends Controller
         $globalFilterStats = $this->calculateGlobalFilterStats($data, $filters);
 
         return view('admin.generations', compact(
-            'data', 'totals', 'resourcePacks', 'filters', 
+            'data', 'totals', 'resourcePacks', 'filters',
             'activeSection', 'pricingRules', 'globalFilterStats', 'noResultsForGlobalUser'
         ));
     }
@@ -112,7 +112,7 @@ class AdminGenerationsController extends Controller
             return [];
         }
     }
-    
+
     /**
      * Procesa filtros globales y específicos por sección.
      *
@@ -130,10 +130,10 @@ class AdminGenerationsController extends Controller
         // Filtros específicos por sección
         $sectionMap = [
             'videos' => 'video',
-            'tryons' => 'tryon', 
+            'tryons' => 'tryon',
             'models' => 'model'
         ];
-        
+
         if ($activeSection === 'all') {
             // Para sección "all", incluir todos los filtros individuales
             foreach ($sectionMap as $sectionKey => $filterKey) {
@@ -191,7 +191,7 @@ class AdminGenerationsController extends Controller
     private function getModelData(string $type, ?string $userId = null, ?string $globalUserId = null): array
     {
         $modelClass = self::MODEL_CLASSES[$type] ?? null;
-        
+
         if (!$modelClass) {
             return ['items' => collect(), 'count' => 0, 'tokens' => 0, 'price' => 0];
         }
@@ -216,7 +216,7 @@ class AdminGenerationsController extends Controller
             'price'  => $query->sum('price'),
         ];
     }
-    
+
     /**
      * Verifica si no hay resultados para un filtro global de usuario.
      *
@@ -269,7 +269,8 @@ class AdminGenerationsController extends Controller
      *
      * @return \Illuminate\Support\Collection
      */
-    private function getPricingRules()
+    //Activar para los precios anteriores pero ya no creo que se utilicen mas
+    /* private function getPricingRules()
     {
         $pricingMap = [
             ['model' => 'kling-v1-6-multi-image', 'duration' => 5,  'mode' => 'std'],
@@ -286,9 +287,17 @@ class AdminGenerationsController extends Controller
                 ->when($map['mode'], fn($q) => $q->where('mode', $map['mode']))
                 ->first();
         })->filter();
+    } */
+
+    private function getPricingRules()
+    {
+        return PricingRule::query()
+            ->orderBy('model_name')
+            ->orderBy('feature')
+            ->orderBy('resolution')
+            ->get();
     }
 
-    
     /**
      * Calcula estadísticas cuando se aplica un filtro global de usuario.
      *
@@ -432,7 +441,7 @@ class AdminGenerationsController extends Controller
         }
     }
 
-    
+
     /**
      * Busca un ítem de generación por tipo e ID.
      *
@@ -444,7 +453,7 @@ class AdminGenerationsController extends Controller
     private function findGenerationItem(string $type, int $id)
     {
         $modelClass = self::MODEL_CLASSES[$type] ?? null;
-        
+
         if (!$modelClass) {
             throw new \Exception('Tipo de generación no válido');
         }
@@ -462,13 +471,13 @@ class AdminGenerationsController extends Controller
     private function deleteGenerationsByType(string $type, ?string $userId = null): void
     {
         $modelClass = self::MODEL_CLASSES[$type] ?? null;
-        
+
         if (!$modelClass) {
             throw new \Exception('Tipo de generación no válido');
         }
 
         $query = $modelClass::query();
-        
+
         if ($userId) {
             $query->where('user_id', $userId);
         }

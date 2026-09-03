@@ -151,9 +151,9 @@
                             </div>
                         @endforeach
                     @endif
-                    
+
                     <!-- Costos por Operación -->
-                    <div class="card">
+                    {{-- <div class="card">
                         <div class="card-header bg-light">
                             <h6 class="mb-0">Costos por Operación</h6>
                         </div>
@@ -172,8 +172,8 @@
 
                                             <small class="d-block text-muted">{{ $rule->tokens }} tokens</small>
                                         </div>
-                                        
-                                        <span class="badge 
+
+                                        <span class="badge
                                             @if(Str::contains($rule->model_name, 'kling')) badge-primary
                                             @elseif(Str::contains($rule->model_name, 'try-on')) badge-success
                                             @elseif(Str::contains($rule->model_name, 'kolors')) badge-info
@@ -186,6 +186,125 @@
                                 @endforeach
                             </ul>
                         </div>
+                    </div> --}}
+                    {{-- Costos actuales de Kling AI --}}
+                    <div class="card">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0">
+                                <i class="fas fa-dollar-sign"></i> Costos actuales de Kling AI
+                            </h6>
+                        </div>
+
+                        <div class="card-body p-2">
+
+                            @if($pricingRules->isEmpty())
+
+                                <div class="alert alert-warning mb-0">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                    No hay reglas de precios configuradas.
+                                </div>
+
+                            @else
+
+                                @php
+                                    $groupedPricing = $pricingRules->groupBy('model_name');
+                                @endphp
+
+                                @foreach($groupedPricing as $modelName => $modelRules)
+
+                                    <div class="card mb-3 shadow-sm">
+
+                                        {{-- Modelo --}}
+                                        <div class="card-header bg-dark text-white">
+                                            <strong>
+                                                <i class="fas fa-robot"></i>
+                                                {{ $modelName }}
+                                            </strong>
+                                        </div>
+
+                                        <div class="card-body p-2">
+
+                                            <div class="table-responsive">
+                                                <table class="table table-sm table-bordered mb-0">
+
+                                                    <thead class="thead-light">
+                                                        <tr>
+                                                            <th>Característica</th>
+                                                            <th>Resolución</th>
+                                                            <th>Facturación</th>
+                                                            <th>Tokens</th>
+                                                            <th>Precio</th>
+                                                        </tr>
+                                                    </thead>
+
+                                                    <tbody>
+
+                                                        @foreach($modelRules as $rule)
+
+                                                            <tr>
+
+                                                                {{-- Feature --}}
+                                                                <td>
+                                                                    @if($rule->feature)
+                                                                        {{ ucwords(str_replace('_', ' ', $rule->feature)) }}
+                                                                    @else
+                                                                        <span class="text-muted">Predeterminado</span>
+                                                                    @endif
+                                                                </td>
+
+                                                                {{-- Resolución --}}
+                                                                <td>
+                                                                    @if($rule->resolution)
+                                                                        <span class="badge badge-info">
+                                                                            {{ strtoupper($rule->resolution) }}
+                                                                        </span>
+                                                                    @else
+                                                                        <span class="text-muted">—</span>
+                                                                    @endif
+                                                                </td>
+
+                                                                {{-- Tipo de facturación --}}
+                                                                <td>
+                                                                    @if($rule->billing_type)
+                                                                        <span class="badge badge-secondary">
+                                                                            {{ ucwords(str_replace('_', ' ', $rule->billing_type)) }}
+                                                                        </span>
+                                                                    @else
+                                                                        <span class="text-muted">—</span>
+                                                                    @endif
+                                                                </td>
+
+                                                                {{-- Tokens --}}
+                                                                <td>
+                                                                    <span class="badge badge-primary">
+                                                                        {{ rtrim(rtrim(number_format($rule->tokens, 3, '.', ''), '0'), '.') }}
+                                                                    </span>
+                                                                </td>
+
+                                                                {{-- Precio --}}
+                                                                <td>
+                                                                    <strong class="text-success">
+                                                                        ${{ number_format($rule->price, 3) }}
+                                                                    </strong>
+                                                                </td>
+
+                                                            </tr>
+
+                                                        @endforeach
+
+                                                    </tbody>
+
+                                                </table>
+                                            </div>
+
+                                        </div>
+                                    </div>
+
+                                @endforeach
+
+                            @endif
+
+                        </div>
                     </div>
                     @if($totals['all']['count'] > 0)
                         <div class="mt-4 ">
@@ -197,7 +316,7 @@
                 </div>
             </div>
         </div>
-    
+
         <!-- Columna derecha (sección principal con cambios) -->
         <div class="col-12 col-lg-8 d-flex flex-column overflow-hidden px-2">
             @php
@@ -252,7 +371,7 @@
                     </div>
                 </div>
             @endif
-    
+
             {{-- Mostrar mensaje según casos --}}
             @if(isset($filters['global_user_id']) && $noResultsForGlobalUser)
                 <!-- Usuario no existe -->
@@ -306,7 +425,7 @@
                                             </div>
                                         </div>
                                     </div>
-                                    
+
                                     <div class="alert alert-light border" style="background: rgba(248, 249, 250, 0.8);">
                                         <div class="d-flex align-items-center">
                                             <i class="fas fa-lightbulb text-warning mr-3 fa-lg"></i>
@@ -322,7 +441,7 @@
                 </div>
             @else
                 <!-- Mostrar tablas según la sección activa y disponibilidad de datos -->
-                
+
                 {{-- SECCIÓN DE VIDEOS --}}
                 @if(($activeSection === 'all' && $data['videos']['count'] > 0) || $activeSection === 'videos')
                     @if(isset($data['videos']))
@@ -363,7 +482,7 @@
                                         </div>
                                     </form>
                                 @endif
-    
+
                                 @if($data['videos']['count'] > 0)
                                     {{-- Mostrar estadísticas filtradas si hay filtro activo --}}
                                     @if($activeSection === 'videos' && isset($filters['video_user_id']))
@@ -381,7 +500,7 @@
                                             </div>
                                         </div>
                                     @endif
-    
+
                                     <div class="table-responsive">
                                         <table class="table">
                                             <thead>
@@ -496,7 +615,7 @@
                         </div>
                     @endif
                 @endif
-    
+
                 {{-- SECCIÓN DE TRY-ONS --}}
                 @if(($activeSection === 'all' && $data['tryons']['count'] > 0) || $activeSection === 'tryons')
                     @if(isset($data['tryons']))
@@ -537,7 +656,7 @@
                                         </div>
                                     </form>
                                 @endif
-    
+
                                 @if($data['tryons']['count'] > 0)
                                     {{-- Mostrar estadísticas filtradas si hay filtro activo --}}
                                     @if($activeSection === 'tryons' && isset($filters['tryon_user_id']))
@@ -555,7 +674,7 @@
                                             </div>
                                         </div>
                                     @endif
-    
+
                                     <div class="table-responsive">
                                         <table class="table">
                                             <thead>
@@ -596,7 +715,7 @@
                                                         <td>
                                                         @if($tryon->result_image_paths)
                                                             @foreach($tryon->result_image_paths as $path)
-                                                                <button class="btn btn-sm btn-outline-success mb-1" 
+                                                                <button class="btn btn-sm btn-outline-success mb-1"
                                                                         onclick="openImageModal('{{ Storage::url($path) }}', 'Probador Virtual Resultado')">
                                                                     <i class="fas fa-image"></i> Ver
                                                                 </button>
@@ -640,7 +759,7 @@
                         </div>
                     @endif
                 @endif
-    
+
                 {{-- SECCIÓN DE MODELOS --}}
                 @if(($activeSection === 'all' && $data['models']['count'] > 0) || $activeSection === 'models')
                     @if(isset($data['models']))
@@ -681,7 +800,7 @@
                                         </div>
                                     </form>
                                 @endif
-    
+
                                 @if($data['models']['count'] > 0)
                                     {{-- Mostrar estadísticas filtradas si hay filtro activo --}}
                                     @if($activeSection === 'models' && isset($filters['model_user_id']))
@@ -699,7 +818,7 @@
                                             </div>
                                         </div>
                                     @endif
-    
+
                                     <div class="table-responsive">
                                         <table class="table">
                                             <thead>
@@ -736,7 +855,7 @@
                                                         <td>
                                                             @if($model->result_image_paths)
                                                                 @foreach($model->result_image_paths as $path)
-                                                                    <button class="btn btn-sm btn-outline-info mb-1" 
+                                                                    <button class="btn btn-sm btn-outline-info mb-1"
                                                                             onclick="openImageModal('{{ Storage::url($path) }}', 'Modelo Virtual Resultado')">
                                                                         <i class="fas fa-image"></i> Ver
                                                                     </button>
@@ -1111,7 +1230,7 @@
     }
 
     // FUNCIONES DE ADMINISTRACIÓN (EXISTENTES)
-    axios.defaults.headers.common['X-CSRF-TOKEN'] = document.querySelector('meta[name="csrf-token"]').getAttribute('content'); 
+    axios.defaults.headers.common['X-CSRF-TOKEN'] = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
     function deleteGeneration(type, id) {
         Swal.fire({
@@ -1124,9 +1243,9 @@
         }).then((result) => {
             if (result.isConfirmed) {
                 const url = `/admin/generations/${type}/${id}`;
-                deleteRequest(url, 'Eliminando generación...'); 
+                deleteRequest(url, 'Eliminando generación...');
             }
-        }); 
+        });
     }
 
     function deleteGenerationType(type, userId = null) {
@@ -1136,12 +1255,12 @@
             icon: 'warning',
             showCancelButton: true,
             confirmButtonText: 'Sí, eliminar todo',
-            cancelButtonText: 'Cancelar' 
+            cancelButtonText: 'Cancelar'
         }).then((result) => {
             if (result.isConfirmed) {
                 const url = '/admin/generations/all';
                 const data = { type, user_id: userId };
-                deleteRequest(url, 'Eliminando historial...', data); 
+                deleteRequest(url, 'Eliminando historial...', data);
             }
         });
     }
@@ -1156,10 +1275,10 @@
             cancelButtonText: 'Cancelar'
         }).then((result) => {
             if (result.isConfirmed) {
-                const url = '/admin/generations/all'; 
-                deleteRequest(url, 'Eliminando todo el historial...'); 
+                const url = '/admin/generations/all';
+                deleteRequest(url, 'Eliminando todo el historial...');
             }
-        }); 
+        });
     }
 
     function deleteRequest(url, loadingMessage, data = {}) {
@@ -1168,8 +1287,8 @@
             allowOutsideClick: false,
             showConfirmButton: false,
             didOpen: () => Swal.showLoading()
-        }); 
-        
+        });
+
         fetch(url, {
             method: 'DELETE',
             headers: {
@@ -1181,7 +1300,7 @@
         })
         .then(response => response.json())
         .then(data => {
-            if (data.success) { 
+            if (data.success) {
                 Swal.fire({
                     icon: 'success',
                     title: '¡Eliminado!',
@@ -1197,17 +1316,17 @@
                     } else {
                         window.location.reload();
                     }
-                }); 
+                });
             } else {
-                throw new Error(data.error || 'Error al eliminar'); 
+                throw new Error(data.error || 'Error al eliminar');
             }
         })
         .catch(error => {
             Swal.fire({
                 icon: 'error',
                 title: 'Error',
-                text: error.message || 'Error al procesar la solicitud' 
-            }); 
+                text: error.message || 'Error al procesar la solicitud'
+            });
         });
     }
 </script>
