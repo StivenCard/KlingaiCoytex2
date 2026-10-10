@@ -254,6 +254,8 @@
 
 @push('scripts')
     <script>
+        const activePolls = new Set();
+
         let modelHistory = [];
         let selectedHint = null;
         let isPromptManuallyEdited = false;
@@ -283,28 +285,37 @@
 
         function initializeExistingData() {
             if (window.existingModels?.length) {
-                modelHistory = window.existingModels.map(model => ({
-                    id: model.id,
-                    task_id: model.task_id,
-                    gender: model.gender,
-                    age_group: model.age_group,
-                    skin_tone: model.skin_tone,
-                    aspect_ratio: model.aspect_ratio,
-                    prompt: model.prompt,
-                    status: model.status,
-                    created_at: model.created_at,
-                    result_image_paths: model.result_image_paths || [],
-                    display_name: model.display_name,
-                    formatted_date: model.formatted_date,
-                    preview_url: model.preview_url
-                }));
+                const DAY_MS = 24 * 60 * 60 * 1000;
+
+                modelHistory = window.existingModels.map(model => {
+                    const paths = model.result_image_paths || [];
+                    const done = model.status === 'completed' && paths.length > 0;
+                    const failed = model.status === 'failed';
+                    const stale = Date.now() - new Date(model.created_at).getTime() > DAY_MS;
+
+                    return {
+                        id: model.id,
+                        task_id: model.task_id,
+                        gender: model.gender,
+                        age_group: model.age_group,
+                        skin_tone: model.skin_tone,
+                        aspect_ratio: model.aspect_ratio,
+                        prompt: model.prompt,
+                        // "completed" sin imágenes o "processing" reciente se vuelven a consultar
+                        status: done ? 'completed' : ((failed || stale) ? 'failed' : 'processing'),
+                        created_at: model.created_at,
+                        result_image_paths: paths,
+                        display_name: model.display_name,
+                        formatted_date: model.formatted_date,
+                        preview_url: model.preview_url
+                    };
+                });
                 renderModelHistory();
 
-                // CAMBIO: retomar el polling de tareas que quedaron en proceso al recargar
-                const isRecent = m => Date.now() - new Date(m.created_at).getTime() < 15 * 60 * 1000;
+                // Retomar el seguimiento de las tareas pendientes
                 modelHistory
-                    .filter(m => m.status === 'processing' && m.task_id && isRecent(m))
-                    .forEach(m => checkModelStatus(m.task_id));
+                    .filter(m => m.status === 'processing' && m.task_id)
+                    .forEach(m => checkModelStatus(m.task_id, true));
             } else {
                 showEmptyState();
             }
@@ -753,41 +764,100 @@
     `);
         };
 
-        const checkModelStatus = taskId => {
-            setTimeout(function poll() {
+        // silent = true: seguimiento de fondo (al recargar), sin alertas ni tocar el botón Generar
+        const checkModelStatus = (taskId, silent = false) => {
+            if (activePolls.has(taskId)) return; // ya se está consultando esta tarea
+            activePolls.add(taskId);
+
+            const MAX_FAILURES = 5; // fallas de conexión seguidas toleradas antes de rendirse
+            let failures = 0;
+
+            const finish = () => {
+                activePolls.delete(taskId);
+                if (!silent) resetGenerateButton();
+            };
+
+            const markFailed = () => {
+                const model = modelHistory.find(m => m.task_id === taskId);
+                if (model) {
+                    model.status = 'failed';
+                    updateModelInHistory(model);
+                }
+            };
+
+            const poll = () => {
                 $.get(`/virtual-model/status/${taskId}`)
                     .done(response => {
-                        if (response.data) {
-                            const status = response.data.task_status;
-                            if (status === 'succeed') {
-                                const model = modelHistory.find(m => m.task_id === taskId);
-                                if (model) {
-                                    model.status = 'completed';
-                                    model.result_image_paths = response.data.local_images || [];
-                                    updateModelInHistory(model);
-                                }
-                                resetGenerateButton();
-                            } else if (status === 'processing' || status === 'submitted') {
-                                setTimeout(poll, 3000);
-                            } else {
-                                const model = modelHistory.find(m => m.task_id === taskId);
-                                if (model) {
-                                    model.status = 'failed';
-                                    updateModelInHistory(model);
-                                }
-                                resetGenerateButton();
+                        failures = 0;
+
+                        if (!response.data) {
+                            setTimeout(poll, 3000);
+                            return;
+                        }
+
+                        const status = response.data.task_status;
+
+                        if (status === 'succeed') {
+                            const model = modelHistory.find(m => m.task_id === taskId);
+                            if (model) {
+                                model.status = 'completed';
+                                model.result_image_paths = response.data.local_images || [];
+                                updateModelInHistory(model);
                             }
+                            finish();
+                        } else if (status === 'processing' || status === 'submitted') {
+                            setTimeout(poll, 3000);
+                        } else if (status === 'failed') {
+                            markFailed();
+                            finish();
+
+                            const msg = response.data.task_status_msg || 'La generación falló';
+                            if (silent) {
+                                console.warn('VirtualModel', taskId, msg);
+                                return;
+                            }
+
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error en la generación',
+                                text: msg
+                            });
+                        } else {
+                            setTimeout(poll, 3000);
                         }
                     })
-                    .fail(() => {
-                        const model = modelHistory.find(m => m.task_id === taskId);
-                        if (model) {
-                            model.status = 'failed';
-                            updateModelInHistory(model);
+                    .fail(xhr => {
+                        failures++;
+
+                        // Falla pasajera: se reintenta sin molestar al usuario
+                        if (failures < MAX_FAILURES) {
+                            setTimeout(poll, 4000);
+                            return;
                         }
-                        resetGenerateButton();
+
+                        // Se rindió: la tarjeta pasa a "Fallido", pero la fila en BD sigue pendiente,
+                        // así que al recargar la página se vuelve a consultar
+                        markFailed();
+                        finish();
+
+                        const msg = xhr.responseJSON?.error ||
+                            xhr.responseJSON?.message ||
+                            'No se pudo verificar el estado del proceso';
+
+                        if (silent) {
+                            console.warn('VirtualModel status', taskId, msg);
+                            return;
+                        }
+
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error de conexión',
+                            text: msg + ' Recarga la página para volver a consultar.'
+                        });
                     });
-            }, 2000);
+            };
+
+            setTimeout(poll, 2000);
         };
 
         const resetGenerateButton = () => {

@@ -11,6 +11,7 @@ use App\Services\KlingAi\KlingApiService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
 class OmniModelController extends Controller
@@ -41,12 +42,12 @@ class OmniModelController extends Controller
         $guidelines = $this->guidelines->getAllGuidelines();
 
         return view('omni-try-on', [
-            'defaultModels'  => $defaultModels,
-            'virtualModels'  => $virtualModels,
-            'existingTryOns' => $existingOmni,
-            'validModels'    => $guidelines['validModels'],
-            'invalidModels'  => $guidelines['invalidModels'],
-            'validGarments'  => $guidelines['validGarments'],
+            'defaultModels'   => $defaultModels,
+            'virtualModels'   => $virtualModels,
+            'existingTryOns'  => $existingOmni,
+            'validModels'     => $guidelines['validModels'],
+            'invalidModels'   => $guidelines['invalidModels'],
+            'validGarments'   => $guidelines['validGarments'],
             'invalidGarments' => $guidelines['invalidGarments'],
         ]);
     }
@@ -77,7 +78,6 @@ class OmniModelController extends Controller
             $garmentImagePath = $this->getGarmentPath($request);
 
             // 2. Definir Prompt y parámetros Omni
-            /* $prompt = $request->input('prompt', 'Fit the outfit from <<<image_2>>> onto the model in <<<image_1>>> accurately while maintaining identity and realistic proportions.'); */
             $prompt = $this->getOmniPrompt($request);
             $aspectRatio = $request->input('aspect_ratio', 'auto');
             $resolution = $request->input('resolution', '1k');
@@ -86,12 +86,7 @@ class OmniModelController extends Controller
             $payload = [
                 'model_name'   => 'kling-v3-omni',
                 'prompt'       => $prompt,
-                //Este usa las prendas combiandas
-                /* 'image_list'   => [
-                    ['image' => $this->getHumanImage($request)],
-                    ['image' => $this->getGarmentImage($request)],
-                ], */
-                'image_list' => $this->getOmniImageList($request),
+                'image_list'   => $this->getOmniImageList($request),
                 'resolution'   => $resolution,
                 'aspect_ratio' => $aspectRatio,
                 'n'            => (int) $request->output_count,
@@ -124,69 +119,104 @@ class OmniModelController extends Controller
             }
 
             return response()->json($response);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
+            Log::error('Omni generate: ' . $e->getMessage());
             return response()->json(['error' => $e->getMessage()], 422);
         }
     }
 
     /**
      * Consulta el estado de la tarea Omni y procesa los resultados al finalizar.
+     *
+     * - Solo marca "completed" si realmente se guardó al menos una imagen.
+     * - Si Kling o la descarga fallan de forma pasajera, la fila NO se marca como fallida:
+     *   queda en "processing" y se reintenta en la siguiente consulta.
      */
     public function taskStatus(string $taskId): JsonResponse
     {
+        $omni = OmniModel::where('task_id', $taskId)->first();
+
+        if (!$omni) {
+            return response()->json(['error' => 'Task not found'], 404);
+        }
+
+        // Ya guardado: no volvemos a consultar a Kling ni a descargar
+        if ($omni->status === 'completed' && !empty($omni->result_image_paths)) {
+            return response()->json([
+                'data' => [
+                    'task_status'  => 'succeed',
+                    'local_images' => array_map(fn($p) => Storage::url($p), $omni->result_image_paths),
+                ],
+            ]);
+        }
+
         try {
             $response = $this->api->getOmniImageResult($taskId);
-            $omni = OmniModel::where('task_id', $taskId)->first();
+        } catch (\Throwable $e) {
+            // Falla pasajera al consultar a Kling: no se toca la fila, el front reintenta
+            Log::warning("Omni {$taskId}: no se pudo consultar a Kling - " . $e->getMessage());
+            return response()->json(['error' => $e->getMessage()], 502);
+        }
 
-            if (!$omni) {
-                return response()->json(['error' => 'Task not found'], 404);
+        $status = $response['data']['task_status'] ?? 'processing';
+
+        if ($status === 'failed') {
+            $omni->update(['status' => 'failed']);
+            return response()->json($response);
+        }
+
+        if ($status !== 'succeed') {
+            return response()->json($response); // submitted / processing
+        }
+
+        // Omni puede devolver las imágenes en "images" o en "series_images"
+        $result = $response['data']['task_result'] ?? [];
+        $items = !empty($result['images']) ? $result['images'] : ($result['series_images'] ?? []);
+
+        $paths = [];
+        $lastError = null;
+
+        foreach ($items as $image) {
+            if (empty($image['url'])) {
+                continue;
             }
 
-            $status = $response['data']['task_status'];
+            try {
+                $paths[] = $this->images->downloadAndSaveImage(
+                    $image['url'],
+                    'klingai/omni_results',
+                    'omni_result_'
+                );
+            } catch (\Throwable $e) {
+                $lastError = $e->getMessage();
+                Log::error("Omni {$taskId}: no se pudo guardar una imagen - " . $lastError);
+            }
+        }
 
-            $omni->update([
-                'status' => match ($status) {
-                    'succeed' => 'completed',
-                    'failed'  => 'failed',
-                    default   => 'processing',
-                }
+        if (!$paths) {
+            Log::error("Omni {$taskId}: Kling reportó succeed pero no se guardó ninguna imagen", [
+                'task_result' => $result,
             ]);
 
-            if ($status === 'succeed') {
-                $results = [];
-
-                foreach ($response['data']['task_result']['images'] ?? [] as $image) {
-                    try {
-                        $results[] = $this->images->downloadAndSaveImage(
-                            $image['url'],
-                            'klingai/omni_results',
-                            'omni_result_'
-                        );
-                    } catch (\Exception $e) {
-                        continue;
-                    }
-                }
-
-                if ($results) {
-                    $omni->update([
-                        'result_image_paths' => $results,
-                        'status'             => 'completed',
-                    ]);
-
-                    $response['data']['local_images'] = array_map(
-                        fn($p) => Storage::url($p),
-                        $results
-                    );
-                }
-            }
+            // La fila queda en "processing" para reintentar en la próxima consulta
+            $response['data']['task_status'] = 'failed';
+            $response['data']['task_status_msg'] = $lastError
+                ? 'No se pudo guardar la imagen: ' . $lastError
+                : 'Kling no devolvió imágenes para esta tarea';
 
             return response()->json($response);
-        } catch (\Exception $e) {
-            return response()->json(['error' => $e->getMessage()], 422);
         }
+
+        $omni->update(['result_image_paths' => $paths, 'status' => 'completed']);
+        $response['data']['local_images'] = array_map(fn($p) => Storage::url($p), $paths);
+
+        return response()->json($response);
     }
 
-    // Auxiliares idénticos a la lógica previa
+    // ---------------------------------------------------------------
+    // Auxiliares
+    // ---------------------------------------------------------------
+
     private function getHumanImage(Request $request): string
     {
         return match ($request->model_source) {
@@ -199,19 +229,6 @@ class OmniModelController extends Controller
             default   => throw new \Exception('Invalid model source')
         };
     }
-
-    //Usado para combinar las prendas en una sola imagen para enviarlas al modelo Omni
-    /* private function getGarmentImage(Request $request): string
-    {
-        return match($request->garment_type) {
-            'single'   => $this->images->convertToBase64($request->file('single_garment')),
-            'multiple' => $this->images->combineImagesToBase64(
-                $request->file('top_garment'),
-                $request->file('bottom_garment')
-            ),
-            default    => throw new \Exception('Invalid garment type')
-        };
-    } */
 
     private function getHumanPath(Request $request): ?string
     {
@@ -251,7 +268,9 @@ class OmniModelController extends Controller
         return null;
     }
 
-    //Metodo para enviar las prendas de manera independiente para que el modelo pueda entenderlo mejor // Comentar si quieres usar prendas combinadas o no usar este metodo
+    /**
+     * image_1 = modelo humano, image_2 (y image_3) = prenda(s), enviadas por separado.
+     */
     private function getOmniImageList(Request $request): array
     {
         $images = [
@@ -259,31 +278,17 @@ class OmniModelController extends Controller
         ];
 
         if ($request->garment_type === 'single') {
-            $images[] = [
-                'image' => $this->images->convertToBase64(
-                    $request->file('single_garment')
-                ),
-            ];
+            $images[] = ['image' => $this->images->convertToBase64($request->file('single_garment'))];
         }
 
         if ($request->garment_type === 'multiple') {
-            $images[] = [
-                'image' => $this->images->convertToBase64(
-                    $request->file('top_garment')
-                ),
-            ];
-
-            $images[] = [
-                'image' => $this->images->convertToBase64(
-                    $request->file('bottom_garment')
-                ),
-            ];
+            $images[] = ['image' => $this->images->convertToBase64($request->file('top_garment'))];
+            $images[] = ['image' => $this->images->convertToBase64($request->file('bottom_garment'))];
         }
 
         return $images;
     }
 
-    //MEOTODO PARA MANEJAR EL PROMPT DE MANERA DINAMICA
     private function getOmniPrompt(Request $request): string
     {
         if ($request->filled('prompt')) {

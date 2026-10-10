@@ -60,28 +60,35 @@ class ImageProcessingService
     }
 
     /**
-     * Descarga una imagen desde URL, aplica marca de agua y guarda en disco.
+     * Descarga una imagen desde URL, aplica marca de agua y guarda en disco (PNG).
+     * Si el procesamiento falla (marca de agua, memoria, formato), guarda la imagen original.
      */
     public function downloadAndSaveImage(string $url, string $directory, string $prefix = ''): string
     {
+        $response = Http::timeout(60)->retry(2, 1000, throw: false)->get($url);
+
+        if (!$response->successful()) {
+            throw new \Exception("HTTP {$response->status()} al descargar la imagen");
+        }
+
         try {
-            $response = Http::timeout(30)->get($url);
-
-            if (!$response->successful()) {
-                throw new \Exception('No se pudo descargar la imagen desde: ' . $url);
-            }
-
             $image = Image::make($response->body());
             $watermarked = $this->addHighQualityLogo($image);
 
-            $filename = $prefix . uniqid() . '.png';
-            $path = $directory . '/' . $filename;
-
+            $path = $directory . '/' . $prefix . uniqid() . '.png';
             Storage::disk('public')->put($path, $watermarked->encode('png'));
 
             return $path;
-        } catch (\Exception $e) {
-            throw new \Exception('Error al descargar imagen: ' . $e->getMessage());
+        } catch (\Throwable $e) {
+            Log::warning('Procesamiento de imagen falló, se guarda la original: ' . $e->getMessage());
+
+            $mime = strtolower((string) $response->header('Content-Type'));
+            $ext = str_contains($mime, 'jpeg') ? 'jpg' : (str_contains($mime, 'webp') ? 'webp' : 'png');
+
+            $path = $directory . '/' . $prefix . uniqid() . '.' . $ext;
+            Storage::disk('public')->put($path, $response->body());
+
+            return $path;
         }
     }
 
@@ -189,13 +196,13 @@ class ImageProcessingService
             $logoWidth = max(150, $image->width() * $sizeFactor);
 
             $logo->resize($logoWidth, null, function ($constraint) {
-                $constraint->aspectRatio(); // Metodo que mantiene las proporciones de la imagen
-                $constraint->upsize(); // Evita que la imagen se haga más grande que su tamaño original
+                $constraint->aspectRatio(); // Mantiene las proporciones de la imagen
+                $constraint->upsize(); // Evita que el logo se agrande más que su tamaño original
             });
 
             $margin = 25;
 
-            //Estas variables son para establecer la posición del logo y el texto, pero no se usan en la función insert de Intervention Image es mas para el texto
+            // Posición del logo para ubicar el texto "Generado por"
             $logoX = $image->width() - $logo->width() - $margin;
             $logoY = $image->height() - $logo->height() - $margin;
 
@@ -247,8 +254,7 @@ class ImageProcessingService
             // Usar el disco público para almacenar el video
             Storage::disk('public')->put($fullPath, $response->body());
 
-            // TODO: Prueba de que el archivo se haya guardado correctamente
-            //Esperar hasta que el archivo esté realmente disponible (máx. 2s)
+            // Esperar hasta que el archivo esté realmente disponible (máx. 2s)
             $waitTime = 0;
             while (!Storage::disk('public')->exists($fullPath) && $waitTime < self::MAX_WAIT_US) {
                 usleep(self::WAIT_INTERVAL_US); // 100ms

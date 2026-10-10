@@ -34,7 +34,7 @@
                                                 class="d-none">
                                             <input type="radio" name="selected_virtual_index" value="{{ $index }}"
                                                 class="d-none">
-                                            <div class="overlay">
+                                            {{-- <div class="overlay">
                                                 <div class="badges">
                                                     <span
                                                         class="badge badge-primary {{ $model->gender }}">{{ ucfirst($model->gender) }}</span>
@@ -45,7 +45,7 @@
                                                 <div class="overlay-title">{{ $model->display_name }} -
                                                     {{ $index + 1 }}</div>
                                                 <div class="overlay-date">{{ $model->formatted_date }}</div>
-                                            </div>
+                                            </div> --}}
                                         </div>
                                     @endforeach
                                 @empty
@@ -315,7 +315,7 @@
                 <strong>Siga estas pautas para subir imágenes de prendas y lograr los mejores resultados de Try-On.</strong>
             </p>
             <div class="alert alert-info py-2 px-3 mb-4">
-                <strong>Imágenes de hasta 50MB, con lado corto ≥ 512px, lado largo ≤ 4096px y formatos JPG/PNG.</strong>
+                <strong>Imágenes de hasta 10MB, con lado corto ≥ 300px, lado largo ≤ 4096px y formatos JPG/PNG.</strong>
             </div>
 
             @if (count($validGarments) > 0)
@@ -457,19 +457,36 @@
         let startX, startY, translateX = 0,
             translateY = 0;
 
+        // Tareas que ya tienen un polling activo (evita consultas duplicadas)
+        const activePolls = new Set();
+
         $(document).ready(function() {
             // INIT DATA
             if (window.existingTryOns?.length) {
-                resultsHistory = window.existingTryOns.map(tryOn => ({
-                    id: tryOn.id,
-                    task_id: tryOn.task_id,
-                    model_type: tryOn.model_type,
-                    garments_type: tryOn.garments_type,
-                    status: tryOn.status === 'completed' ? 'completed' : 'processing',
-                    created_at: tryOn.created_at,
-                    result_image_paths: tryOn.result_image_paths?.map(path => `/storage/${path}`) || []
-                }));
+                const DAY_MS = 24 * 60 * 60 * 1000;
+
+                resultsHistory = window.existingTryOns.map(tryOn => {
+                    const paths = tryOn.result_image_paths?.map(path => `/storage/${path}`) || [];
+                    const done = tryOn.status === 'completed' && paths.length > 0;
+                    const stale = Date.now() - new Date(tryOn.created_at).getTime() > DAY_MS;
+
+                    return {
+                        id: tryOn.id,
+                        task_id: tryOn.task_id,
+                        model_type: tryOn.model_type,
+                        garments_type: tryOn.garments_type,
+                        // "completed" sin imágenes o "processing" reciente se vuelven a consultar
+                        status: done ? 'completed' : (stale ? 'failed' : 'processing'),
+                        created_at: tryOn.created_at,
+                        result_image_paths: paths
+                    };
+                });
                 renderResultsHistory();
+
+                // Retomar el seguimiento de las tareas pendientes
+                resultsHistory
+                    .filter(r => r.status === 'processing' && r.task_id)
+                    .forEach(r => checkTaskStatus(r.task_id, true));
             } else {
                 showEmptyState();
             }
@@ -539,7 +556,7 @@
                     if ($('#hiddenSelectedVirtualIndex').length === 0) {
                         $('#hiddenForm').append(
                             `<input type="hidden" name="selected_virtual_index" id="hiddenSelectedVirtualIndex" value="${modelIndex}">`
-                            );
+                        );
                     } else {
                         $('#hiddenSelectedVirtualIndex').val(modelIndex);
                     }
@@ -697,18 +714,16 @@
                         renderResultsHistory();
                         resetGenerateButton();
 
-                        let errorMessage = 'Error desconocido';
-                        if (xhr.responseJSON?.message) {
-                            errorMessage = xhr.responseJSON.message;
-                        } else if (xhr.responseJSON?.error) {
-                            errorMessage = xhr.responseJSON.error;
-                        } else if (xhr.responseText) {
-                            errorMessage = 'Error del servidor';
-                        }
+                        // Mensaje real: error del servidor, errores de validación de Laravel o message
+                        const errors = xhr.responseJSON?.errors;
+                        const errorMessage = xhr.responseJSON?.error ||
+                            (errors ? Object.values(errors).flat().join('\n') : null) ||
+                            xhr.responseJSON?.message ||
+                            'Error del servidor';
 
                         Swal.fire({
-                            icon: 'warning',
-                            title: 'Resolución errónea',
+                            icon: 'error',
+                            title: 'No se pudo generar',
                             text: errorMessage,
                             confirmButtonText: 'Entendido'
                         });
@@ -720,22 +735,11 @@
         // FUNCIONES TOOLTIP MEJORADAS
         const toggleTooltip = (tooltipId, targetElement) => {
             const tooltip = document.getElementById(tooltipId);
-            const rect = targetElement.getBoundingClientRect();
-            const viewportWidth = window.innerWidth;
-            const viewportHeight = window.innerHeight;
 
             if (tooltip.style.display === 'block') {
                 hideTooltip(tooltipId);
             } else {
                 tooltip.style.display = 'block';
-
-                // let left = rect.left - 450;
-                // if (left < 10) left = 10;
-                // if (left + 1000 > viewportWidth) left = viewportWidth - 1010;
-
-                // let top = rect.bottom + 10;
-                // if (top + 500 > viewportHeight) top = rect.top - 510;
-                // if (top < 10) top = 10;
 
                 let left = 50;
                 let top = 30;
@@ -1117,77 +1121,123 @@
         };
 
         // FUNCIONES DE MONITOREO
-        const checkTaskStatus = taskId => {
-            setTimeout(function poll() {
+        // silent = true: seguimiento de fondo (al recargar la página), sin alertas ni tocar el botón Generar
+        const checkTaskStatus = (taskId, silent = false) => {
+            if (activePolls.has(taskId)) return; // ya se está consultando esta tarea
+            activePolls.add(taskId);
+
+            const MAX_FAILURES = 5; // fallas de conexión seguidas toleradas antes de rendirse
+            let failures = 0;
+
+            const finish = () => {
+                activePolls.delete(taskId);
+                if (!silent) resetGenerateButton();
+            };
+
+            const poll = () => {
                 $.get(`/omni-try-on/status/${taskId}`)
                     .done(response => {
-                        if (response.data) {
-                            const status = response.data.task_status;
-                            const errorMsg = response.data.task_status_msg;
+                        failures = 0;
 
-                            if (status === 'succeed') {
-                                const result = resultsHistory.find(r => r.task_id === taskId);
-                                if (result) {
-                                    result.status = 'completed';
-                                    result.result_image_paths = response.data.local_images || [];
-                                    updateResultInHistory(result);
-                                }
-                                resetGenerateButton();
-                            } else if (status === 'processing' || status === 'submitted') {
-                                setTimeout(poll, 3000);
-                            } else if (status === 'failed') {
-                                // Eliminar el resultado fallido del historial
-                                resultsHistory = resultsHistory.filter(r => r.task_id !== taskId);
-                                renderResultsHistory();
-                                resetGenerateButton();
+                        if (!response.data) {
+                            setTimeout(poll, 3000);
+                            return;
+                        }
 
-                                // Traducir mensajes de error
-                                let translatedError = 'Error desconocido';
-                                if (errorMsg) {
-                                    switch (errorMsg.toLowerCase()) {
-                                        case 'the two pieces of clothing must be a top and a bottom':
-                                            translatedError =
-                                                'Combinacion no valida. Debes subir una prenda superior y una prenda inferior';
-                                            break;
-                                        case 'cloth image number is invalid':
-                                            translatedError =
-                                                'Prenda no válida. Por favor, sube una imagen de prenda válida';
-                                            break;
-                                        default:
-                                            translatedError = errorMsg;
-                                    }
-                                }
+                        const status = response.data.task_status;
+                        const errorMsg = response.data.task_status_msg;
 
-                                // Mostrar SweetAlert con el error traducido
-                                Swal.fire({
-                                    icon: 'error',
-                                    title: 'Error de prenda seleccionada',
-                                    text: translatedError,
-                                    confirmButtonText: 'Entendido',
-                                    customClass: {
-                                        confirmButton: 'btn btn-primary'
-                                    }
-                                });
+                        if (status === 'succeed') {
+                            const result = resultsHistory.find(r => r.task_id === taskId);
+                            if (result) {
+                                result.status = 'completed';
+                                result.result_image_paths = response.data.local_images || [];
+                                updateResultInHistory(result);
                             }
+                            finish();
+                        } else if (status === 'processing' || status === 'submitted') {
+                            setTimeout(poll, 3000);
+                        } else if (status === 'failed') {
+                            // Eliminar el resultado fallido del historial
+                            resultsHistory = resultsHistory.filter(r => r.task_id !== taskId);
+                            renderResultsHistory();
+                            finish();
+
+                            if (silent) {
+                                console.warn('Omni', taskId, errorMsg);
+                                return;
+                            }
+
+                            // Traducir mensajes de error
+                            let translatedError = 'Error desconocido';
+                            if (errorMsg) {
+                                switch (errorMsg.toLowerCase()) {
+                                    case 'the two pieces of clothing must be a top and a bottom':
+                                        translatedError =
+                                            'Combinacion no valida. Debes subir una prenda superior y una prenda inferior';
+                                        break;
+                                    case 'cloth image number is invalid':
+                                        translatedError =
+                                            'Prenda no válida. Por favor, sube una imagen de prenda válida';
+                                        break;
+                                    default:
+                                        translatedError = errorMsg;
+                                }
+                            }
+
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error de prenda seleccionada',
+                                text: translatedError,
+                                confirmButtonText: 'Entendido',
+                                customClass: {
+                                    confirmButton: 'btn btn-primary'
+                                }
+                            });
+                        } else {
+                            setTimeout(poll, 3000);
                         }
                     })
-                    .fail(() => {
-                        // Eliminar el resultado fallido del historial
-                        resultsHistory = resultsHistory.filter(r => r.task_id !== taskId);
-                        renderResultsHistory();
-                        resetGenerateButton();
+                    .fail(xhr => {
+                        failures++;
+
+                        // Falla pasajera: se reintenta sin molestar al usuario
+                        if (failures < MAX_FAILURES) {
+                            setTimeout(poll, 4000);
+                            return;
+                        }
+
+                        const msg = xhr.responseJSON?.error ||
+                            xhr.responseJSON?.message ||
+                            'No se pudo verificar el estado del proceso';
+
+                        // Se rindió: la tarjeta pasa a "Fallido" pero la fila en BD sigue pendiente,
+                        // así que al recargar la página se vuelve a consultar
+                        const result = resultsHistory.find(r => r.task_id === taskId);
+                        if (result) {
+                            result.status = 'failed';
+                            updateResultInHistory(result);
+                        }
+                        finish();
+
+                        if (silent) {
+                            console.warn('Omni status', taskId, msg);
+                            return;
+                        }
 
                         Swal.fire({
                             icon: 'error',
                             title: 'Error de conexión',
-                            text: 'No se pudo verificar el estado del proceso',
-                            confirmButtonText: 'Reintentar',
+                            text: msg + ' Recarga la página para volver a consultar.',
+                            confirmButtonText: 'Entendido',
                             customClass: {
                                 confirmButton: 'btn btn-primary'
                             }
                         });
                     });
-            }, 2000);
+            };
+
+            setTimeout(poll, 2000);
         };
 
         const resetGenerateButton = () => {

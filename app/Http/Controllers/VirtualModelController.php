@@ -59,8 +59,9 @@ class VirtualModelController extends Controller
             ]);
 
             if ($taskId = $response['data']['task_id'] ?? null) {
-                $pricing = PricingRule::where('model_name', 'kling-v3-omni')
-                    ->where('mode', 'text-to-image')
+                $pricing = PricingRule::where('model_name', 'kling_image_3_0_omni')
+                    ->where('resolution', '1K, 2K')
+                    ->where('feature', 'Text-to-Image, Image-to-Image')
                     ->first();
 
                 VirtualModel::create([
@@ -88,6 +89,11 @@ class VirtualModelController extends Controller
     /**
      * Consulta la tarea en Kling. Si terminó, descarga las imágenes y actualiza el modelo.
      */
+    /**
+     * Consulta la tarea en Kling. Si terminó, descarga las imágenes y actualiza el modelo.
+     * Si Kling o la descarga fallan de forma pasajera, la fila NO se marca como fallida:
+     * queda en "processing" y se reintenta en la siguiente consulta.
+     */
     public function taskStatus(string $taskId): JsonResponse
     {
         $model = VirtualModel::where('task_id', $taskId)->first();
@@ -96,7 +102,7 @@ class VirtualModelController extends Controller
             return response()->json(['error' => 'Task not found'], 404);
         }
 
-        // Ya procesado: no consultamos Kling ni descargamos de nuevo
+        // Ya guardado: no consultamos Kling ni descargamos de nuevo
         if ($model->status === 'completed' && !empty($model->result_image_paths)) {
             return response()->json([
                 'data' => [
@@ -108,41 +114,57 @@ class VirtualModelController extends Controller
 
         try {
             $response = $this->api->getImageGenerationResult($taskId);
-            $status = $response['data']['task_status'] ?? 'processing';
+        } catch (\Throwable $e) {
+            // Falla pasajera al consultar a Kling: no se toca la fila, el front reintenta
+            Log::warning("VirtualModel {$taskId}: no se pudo consultar a Kling - " . $e->getMessage());
+            return response()->json(['error' => $e->getMessage()], 502);
+        }
 
-            if ($status === 'failed') {
-                $model->update(['status' => 'failed']);
+        $status = $response['data']['task_status'] ?? 'processing';
+
+        if ($status === 'failed') {
+            $model->update(['status' => 'failed']);
+            return response()->json($response);
+        }
+
+        if ($status !== 'succeed') {
+            return response()->json($response); // submitted / processing
+        }
+
+        $paths = [];
+        $lastError = null;
+
+        foreach ($response['data']['task_result']['images'] ?? [] as $image) {
+            if (empty($image['url'])) {
+                continue;
             }
 
-            if ($status === 'succeed') {
-                $paths = [];
-
-                foreach ($response['data']['task_result']['images'] ?? [] as $image) {
-                    try {
-                        $paths[] = $this->images->downloadAndSaveImage(
-                            $image['url'],
-                            'klingai/virtual_models',
-                            'model_'
-                        );
-                    } catch (\Exception $e) {
-                        Log::warning("VirtualModel {$taskId}: no se pudo descargar una imagen - " . $e->getMessage());
-                    }
-                }
-
-                if ($paths) {
-                    $model->update(['result_image_paths' => $paths, 'status' => 'completed']);
-                    $response['data']['local_images'] = array_map(fn($p) => Storage::url($p), $paths);
-                } else {
-                    // Kling terminó pero no pudimos guardar nada: lo reflejamos como fallido
-                    $model->update(['status' => 'failed']);
-                    $response['data']['task_status'] = 'failed';
-                }
+            try {
+                $paths[] = $this->images->downloadAndSaveImage(
+                    $image['url'],
+                    'klingai/virtual_models',
+                    'model_'
+                );
+            } catch (\Throwable $e) {
+                $lastError = $e->getMessage();
+                Log::error("VirtualModel {$taskId}: no se pudo guardar una imagen - " . $lastError);
             }
+        }
+
+        if (!$paths) {
+            // La fila queda en "processing" para reintentar en la próxima consulta
+            $response['data']['task_status'] = 'failed';
+            $response['data']['task_status_msg'] = $lastError
+                ? 'No se pudo guardar la imagen: ' . $lastError
+                : 'Kling no devolvió imágenes para esta tarea';
 
             return response()->json($response);
-        } catch (\Exception $e) {
-            return response()->json(['error' => $e->getMessage()], 422);
         }
+
+        $model->update(['result_image_paths' => $paths, 'status' => 'completed']);
+        $response['data']['local_images'] = array_map(fn($p) => Storage::url($p), $paths);
+
+        return response()->json($response);
     }
 
     /**

@@ -5,6 +5,7 @@ namespace App\Services\KlingAi;
 use Firebase\JWT\JWT;
 use App\Models\ApiLog;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Cache;
 use Exception;
 
@@ -86,7 +87,12 @@ class KlingApiService
         try {
             $response = Http::withHeaders($this->getHeaders())
                 ->timeout(120)
-                ->retry(2, 1000)
+                ->retry(
+                    4,
+                    1500,
+                    fn($exception) => $exception instanceof ConnectionException,
+                    throw: false
+                )
                 ->post($this->baseUrl . $path, $data);
 
             $result = $response->json();
@@ -121,7 +127,12 @@ class KlingApiService
         try {
             $response = Http::withHeaders($this->getHeaders())
                 ->timeout(30)
-                ->retry(2, 1000)
+                ->retry(
+                    4,
+                    1500,
+                    fn($exception) => $exception instanceof ConnectionException,
+                    throw: false
+                )
                 ->get($this->baseUrl . $path);
 
             $result = $response->json();
