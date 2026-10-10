@@ -125,6 +125,41 @@ class ImageProcessingService
         return $this->imageToBase64($fullPath);
     }
 
+    /*     public function getVirtualModelBase64(
+        string $virtualModelId,
+        int $index = 0
+    ): string {
+        $model = VirtualModel::find($virtualModelId);
+
+        if (!$model || $model->status !== 'completed') {
+            throw new \Exception(
+                'Virtual model not found or not completed'
+            );
+        }
+
+        $imagePaths = $model->result_image_paths;
+
+        if (empty($imagePaths) || !isset($imagePaths[$index])) {
+            throw new \Exception(
+                "No image found at index {$index} for virtual model."
+            );
+        }
+
+        $path = $imagePaths[$index];
+
+        if (!Storage::disk('s3')->exists($path)) {
+            throw new \Exception(
+                "No se encontró la imagen del modelo virtual en S3: {$path}"
+            );
+        }
+
+        $contents = Storage::disk('s3')->get($path);
+
+        return base64_encode(
+            Image::make($contents)->encode('png')
+        );
+    } */
+
 
     private const TRYON_MAX_SIDE = 2048;              // Try-On: lado largo máx. 2048px
     private const TRYON_MAX_BYTES = 9 * 1024 * 1024;  // Try-On: máx. 10MB (margen de 1MB)

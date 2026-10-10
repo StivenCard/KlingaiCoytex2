@@ -37,6 +37,17 @@ class VirtualTryOn extends Model
             ->all();
     }
 
+    /* public function getAllPreviewUrlsAttribute(): array
+    {
+        return collect($this->result_image_paths ?? [])
+            ->filter()
+            ->map(fn($path) => Storage::disk('s3')->temporaryUrl(
+                $path,
+                now()->addMinutes(30)
+            ))
+            ->all();
+    } */
+
     /**
      * Al eliminar el registro se borran sus resultados y las copias de entrada que creó este módulo.
      * Las rutas de otros módulos (modelos predeterminados o virtuales) nunca se tocan.
@@ -47,12 +58,22 @@ class VirtualTryOn extends Model
             foreach ((array) $img->result_image_paths as $path) {
                 Storage::disk('public')->delete(preg_replace('/^storage\//', '', $path));
             }
+            /* foreach ((array) $img->result_image_paths as $path) {
+                Storage::disk('s3')->delete(
+                    preg_replace('/^storage\//', '', $path)
+                );
+            } */
 
             foreach ([$img->human_image_path, $img->cloth_image_path] as $input) {
                 if ($input && str_starts_with($input, 'klingai/tryon_inputs/')) {
                     Storage::disk('public')->delete($input);
                 }
             }
+            /* foreach ([$img->human_image_path, $img->cloth_image_path] as $input) {
+                if ($input && str_starts_with($input, 'klingai/tryon_inputs/')) {
+                    Storage::disk('s3')->delete($input);
+                }
+            } */
         });
     }
 }

@@ -40,7 +40,6 @@ return [
         'access_key' => env('KLING_ACCESS_KEY'),
         'secret_key' => env('KLING_SECRET_KEY'),
         'api_key' => env('KLING_API_KEY'),
-        'public_url' => env('KLING_PUBLIC_URL'),
     ],
 
     'servientrega' => [

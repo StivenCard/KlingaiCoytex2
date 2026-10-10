@@ -89,8 +89,8 @@ class VirtualTryOnController extends Controller
 
             $payload = [
                 'contents' => [
-                    ['type' => 'product_image', 'url' => 'https://media.istockphoto.com/id/1278802435/es/foto/su%C3%A9ter-de-color-amarillo-aislado-en-blanco-ropa-de-mujer-de-moda-ropa-de-punto.jpg?s=612x612&w=0&k=20&c=mlVhz-yJxZi5awTh8qxb2Z7Li7vU925Yue1Q1PIJOQE='],
-                    ['type' => 'person_image',  'url' => 'https://img.magnific.com/fotos-premium/mujer-negocios-sonriente-equipo-sitio-web-vista-encima-fondo-blanco-cintura_935410-1390.jpg?semt=ais_hybrid&w=740&q=80'],
+                    ['type' => 'product_image', 'url' => $this->publicUrl($baseUrl, $garmentPath)],
+                    ['type' => 'person_image',  'url' => $this->publicUrl($baseUrl, $humanPath)],
                 ],
                 'settings' => [
                     'keep_face'       => true,
@@ -101,6 +101,35 @@ class VirtualTryOnController extends Controller
                     'watermark' => ['enabled' => false],
                 ],
             ];
+
+            /* $payload = [
+                'contents' => [
+                    [
+                        'type' => 'product_image',
+                        'url' => Storage::disk('s3')->temporaryUrl(
+                            $garmentPath,
+                            now()->addMinutes(60)
+                        ),
+                    ],
+                    [
+                        'type' => 'person_image',
+                        'url' => Storage::disk('s3')->temporaryUrl(
+                            $humanPath,
+                            now()->addMinutes(60)
+                        ),
+                    ],
+                ],
+                'settings' => [
+                    'keep_face' => true,
+                    'keep_pose' => true,
+                    'keep_background' => true,
+                ],
+                'options' => [
+                    'watermark' => ['enabled' => false],
+                ],
+            ]; */
+
+            //se pueden retirar los metodos publicBaseUrl() y publicUrl()
 
             $response = $this->api->createVirtualTryOn($payload, $humanPath, $garmentPath);
 
