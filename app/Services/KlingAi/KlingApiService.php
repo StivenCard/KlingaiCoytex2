@@ -163,15 +163,20 @@ class KlingApiService
      * @param string|null $clothPath Ruta prenda (solo try-on).
      * @return void
      */
-    private function log(string $type, array $data, ?array $result, string $path, ?string $error = null, ?string $humanPath = null, ?string $clothPath = null, string $httpMethod): void
+    private function log(string $type, array $data, ?array $result, string $path, ?string $error = null, ?string $humanPath = null, ?string $clothPath = null, string $httpMethod = 'POST'): void
     {
+        $taskData = $result['data'] ?? [];
+        if (is_array($taskData) && array_is_list($taskData)) {
+            $taskData = $taskData[0] ?? [];
+        }
+
         $logData = [
             'operation_type' => $type,
-            'task_id'        => $result['data']['task_id'] ?? null,
-            'model_name'     => $data['model_name'] ?? null,
+            'task_id'        => $taskData['task_id'] ?? $taskData['id'] ?? null,
+            'model_name'     => $data['model_name'] ?? ($type === 'virtual_try_on' ? 'virtual_try_on' : null),
             'prompt'         => $data['prompt'] ?? null,
             'status'         => $error ? 'failed' : 'completed',
-            'task_status'    => $result['data']['task_status'] ?? null,
+            'task_status'    => $taskData['task_status'] ?? $taskData['status'] ?? null,
             'response_data'  => $result,
             'error_details'  => $error ? ['message' => $error] : null,
             'endpoint'       => $this->baseUrl . $path,
@@ -181,7 +186,15 @@ class KlingApiService
         // Agregar datos específicos según el tipo de operación
         if ($type === 'virtual_model') {
             $logData['request_data'] = $data;
-        } elseif ($type === 'virtual_try_on' || $type === 'omni_image') {
+        } elseif ($type === 'virtual_try_on') {
+            $logData['human_image_path'] = $humanPath;
+            $logData['cloth_image_path'] = $clothPath;
+
+            // El request del try-on solo lleva URLs, es liviano
+            if ($httpMethod === 'POST') {
+                $logData['request_data'] = $data;
+            }
+        } elseif ($type === 'omni_image') {
             $logData['human_image_path'] = $humanPath;
             $logData['cloth_image_path'] = $clothPath;
         } elseif ($type === 'multi_image_to_video') {
@@ -265,7 +278,7 @@ class KlingApiService
      */
     public function createVirtualTryOn(array $data, ?string $humanPath = null, ?string $clothPath = null): array
     {
-        return $this->post('/v1/images/kolors-virtual-try-on', $data, 'virtual_try_on', $humanPath, $clothPath);
+        return $this->post('/solutions/virtual_try_on', $data, 'virtual_try_on', $humanPath, $clothPath);
     }
 
     /**
@@ -278,7 +291,7 @@ class KlingApiService
      */
     public function getVirtualTryOnResult(string $taskId, ?string $humanPath = null, ?string $clothPath = null): array
     {
-        return $this->get('/v1/images/kolors-virtual-try-on/' . $taskId, 'virtual_try_on', $humanPath, $clothPath);
+        return $this->get('/solutions?task_ids=' . urlencode($taskId), 'virtual_try_on', $humanPath, $clothPath);
     }
 
     /**

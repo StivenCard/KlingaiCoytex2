@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Log;
 
 class ImageProcessingService
 {
+
     /**
      * Convierte una imagen subida a base64 codificado en PNG.
      */
@@ -122,6 +123,89 @@ class ImageProcessingService
         $fullPath = storage_path('app/public/' . $imagePaths[$index]);
 
         return $this->imageToBase64($fullPath);
+    }
+
+
+    private const TRYON_MAX_SIDE = 2048;              // Try-On: lado largo máx. 2048px
+    private const TRYON_MAX_BYTES = 9 * 1024 * 1024;  // Try-On: máx. 10MB (margen de 1MB)
+
+    /**
+     * Try-On: valida una imagen subida, la ajusta a las reglas de Kling y la guarda como JPG.
+     * Retorna la ruta relativa en el disco public.
+     */
+    public function storeForTryOn(UploadedFile $file, string $directory, string $prefix = ''): string
+    {
+        $this->validateImage($file);
+
+        return $this->saveTryOnImage($this->openOriented($file->getRealPath()), $directory, $prefix);
+    }
+
+    /**
+     * Try-On: toma una imagen que ya existe en disco (modelo predeterminado o virtual),
+     * y guarda una copia ajustada a las reglas de Kling.
+     */
+    public function storeFileForTryOn(string $fullPath, string $directory, string $prefix = ''): string
+    {
+        if (! is_file($fullPath)) {
+            throw new \Exception("File not found: $fullPath");
+        }
+
+        return $this->saveTryOnImage($this->openOriented($fullPath), $directory, $prefix);
+    }
+
+    /**
+     * Try-On: combina dos prendas en una sola imagen (la API solo acepta una) y la guarda ajustada.
+     */
+    public function storeCombinedForTryOn(UploadedFile $file1, UploadedFile $file2, string $directory, string $prefix = ''): string
+    {
+        return $this->saveTryOnImage($this->combineImages($file1, $file2), $directory, $prefix);
+    }
+
+    /**
+     * Abre una imagen corrigiendo la orientación EXIF (fotos de celular), si PHP tiene exif.
+     */
+    private function openOriented(string $path): InterventionImage
+    {
+        $image = Image::make($path);
+
+        if (function_exists('exif_read_data')) {
+            try {
+                $image->orientate();
+            } catch (\Throwable $e) {
+                // Sin EXIF utilizable: se deja la imagen como está
+            }
+        }
+
+        return $image;
+    }
+
+    /**
+     * Reduce a 2048px de lado largo, aplana sobre blanco y guarda como JPG (<= 9MB).
+     */
+    private function saveTryOnImage(InterventionImage $image, string $directory, string $prefix): string
+    {
+        $image->resize(self::TRYON_MAX_SIDE, self::TRYON_MAX_SIDE, function ($constraint) {
+            $constraint->aspectRatio();
+            $constraint->upsize();
+        });
+
+        // Kling exige lado corto estrictamente mayor a 300px
+        if (min($image->width(), $image->height()) <= 300) {
+            throw new \Exception('La imagen es demasiado alargada: al ajustarla a 2048px el lado corto queda en 300px o menos.');
+        }
+
+        $canvas = Image::canvas($image->width(), $image->height(), '#ffffff');
+        $canvas->insert($image);
+
+        $bytes = (string) $canvas->encode('jpg', 92);
+        if (strlen($bytes) > self::TRYON_MAX_BYTES) {
+            $bytes = (string) $canvas->encode('jpg', 75);
+        }
+
+        $path = $directory . '/' . $prefix . uniqid() . '.jpg';
+        Storage::disk('public')->put($path, $bytes);
+
+        return $path;
     }
 
     /**
