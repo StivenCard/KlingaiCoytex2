@@ -13,6 +13,7 @@ class KlingApiService
     private string $baseUrl;
     private string $accessKey;
     private string $secretKey;
+    private string $api_key;
 
     /**
      * Inicializa el servicio con los datos de configuración desde el archivo `config/services.php`.
@@ -24,8 +25,10 @@ class KlingApiService
         $this->baseUrl = config('services.kling.api_url');
         $this->accessKey = config('services.kling.access_key');
         $this->secretKey = config('services.kling.secret_key');
+        $this->api_key = config('services.kling.api_key');
 
-        if (!$this->baseUrl || !$this->accessKey || !$this->secretKey) {
+        // !$this->baseUrl || !$this->accessKey || !$this->secretKey ||
+        if (!$this->api_key) {
             throw new Exception('KlingAI configuration missing');
         }
     }
@@ -59,8 +62,9 @@ class KlingApiService
      */
     private function getHeaders(): array
     {
+        // $this->generateJwtToken()
         return [
-            'Authorization' => 'Bearer ' . $this->generateJwtToken(),
+            'Authorization' => 'Bearer ' . $this->api_key,
             'Content-Type'  => 'application/json'
         ];
     }
@@ -90,11 +94,11 @@ class KlingApiService
             if ($response->failed()) {
                 throw new Exception("API Error: {$response->status()} - " . ($result['message'] ?? 'Unknown error'));
             }
+            $this->assertSuccess($result);
 
             $this->log($type, $data, $result, $path, null, $humanPath, $clothPath, 'POST');
 
             return $result;
-
         } catch (Exception $e) {
             $this->log($type, $data, null, $path, $e->getMessage(), $humanPath, $clothPath, 'POST');
             throw new Exception("KlingAI Error: " . $e->getMessage());
@@ -125,11 +129,11 @@ class KlingApiService
             if ($response->failed()) {
                 throw new Exception("API Error: {$response->status()} - " . ($result['message'] ?? 'Unknown error'));
             }
+            $this->assertSuccess($result);
 
             $this->log($type, [], $result, $path, null, $humanPath, $clothPath, 'GET');
 
             return $result;
-
         } catch (Exception $e) {
             $this->log($type, [], null, $path, $e->getMessage(), $humanPath, $clothPath, 'GET');
             throw new Exception("KlingAI Error: " . $e->getMessage());
@@ -166,7 +170,6 @@ class KlingApiService
         // Agregar datos específicos según el tipo de operación
         if ($type === 'virtual_model') {
             $logData['request_data'] = $data;
-
         } elseif ($type === 'virtual_try_on' || $type === 'omni_image') {
             $logData['human_image_path'] = $humanPath;
             $logData['cloth_image_path'] = $clothPath;
@@ -297,7 +300,8 @@ class KlingApiService
      * @param string|null $clothPath Ruta prenda para logs.
      * @return array Respuesta de la API.
      */
-    public function createOmniImage(array $data, ?string $humanPath = null, ?string $clothPath = null): array {
+    public function createOmniImage(array $data, ?string $humanPath = null, ?string $clothPath = null): array
+    {
 
         return $this->post('/v1/images/omni-image', $data, 'omni_image', $humanPath, $clothPath);
     }
@@ -305,5 +309,15 @@ class KlingApiService
     public function getOmniImageResult(string $taskId, ?string $humanPath = null, ?string $clothPath = null): array
     {
         return $this->get('/v1/images/omni-image/' . $taskId, 'omni_image', $humanPath, $clothPath);
+    }
+
+    /**
+     * Kling indica errores de negocio con code != 0 (incluso con HTTP 200).
+     */
+    private function assertSuccess(?array $result): void
+    {
+        if (($result['code'] ?? 0) !== 0) {
+            throw new Exception("API Error {$result['code']} - " . ($result['message'] ?? 'Unknown error'));
+        }
     }
 }

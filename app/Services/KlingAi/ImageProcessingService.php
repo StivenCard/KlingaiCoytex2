@@ -37,8 +37,8 @@ class ImageProcessingService
     {
         $this->validateImage($file);
 
-        $filename = $prefix.uniqid().'.'.$file->getClientOriginalExtension();
-        $path = $directory.'/'.$filename;
+        $filename = $prefix . uniqid() . '.' . $file->getClientOriginalExtension();
+        $path = $directory . '/' . $filename;
 
         Storage::disk('public')->putFileAs($directory, $file, $filename);
 
@@ -51,8 +51,8 @@ class ImageProcessingService
     public function saveCombinedImage(UploadedFile $file1, UploadedFile $file2, string $directory): string
     {
         $canvas = $this->combineImages($file1, $file2);
-        $filename = 'combined_'.uniqid().'.png';
-        $path = $directory.'/'.$filename;
+        $filename = 'combined_' . uniqid() . '.png';
+        $path = $directory . '/' . $filename;
 
         Storage::disk('public')->put($path, $canvas->encode('png'));
 
@@ -68,20 +68,20 @@ class ImageProcessingService
             $response = Http::timeout(30)->get($url);
 
             if (!$response->successful()) {
-                throw new \Exception('No se pudo descargar la imagen desde: '.$url);
+                throw new \Exception('No se pudo descargar la imagen desde: ' . $url);
             }
 
             $image = Image::make($response->body());
             $watermarked = $this->addHighQualityLogo($image);
 
-            $filename = $prefix.uniqid().'.png';
-            $path = $directory.'/'.$filename;
+            $filename = $prefix . uniqid() . '.png';
+            $path = $directory . '/' . $filename;
 
             Storage::disk('public')->put($path, $watermarked->encode('png'));
 
             return $path;
         } catch (\Exception $e) {
-            throw new \Exception('Error al descargar imagen: '.$e->getMessage());
+            throw new \Exception('Error al descargar imagen: ' . $e->getMessage());
         }
     }
 
@@ -90,7 +90,7 @@ class ImageProcessingService
      */
     public function getSelectedDefaultModelBase64(string $selectedModel): string
     {
-        $path = public_path('klingai/default_models/'.$selectedModel);
+        $path = public_path('klingai/default_models/' . $selectedModel);
 
         return $this->imageToBase64($path);
     }
@@ -112,7 +112,7 @@ class ImageProcessingService
             throw new \Exception("No image found at index $index for virtual model.");
         }
 
-        $fullPath = storage_path('app/public/'.$imagePaths[$index]);
+        $fullPath = storage_path('app/public/' . $imagePaths[$index]);
 
         return $this->imageToBase64($fullPath);
     }
@@ -153,8 +153,8 @@ class ImageProcessingService
 
         $targetHeight = max($img1->height(), $img2->height());
 
-        $img1->resize(null, $targetHeight, fn ($c) => $c->aspectRatio());
-        $img2->resize(null, $targetHeight, fn ($c) => $c->aspectRatio());
+        $img1->resize(null, $targetHeight, fn($c) => $c->aspectRatio());
+        $img2->resize(null, $targetHeight, fn($c) => $c->aspectRatio());
 
         $canvas = Image::canvas($img1->width() + $img2->width(), $targetHeight, '#ffffff');
         $canvas->insert($img1, 'left');
@@ -214,7 +214,7 @@ class ImageProcessingService
                 $font->valign('bottom');
             });
         } catch (\Exception $e) {
-            Log::warning('Error al aplicar logo de marca de agua: '.$e->getMessage());
+            Log::warning('Error al aplicar logo de marca de agua: ' . $e->getMessage());
         }
 
         return $image;
@@ -261,7 +261,3 @@ class ImageProcessingService
         }
     }
 }
-
-
-
-

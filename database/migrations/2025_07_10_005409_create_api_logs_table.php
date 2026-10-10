@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::create('api_logs', function (Blueprint $table) {
             $table->id();
-            $table->enum('operation_type', ['virtual_model', 'virtual_try_on', 'multi_image_to_video']);
+            $table->enum('operation_type', ['virtual_model', 'virtual_try_on', 'multi_image_to_video', 'omni_image']);
             $table->string('task_id')->nullable();
             $table->string('model_name')->nullable();
             $table->text('prompt')->nullable(); // Solo para virtual_model

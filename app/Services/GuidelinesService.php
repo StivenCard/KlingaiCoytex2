@@ -4,7 +4,7 @@ namespace App\Services;
 
 class GuidelinesService
 {
-    private const EXTS = ['jpg', 'jpeg', 'png'];
+    private const EXTS = ['jpg', 'jpeg', 'png', 'webp'];
     private const PATH = 'klingai';
 
     /**
@@ -48,7 +48,7 @@ class GuidelinesService
             'validModels'    => $this->getGuidelines('valid_model'),
             'invalidModels'  => $this->getGuidelines('invalid_model'),
             'validGarments'  => $this->getGuidelines('valid_garment'),
-            'invalidGarments'=> $this->getGuidelines('invalid_garment'),
+            'invalidGarments' => $this->getGuidelines('invalid_garment'),
         ];
     }
 
@@ -82,7 +82,9 @@ class GuidelinesService
         if (!is_dir($path)) return [];
 
         //scandir obtiene todos los archivos y carpetas en la ruta, luego array_filter filtra solo los archivos con extensiones válidas (jpg, jpeg, png).
-        $files = array_filter(scandir($path), fn($file) =>
+        $files = array_filter(
+            scandir($path),
+            fn($file) =>
             in_array(strtolower(pathinfo($file, PATHINFO_EXTENSION)), self::EXTS)
         );
 

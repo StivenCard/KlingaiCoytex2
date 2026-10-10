@@ -7,36 +7,24 @@ use App\Models\VirtualModel;
 use App\Services\HintsService;
 use App\Services\KlingAi\ImageProcessingService;
 use App\Services\KlingAi\KlingApiService;
-use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class VirtualModelController extends Controller
 {
-    /**
-     * Constructor del controlador de modelos virtuales.
-     *
-     * @param KlingApiService $api Servicio para interactuar con la API de KlingAI.
-     * @param ImageProcessingService $images Servicio para procesar imágenes (base64, descarga, validación, etc).
-     * @param HintsService $hints Servicio que entrega prompts predefinidos.
-     */
+    private const MODEL_NAME = 'kling-v3';
+    private const OUTPUT_COUNT = 1;
+
     public function __construct(
         private KlingApiService $api,
         private ImageProcessingService $images,
         private HintsService $hints
     ) {}
 
-    /**
-     * Muestra la vista principal de generación de modelos virtuales.
-     *
-     * Carga:
-     * - Los prompts sugeridos (hints).
-     * - Los últimos 20 modelos generados.
-     *
-     * @return View
-     */
     public function show()
     {
         $hints = $this->hints->getAllHints();
@@ -46,58 +34,48 @@ class VirtualModelController extends Controller
     }
 
     /**
-     * Envía una solicitud de generación de modelo virtual a KlingAI.
-     *
-     * Valida los datos del formulario, genera el prompt (si no fue personalizado)
-     * y registra en base de datos el modelo con estado "processing".
-     *
-     * @param Request $request Datos validados del formulario.
-     * @return JsonResponse Respuesta de la API o error.
+     * Crea la tarea en Kling (POST /v1/images/generations) y registra el modelo en "processing".
      */
-    public function generate(Request $request)
+    public function generate(Request $request): JsonResponse
     {
         $request->validate([
-            'gender' => 'required|in:male,female',
-            'age_group' => 'required|in:children,youth,elderly',
-            'skin_tone' => 'required|in:light,medium,dark,olive',
+            'gender'       => 'required|in:male,female',
+            'age_group'    => 'required|in:children,youth,elderly',
+            'skin_tone'    => 'required|in:light,medium,dark,olive',
             'aspect_ratio' => 'required|in:1:1,9:16,2:3,3:4',
-            'output_count' => 'required|integer|min:1|max:4',
-            'prompt' => 'nullable|string|max:2500',
+            'prompt'       => 'nullable|string|max:2500',
         ]);
 
         try {
             $prompt = $this->buildPrompt($request);
 
+            // Solo parámetros que existen en la doc de Kling.
+            // Género/edad/tono van dentro del prompt y se guardan en la BD.
             $response = $this->api->createImageGenerationTask([
-                'model_name' => 'kling-v1-5',
-                'prompt' => $prompt,
+                'model_name'   => self::MODEL_NAME,
+                'prompt'       => $prompt,
                 'aspect_ratio' => $request->aspect_ratio,
-                'n' => $request->output_count,
-                'gender' => $request->gender,
-                'age_group' => $request->age_group,
-                'skin_tone' => $request->skin_tone,
+                'n'            => self::OUTPUT_COUNT,
             ]);
 
             if ($taskId = $response['data']['task_id'] ?? null) {
-
-                // Obtener precios y tokens de la regla de precios
-                $pricing = PricingRule::where('model_name', 'kolors-v3')
-                ->where('mode', 'text-to-image')
-                ->first();
+                $pricing = PricingRule::where('model_name', 'kling-v3-omni')
+                    ->where('mode', 'text-to-image')
+                    ->first();
 
                 VirtualModel::create([
-                    'task_id' => $taskId,
-                    'user_id' => Auth::id() ?? '123321', //Posiblemente a futuro sea auth()->id() si se implementa login o Auth::user()->id
-                    'model_name' => 'kling-v3',
-                    'prompt' => $prompt,
-                    'gender' => $request->gender,
-                    'age_group' => $request->age_group,
-                    'skin_tone' => $request->skin_tone,
+                    'task_id'      => $taskId,
+                    'user_id'      => Auth::id() ?? '123321',
+                    'model_name'   => self::MODEL_NAME,
+                    'prompt'       => $prompt,
+                    'gender'       => $request->gender,
+                    'age_group'    => $request->age_group,
+                    'skin_tone'    => $request->skin_tone,
                     'aspect_ratio' => $request->aspect_ratio,
-                    'output_count' => $request->output_count,
-                    'tokens' => $pricing->tokens,
-                    'price' => $pricing->price,
-                    'status' => 'processing',
+                    'output_count' => self::OUTPUT_COUNT,
+                    'tokens'       => $pricing?->tokens ?? 0,
+                    'price'        => $pricing?->price ?? 0,
+                    'status'       => 'processing',
                 ]);
             }
 
@@ -108,53 +86,56 @@ class VirtualModelController extends Controller
     }
 
     /**
-     * Consulta el estado de una tarea de modelo virtual en KlingAI y guarda imágenes si está lista.
-     *
-     * Si el estado es `succeed`, descarga las imágenes, las guarda en disco y
-     * actualiza el modelo en base de datos.
-     *
-     * @param string $taskId ID de la tarea a consultar.
-     * @return JsonResponse Resultado actualizado o error.
+     * Consulta la tarea en Kling. Si terminó, descarga las imágenes y actualiza el modelo.
      */
-    public function taskStatus(string $taskId)
+    public function taskStatus(string $taskId): JsonResponse
     {
+        $model = VirtualModel::where('task_id', $taskId)->first();
+
+        if (!$model) {
+            return response()->json(['error' => 'Task not found'], 404);
+        }
+
+        // Ya procesado: no consultamos Kling ni descargamos de nuevo
+        if ($model->status === 'completed' && !empty($model->result_image_paths)) {
+            return response()->json([
+                'data' => [
+                    'task_status'  => 'succeed',
+                    'local_images' => array_map(fn($p) => Storage::url($p), $model->result_image_paths),
+                ],
+            ]);
+        }
+
         try {
             $response = $this->api->getImageGenerationResult($taskId);
-            $model = VirtualModel::where('task_id', $taskId)->first();
+            $status = $response['data']['task_status'] ?? 'processing';
 
-            if (!$model) {
-                return response()->json(['error' => 'Task not found'], 404);
+            if ($status === 'failed') {
+                $model->update(['status' => 'failed']);
             }
 
-            $status = $response['data']['task_status'];
-            $model->update(['status' => $status === 'succeed' ? 'completed' : 'processing']);
-
             if ($status === 'succeed') {
-                $results = [];
+                $paths = [];
 
                 foreach ($response['data']['task_result']['images'] ?? [] as $image) {
                     try {
-                        $results[] = $this->images->downloadAndSaveImage(
+                        $paths[] = $this->images->downloadAndSaveImage(
                             $image['url'],
-                            'klingai/virtual_models', //Directorio de almacenamiento en disco
+                            'klingai/virtual_models',
                             'model_'
                         );
                     } catch (\Exception $e) {
-                        continue;
+                        Log::warning("VirtualModel {$taskId}: no se pudo descargar una imagen - " . $e->getMessage());
                     }
                 }
 
-                if ($results) {
-                    $model->update([
-                        'result_image_paths' => $results,
-                        'status' => 'completed'
-                    ]);
-
-                    //Agregamos el campo local_images al response para que el front pueda mostrar las imágenes descargadas
-                    $response['data']['local_images'] = array_map(
-                        fn($p) => Storage::url($p),
-                        $results
-                    );
+                if ($paths) {
+                    $model->update(['result_image_paths' => $paths, 'status' => 'completed']);
+                    $response['data']['local_images'] = array_map(fn($p) => Storage::url($p), $paths);
+                } else {
+                    // Kling terminó pero no pudimos guardar nada: lo reflejamos como fallido
+                    $model->update(['status' => 'failed']);
+                    $response['data']['task_status'] = 'failed';
                 }
             }
 
@@ -165,69 +146,43 @@ class VirtualModelController extends Controller
     }
 
     /**
-     * Construye el prompt a partir del formulario.
-     *
-     * Si el usuario ingresó texto, lo devuelve limpio.
-     * Si no, genera uno automáticamente con base en género, edad y tono de piel.
-     *
-     * @param Request $request Datos del formulario.
-     * @return string Prompt final.
+     * Prompt base (siempre con género, edad y tono) + texto/hint del usuario si existe.
      */
     private function buildPrompt(Request $request): string
     {
-        //Filled pregunta si el campo prompt fue llenado, y no es nulo ni vacío. Si es así, devuelve el prompt ingresado por el usuario.
+        $subject = $this->describeSubject($request->gender, $request->age_group);
+        $skin = $this->mapSkinTone($request->skin_tone);
+
+        $base = "Full-body fashion model photo of {$subject}, {$skin} skin tone, Colombian features, "
+            . 'natural proportions, realistic, no distortions, sharp focus, high quality';
+
         if ($request->filled('prompt')) {
-            return trim($request->prompt); //Trim elimina espacios en blanco al inicio y final del prompt ingresado por el usuario.
+            // El usuario/hint define pose, ropa y fondo, así que no forzamos el fondo
+            return Str::limit("{$base}. " . trim($request->prompt), 2500, '');
         }
 
-        return $this->buildBasePrompt($request);
+        return "{$base}, simple plain studio background.";
     }
 
-    /**
-     * Genera un prompt predeterminado en español para la generación del modelo.
-     *
-     * @param Request $request
-     * @return string Prompt generado.
-     */
-    private function buildBasePrompt(Request $request): string
+    private function describeSubject(string $gender, string $age): string
     {
-        $gender = $request->gender === 'male' ? 'masculino' : 'femenino';
-        $age = $this->mapAge($request->age_group);
-        $skinTone = $this->mapSkinTone($request->skin_tone);
+        $female = $gender === 'female';
 
-        return "Crear un modelo de cuerpo completo, con rasgos colombianos, fondo sencillo, sin imperfecciones, cuerpo completo, sin irregularidades, de genero {$gender}, edad {$age}, tono de piel {$skinTone}.";
-    }
-
-    /**
-     * Traduce el grupo de edad técnico a un texto legible para prompt.
-     *
-     * @param string $age Valor interno: children, youth, elderly.
-     * @return string Valor legible: joven, adulto joven, adulto mayor.
-     */
-    private function mapAge(string $age): string
-    {
-        return match($age) {
-            'children' => 'joven',
-            'youth' => 'adulto joven',
-            'elderly' => 'adulto mayor',
-            default => 'adulto'
+        return match ($age) {
+            'children' => $female ? 'a young girl' : 'a young boy',
+            'elderly'  => $female ? 'an elderly woman' : 'an elderly man',
+            default    => $female ? 'a young adult woman' : 'a young adult man',
         };
     }
 
-    /**
-     * Traduce el tono de piel técnico a su versión legible.
-     *
-     * @param string $tone Valor interno: light, medium, dark, olive.
-     * @return string Valor legible: claro, medio, oscuro, oliva.
-     */
     private function mapSkinTone(string $tone): string
     {
-        return match($tone) {
-            'light' => 'claro',
-            'medium' => 'medio',
-            'dark' => 'oscuro',
-            'olive' => 'oliva',
-            default => 'medio'
+        return match ($tone) {
+            'light'  => 'light',
+            'medium' => 'medium',
+            'dark'   => 'dark',
+            'olive'  => 'olive',
+            default  => 'medium',
         };
     }
 }

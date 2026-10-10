@@ -47,7 +47,7 @@ class OmniModelController extends Controller
             'validModels'    => $guidelines['validModels'],
             'invalidModels'  => $guidelines['invalidModels'],
             'validGarments'  => $guidelines['validGarments'],
-            'invalidGarments'=> $guidelines['invalidGarments'],
+            'invalidGarments' => $guidelines['invalidGarments'],
         ]);
     }
 
@@ -124,7 +124,6 @@ class OmniModelController extends Controller
             }
 
             return response()->json($response);
-
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 422);
         }
@@ -146,7 +145,7 @@ class OmniModelController extends Controller
             $status = $response['data']['task_status'];
 
             $omni->update([
-                'status' => match($status) {
+                'status' => match ($status) {
                     'succeed' => 'completed',
                     'failed'  => 'failed',
                     default   => 'processing',
@@ -182,7 +181,6 @@ class OmniModelController extends Controller
             }
 
             return response()->json($response);
-
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 422);
         }
@@ -191,7 +189,7 @@ class OmniModelController extends Controller
     // Auxiliares idénticos a la lógica previa
     private function getHumanImage(Request $request): string
     {
-        return match($request->model_source) {
+        return match ($request->model_source) {
             'upload'  => $this->images->convertToBase64($request->file('human_image')),
             'virtual' => $this->images->getVirtualModelBase64(
                 $request->selected_virtual_model,
