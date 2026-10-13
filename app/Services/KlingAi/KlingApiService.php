@@ -207,42 +207,54 @@ class KlingApiService
     }
 
     /**
-     * Consulta el consumo de recursos y tokens de la API
-     * La clave de la caché ahora es única para cada accessKey.
-     *
-     * @param int|null $startTime Tiempo inicial en timestamp (ms)
-     * @param int|null $endTime Tiempo final en timestamp (ms)
-     * @param string|null $resourcePackName Nombre del paquete específico (opcional)
-     * @return array
+     * Consulta los paquetes de recursos de la cuenta (GET /account/costs).
+     * Gratis, pero con límite de QPS <= 1, por eso se cachea.
+     * Nota de Kling: remaining_quantity tiene hasta 12h de retraso.
      */
-    public function getApiConsumption($startTime = null, $endTime = null, $resourcePackName = null)
-    {
-        // Si no se especifica, consulta último mes
-        $startTime = $startTime ?? now()->subDays(3)->timestamp * 1000;
-        $endTime = $endTime ?? now()->timestamp * 1000;
+    public function getApiConsumption(
+        ?int $startTime = null,
+        ?int $endTime = null,
+        ?string $resourcePackName = null,
+        bool $forceRefresh = false
+    ): array {
+        // Ventana amplia y estable (cambia solo una vez al día => la caché funciona)
+        $startTime = $startTime ?? now()->subYear()->startOfDay()->timestamp * 1000;
+        $endTime   = $endTime   ?? now()->endOfDay()->timestamp * 1000;
+
+        $cacheKey = 'kling_account_costs_' . md5($this->api_key . $startTime . $endTime . $resourcePackName);
+
+        // Refresco manual, pero máximo 1 vez por minuto para respetar el QPS
+        if ($forceRefresh && Cache::add($cacheKey . '_cooldown', true, 60)) {
+            Cache::forget($cacheKey);
+        }
 
         try {
-            // Usa el accessKey para generar una clave de caché única
-            $cacheKey = "api_consumption_{$startTime}_{$endTime}_" . md5($this->accessKey);
-
-            return Cache::remember($cacheKey, 3600, function () use ($startTime, $endTime, $resourcePackName) {
+            return Cache::remember($cacheKey, now()->addMinutes(10), function () use ($startTime, $endTime, $resourcePackName) {
                 $response = Http::withHeaders($this->getHeaders())
                     ->timeout(30)
                     ->retry(2, 1000)
-                    ->get($this->baseUrl . '/account/costs', [
-                        'start_time' => $startTime,
-                        'end_time' => $endTime,
-                        'resource_pack_name' => $resourcePackName
-                    ]);
+                    ->get($this->baseUrl . '/account/costs', array_filter([
+                        'start_time'         => $startTime,
+                        'end_time'           => $endTime,
+                        'resource_pack_name' => $resourcePackName,
+                    ], fn($v) => $v !== null && $v !== ''));
+
+                $json = $response->json() ?? [];
 
                 if ($response->failed()) {
-                    throw new Exception("API Error: {$response->status()} - " . ($response->json()['message'] ?? 'Unknown error'));
+                    throw new Exception("API Error: {$response->status()} - " . ($json['message'] ?? 'Unknown error'));
                 }
 
-                return $response->json();
+                // Error de negocio externo (code) e interno (data.code)
+                $this->assertSuccess($json);
+                if (($json['data']['code'] ?? 0) !== 0) {
+                    throw new Exception('API Error ' . $json['data']['code'] . ' - ' . ($json['data']['msg'] ?? 'Unknown error'));
+                }
+
+                return $json; // Solo se cachean respuestas válidas
             });
         } catch (Exception $e) {
-            throw new Exception("Error consultando consumo de API: " . $e->getMessage());
+            throw new Exception('Error consultando consumo de API: ' . $e->getMessage());
         }
     }
 

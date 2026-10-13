@@ -10,7 +10,7 @@
                 <div class="">
                     <div class="row">
                         {{-- Card: Videos --}}
-                        <div class="col-12 col-md-3 mb-3">
+                        <div class="col-12 col-sm-6 col-lg mb-3">
                             <a href="{{ route('admin.generations', ['section' => 'videos']) }}"
                                 class="text-decoration-none d-block card-link {{ $activeSection === 'videos' ? 'active' : '' }}">
                                 <div class="card bg-primary text-white">
@@ -25,7 +25,7 @@
                         </div>
 
                         {{-- Card: Try-Ons --}}
-                        <div class="col-12 col-md-3 mb-3">
+                        <div class="col-12 col-sm-6 col-lg mb-3">
                             <a href="{{ route('admin.generations', ['section' => 'tryons']) }}"
                                 class="text-decoration-none d-block card-link {{ $activeSection === 'tryons' ? 'active' : '' }}">
                                 <div class="card bg-success text-white">
@@ -40,7 +40,7 @@
                         </div>
 
                         {{-- Card: Modelos --}}
-                        <div class="col-12 col-md-3 mb-3">
+                        <div class="col-12 col-sm-6 col-lg mb-3">
                             <a href="{{ route('admin.generations', ['section' => 'models']) }}"
                                 class="text-decoration-none d-block card-link {{ $activeSection === 'models' ? 'active' : '' }}">
                                 <div class="card bg-info text-white">
@@ -54,8 +54,23 @@
                             </a>
                         </div>
 
+                        {{-- Card: Omni --}}
+                        <div class="col-12 col-sm-6 col-lg mb-3">
+                            <a href="{{ route('admin.generations', ['section' => 'omnis']) }}"
+                                class="text-decoration-none d-block card-link {{ $activeSection === 'omnis' ? 'active' : '' }}">
+                                <div class="card bg-secondary text-white">
+                                    <div class="card-body">
+                                        <h5 class="card-title">Total Omni</h5>
+                                        <h2>{{ $totals['omnis']['count'] }}</h2>
+                                        <small>{{ $totals['omnis']['tokens'] }} tokens |
+                                            ${{ number_format($totals['omnis']['price'], 2) }}</small>
+                                    </div>
+                                </div>
+                            </a>
+                        </div>
+
                         {{-- Card: Total en conjunto --}}
-                        <div class="col-12 col-md-3 mb-3">
+                        <div class="col-12 col-sm-6 col-lg mb-3">
                             <a href="{{ route('admin.generations', ['section' => 'all']) }}"
                                 class="text-decoration-none d-block card-link {{ $activeSection === 'all' ? 'active' : '' }}">
                                 <div class="card bg-warning text-white">
@@ -72,19 +87,28 @@
                 </div>
             </div>
 
-            <!-- Columna izquierda (se mantiene igual) -->
+            <!-- Columna izquierda -->
             <div class="col-12 col-lg-4 d-flex flex-column overflow-hidden px-2">
-                <!-- Consumo de API (se mantiene igual) -->
+                <!-- Consumo de API -->
                 <div class="card mb-4">
                     <div class="card-header bg-dark text-white">
                         <h5 class="mb-0">
                             <i class="fas fa-tachometer-alt"></i> Consumo de API
-                            <button class="btn btn-sm btn-light float-right" onclick="window.location.reload()">
+                            <a href="{{ route('admin.generations', array_merge(request()->query(), ['refresh' => 1])) }}"
+                                class="btn btn-sm btn-light float-right" title="Actualizar (máx. 1 vez por minuto)">
                                 <i class="fas fa-sync"></i>
-                            </button>
+                            </a>
                         </h5>
                     </div>
                     <div class="card-body">
+                        @if (session('api_error'))
+                            <div class="alert alert-danger">{{ session('api_error') }}</div>
+                        @endif
+
+                        <small class="text-muted d-block mb-2">
+                            <i class="fas fa-clock"></i> El restante puede tener hasta 12 h de retraso (según Kling).
+                        </small>
+
                         @if (empty($resourcePacks))
                             <div class="alert alert-warning">
                                 <i class="fas fa-exclamation-triangle"></i>
@@ -98,11 +122,16 @@
                                             <span>
                                                 <i class="fas fa-box"></i> {{ $pack['resource_pack_name'] }}
                                             </span>
-                                            <span
-                                                class="badge badge-{{ $pack['status'] === 'online' ? 'success' : ($pack['status'] === 'expired' ? 'danger' : 'warning') }}">
-                                                {{ ucfirst($pack['status']) }}
+                                            <span class="badge badge-{{ $pack['status_class'] }}">
+                                                {{ $pack['status_label'] }}
                                             </span>
                                         </h6>
+
+                                        @if ($pack['is_periodic'])
+                                            <small class="text-muted d-block mb-2">
+                                                Paquete periódico: el total se renueva cada periodo.
+                                            </small>
+                                        @endif
 
                                         <div class="progress mb-2" style="height: 20px;"
                                             title="Consumido: {{ number_format($pack['used_quantity'], 2) }} tokens">
@@ -164,49 +193,13 @@
                             @endforeach
                         @endif
 
-                        <!-- Costos por Operación -->
-                        {{-- <div class="card">
-                        <div class="card-header bg-light">
-                            <h6 class="mb-0">Costos por Operación</h6>
-                        </div>
-                        <div class="card-body">
-                            <ul class="list-group list-group-flush">
-                                @foreach ($pricingRules as $rule)
-                                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                                        <div>
-                                            @if (Str::contains($rule->model_name, 'kling'))
-                                                <i class="fas fa-film"></i> Video ({{ $rule->duration }}s) - {{ ucfirst($rule->mode) }}
-                                            @elseif(Str::contains($rule->model_name, 'try-on'))
-                                                <i class="fas fa-tshirt"></i> Try-on
-                                            @elseif(Str::contains($rule->model_name, 'kolors'))
-                                                <i class="fas fa-image"></i> Modelo Virtual
-                                            @endif
-
-                                            <small class="d-block text-muted">{{ $rule->tokens }} tokens</small>
-                                        </div>
-
-                                        <span class="badge
-                                            @if (Str::contains($rule->model_name, 'kling')) badge-primary
-                                            @elseif(Str::contains($rule->model_name, 'try-on')) badge-success
-                                            @elseif(Str::contains($rule->model_name, 'kolors')) badge-info
-                                            @else badge-secondary
-                                            @endif
-                                        ">
-                                            ${{$rule->price }}
-                                        </span>
-                                    </li>
-                                @endforeach
-                            </ul>
-                        </div>
-                    </div> --}}
-                    {{-- Costos actuales de Kling AI --}}
-                    <div class="card">
+                        {{-- Costos actuales de Kling AI --}}
+                        <div class="card">
                             <div class="card-header bg-light">
                                 <h6 class="mb-0">
                                     <i class="fas fa-dollar-sign"></i> Costos actuales de Kling AI
                                 </h6>
                             </div>
-                            {{-- Contenedor con scroll interno --}}
                             <div class="card-body p-2">
                                 @if ($pricingRules->isEmpty())
                                     <div class="alert alert-warning mb-0">
@@ -258,9 +251,7 @@
                                                                                 {{ strtoupper($rule->resolution) }}
                                                                             </span>
                                                                         @else
-                                                                            <span class="text-muted">
-                                                                                —
-                                                                            </span>
+                                                                            <span class="text-muted">—</span>
                                                                         @endif
                                                                     </td>
                                                                     {{-- Facturación --}}
@@ -270,9 +261,7 @@
                                                                                 {{ ucwords(str_replace('_', ' ', $rule->billing_type)) }}
                                                                             </span>
                                                                         @else
-                                                                            <span class="text-muted">
-                                                                                —
-                                                                            </span>
+                                                                            <span class="text-muted">—</span>
                                                                         @endif
                                                                     </td>
                                                                     {{-- Tokens --}}
@@ -316,7 +305,7 @@
                 </div>
             </div>
 
-            <!-- Columna derecha (sección principal con cambios) -->
+            <!-- Columna derecha -->
             <div class="col-12 col-lg-8 d-flex flex-column overflow-hidden px-2">
                 @php
                     $hasData = false;
@@ -324,12 +313,14 @@
                         $hasData =
                             $totals['videos']['count'] > 0 ||
                             $totals['tryons']['count'] > 0 ||
-                            $totals['models']['count'] > 0;
+                            $totals['models']['count'] > 0 ||
+                            $totals['omnis']['count'] > 0;
                     } else {
-                        $hasData = $totals[$activeSection]['count'] > 0;
+                        $hasData = ($totals[$activeSection]['count'] ?? 0) > 0;
                     }
                 @endphp
-                {{-- Mostrar SIEMPRE el filtro global si estás en sección "all" --}}
+
+                {{-- Filtro global en sección "all" --}}
                 @if ($activeSection === 'all' && $hasData)
                     <div class="card mb-3">
                         <div class="card-body">
@@ -387,7 +378,7 @@
                         </div>
                     </div>
                 @elseif(!$hasData && $activeSection === 'all')
-                    <!-- Mostrar solo mensaje de bienvenida cuando no hay datos en vista general -->
+                    <!-- Mensaje de bienvenida cuando no hay datos -->
                     <div class="card">
                         <div class="card-body">
                             <div class="text-center py-5">
@@ -398,9 +389,9 @@
                                 <p class="text-muted mb-4 lead">Aquí podrás ver y administrar todas las generaciones de IA
                                     de tus usuarios.</p>
                                 <div class="row justify-content-center">
-                                    <div class="col-md-10">
+                                    <div class="col-md-12">
                                         <div class="row">
-                                            <div class="col-md-4 mb-3">
+                                            <div class="col-md-3 mb-3">
                                                 <div class="card border-primary"
                                                     style="background: rgba(0, 123, 255, 0.05);">
                                                     <div class="card-body text-center">
@@ -410,7 +401,7 @@
                                                     </div>
                                                 </div>
                                             </div>
-                                            <div class="col-md-4 mb-3">
+                                            <div class="col-md-3 mb-3">
                                                 <div class="card border-success"
                                                     style="background: rgba(40, 167, 69, 0.05);">
                                                     <div class="card-body text-center">
@@ -420,13 +411,23 @@
                                                     </div>
                                                 </div>
                                             </div>
-                                            <div class="col-md-4 mb-3">
+                                            <div class="col-md-3 mb-3">
                                                 <div class="card border-info"
                                                     style="background: rgba(23, 162, 184, 0.05);">
                                                     <div class="card-body text-center">
                                                         <i class="fas fa-user-plus fa-2x text-info mb-2"></i>
                                                         <h6 class="text-info">Modelos</h6>
                                                         <small class="text-muted">Modelos virtuales personalizados</small>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3 mb-3">
+                                                <div class="card border-secondary"
+                                                    style="background: rgba(108, 117, 125, 0.05);">
+                                                    <div class="card-body text-center">
+                                                        <i class="fas fa-magic fa-2x text-secondary mb-2"></i>
+                                                        <h6 class="text-secondary">Omni</h6>
+                                                        <small class="text-muted">Imágenes con Omni</small>
                                                     </div>
                                                 </div>
                                             </div>
@@ -493,7 +494,7 @@
                                     @endif
 
                                     @if ($data['videos']['count'] > 0)
-                                        {{-- Mostrar estadísticas filtradas si hay filtro activo --}}
+                                        {{-- Estadísticas filtradas si hay filtro activo --}}
                                         @if ($activeSection === 'videos' && isset($filters['video_user_id']))
                                             <div class="alert alert-info mb-3">
                                                 <div class="row text-center">
@@ -520,21 +521,15 @@
                                                         <th style="min-width: 150px;">Modelo</th>
                                                         <th style="min-width: 20rem;">Prompt</th>
                                                         <th style="min-width: 20rem;">Prompt Negativo</th>
-
-                                                        {{-- Ajuste del header Relación de Aspecto --}}
                                                         <th style="min-width: 180px; white-space: nowrap;">
                                                             Relación de Aspecto
                                                         </th>
-
                                                         <th>Modo</th>
                                                         <th>Duración</th>
                                                         <th>Estado</th>
                                                         <th>Tokens</th>
                                                         <th>Precio</th>
-
-                                                        {{-- Fecha con ancho fijo para que siempre se vea completa --}}
                                                         <th style="min-width: 180px;">Fecha</th>
-
                                                         <th>Videos</th>
                                                         <th>Acciones</th>
                                                     </tr>
@@ -580,11 +575,8 @@
                                                             <td><span
                                                                     class="badge badge-secondary">${{ number_format($video->price, 2) }}</span>
                                                             </td>
-
-                                                            {{-- Fecha siempre visible y completa --}}
                                                             <td>{{ $video->created_at->format('d/m/Y H:i') }}</td>
 
-                                                            {{-- Botones en línea --}}
                                                             <td style="white-space: nowrap;">
                                                                 @if ($video->result_video_paths)
                                                                     @foreach ($video->result_video_paths as $path)
@@ -656,7 +648,6 @@
                                 </div>
                                 <div class="card-body">
                                     @if ($activeSection === 'tryons')
-                                        {{-- Filtro solo en vista individual --}}
                                         <form method="GET" action="{{ route('admin.generations') }}" class="mb-3">
                                             <input type="hidden" name="section" value="tryons">
                                             <div class="input-group">
@@ -679,7 +670,6 @@
                                     @endif
 
                                     @if ($data['tryons']['count'] > 0)
-                                        {{-- Mostrar estadísticas filtradas si hay filtro activo --}}
                                         @if ($activeSection === 'tryons' && isset($filters['tryon_user_id']))
                                             <div class="alert alert-success mb-3">
                                                 <div class="row text-center">
@@ -808,7 +798,6 @@
                                 </div>
                                 <div class="card-body">
                                     @if ($activeSection === 'models')
-                                        {{-- Filtro solo en vista individual --}}
                                         <form method="GET" action="{{ route('admin.generations') }}" class="mb-3">
                                             <input type="hidden" name="section" value="models">
                                             <div class="input-group">
@@ -831,7 +820,6 @@
                                     @endif
 
                                     @if ($data['models']['count'] > 0)
-                                        {{-- Mostrar estadísticas filtradas si hay filtro activo --}}
                                         @if ($activeSection === 'models' && isset($filters['model_user_id']))
                                             <div class="alert alert-info mb-3">
                                                 <div class="row text-center">
@@ -929,6 +917,170 @@
                                             <h4 class="text-muted mb-3">Aún no hay modelos virtuales</h4>
                                             <p class="text-muted mb-4">Los usuarios pueden configurar los ajustes y generar
                                                 modelos virtuales personalizados.</p>
+                                        </div>
+                                    @endif
+                                </div>
+                            </div>
+                        @endif
+                    @endif
+
+                    {{-- SECCIÓN DE OMNI --}}
+                    @if (($activeSection === 'all' && $data['omnis']['count'] > 0) || $activeSection === 'omnis')
+                        @if (isset($data['omnis']))
+                            <div class="card mb-4">
+                                <div
+                                    class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
+                                    <h5 class="mb-0">
+                                        <i class="fas fa-magic"></i> Omni
+                                        <span class="badge badge-light">{{ $data['omnis']['count'] }}</span>
+                                    </h5>
+                                    @if ($data['omnis']['count'] > 0 && $activeSection === 'omnis')
+                                        <button class="btn btn-light btn-sm"
+                                            onclick="deleteGenerationType('omni', {{ $filters['omni_user_id'] ?? 'null' }})">
+                                            <i class="fas fa-trash"></i> Eliminar Historial
+                                        </button>
+                                    @endif
+                                </div>
+                                <div class="card-body">
+                                    @if ($activeSection === 'omnis')
+                                        <form method="GET" action="{{ route('admin.generations') }}" class="mb-3">
+                                            <input type="hidden" name="section" value="omnis">
+                                            <div class="input-group">
+                                                <input type="number" name="omni_user_id" class="form-control"
+                                                    placeholder="Filtrar por ID de usuario"
+                                                    value="{{ $filters['omni_user_id'] ?? '' }}">
+                                                <div class="input-group-append mr-4">
+                                                    <button type="submit" class="btn btn-secondary">
+                                                        <i class="fas fa-search"></i> Filtrar
+                                                    </button>
+                                                    @if (isset($filters['omni_user_id']))
+                                                        <a href="{{ route('admin.generations', ['section' => 'omnis']) }}"
+                                                            class="btn btn-outline-secondary">
+                                                            <i class="fas fa-times"></i> Limpiar
+                                                        </a>
+                                                    @endif
+                                                </div>
+                                            </div>
+                                        </form>
+                                    @endif
+
+                                    @if ($data['omnis']['count'] > 0)
+                                        @if ($activeSection === 'omnis' && isset($filters['omni_user_id']))
+                                            <div class="alert alert-secondary mb-3">
+                                                <div class="row text-center">
+                                                    <div class="col-4">
+                                                        <strong>Generaciones:</strong>
+                                                        {{ count($data['omnis']['items']) }}
+                                                    </div>
+                                                    <div class="col-4">
+                                                        <strong>Tokens:</strong> {{ $data['omnis']['tokens'] }}
+                                                    </div>
+                                                    <div class="col-4">
+                                                        <strong>Precio:</strong>
+                                                        ${{ number_format($data['omnis']['price'], 2) }}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        @endif
+
+                                        <div class="table-responsive">
+                                            <table class="table">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Usuario</th>
+                                                        <th style="min-width: 150px;">Modelo</th>
+                                                        <th style="min-width: 20rem;">Prompt</th>
+                                                        <th>Resolución</th>
+                                                        <th style="white-space: nowrap;">Relación de Aspecto</th>
+                                                        <th>Cant.</th>
+                                                        <th>Estado</th>
+                                                        <th>Tokens</th>
+                                                        <th>Precio</th>
+                                                        <th style="min-width: 150px;">Fecha</th>
+                                                        <th>Imágenes</th>
+                                                        <th>Acciones</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    @foreach ($data['omnis']['items'] as $omni)
+                                                        <tr>
+                                                            <td><span
+                                                                    class="badge badge-secondary">{{ $omni->user_id }}</span>
+                                                            </td>
+                                                            <td style="max-width: 150px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"
+                                                                title="{{ $omni->model_name }}">
+                                                                {{ $omni->model_name }}
+                                                            </td>
+                                                            <td style="max-width: 300px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"
+                                                                title="{{ $omni->prompt }}">
+                                                                {{ $omni->prompt }}
+                                                            </td>
+                                                            <td>
+                                                                @if ($omni->resolution)
+                                                                    <span
+                                                                        class="badge badge-info">{{ strtoupper($omni->resolution) }}</span>
+                                                                @else
+                                                                    <span class="text-muted">—</span>
+                                                                @endif
+                                                            </td>
+                                                            <td>{{ $omni->aspect_ratio ?? '—' }}</td>
+                                                            <td>{{ $omni->output_count ?? 1 }}</td>
+                                                            <td>
+                                                                <span
+                                                                    class="badge badge-{{ $omni->status == 'completed' ? 'success' : 'warning' }}">
+                                                                    {{ $omni->status }}
+                                                                </span>
+                                                            </td>
+                                                            <td><span
+                                                                    class="badge badge-primary">{{ $omni->tokens }}</span>
+                                                            </td>
+                                                            <td><span
+                                                                    class="badge badge-secondary">${{ number_format($omni->price, 2) }}</span>
+                                                            </td>
+                                                            <td>{{ $omni->created_at->format('d/m/Y H:i') }}</td>
+                                                            <td>
+                                                                @if ($omni->result_image_paths)
+                                                                    @foreach ($omni->result_image_paths as $path)
+                                                                        <button
+                                                                            class="btn btn-sm btn-outline-secondary mb-1"
+                                                                            onclick="openImageModal('{{ Storage::url($path) }}', 'Omni Resultado')">
+                                                                            <i class="fas fa-image"></i> Ver
+                                                                        </button>
+                                                                    @endforeach
+                                                                @endif
+                                                            </td>
+                                                            <td>
+                                                                <button class="btn btn-sm btn-danger"
+                                                                    onclick="deleteGeneration('omni', {{ $omni->id }})">
+                                                                    <i class="fas fa-trash"></i>
+                                                                </button>
+                                                            </td>
+                                                        </tr>
+                                                    @endforeach
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div>
+                                                {{ $data['omnis']['items']->appends(request()->query())->links('pagination::bootstrap-4') }}
+                                            </div>
+                                            <div>
+                                                Mostrando
+                                                <strong>{{ $data['omnis']['items']->firstItem() }}</strong>
+                                                –
+                                                <strong>{{ $data['omnis']['items']->lastItem() }}</strong>
+                                                de
+                                                <strong>{{ $data['omnis']['items']->total() }}</strong> resultados
+                                                (Página {{ $data['omnis']['items']->currentPage() }} de
+                                                {{ $data['omnis']['items']->lastPage() }})
+                                            </div>
+                                        </div>
+                                    @else
+                                        <div class="text-center py-5">
+                                            <i class="fas fa-magic fa-4x text-muted mb-4" style="opacity: 0.3;"></i>
+                                            <h4 class="text-muted mb-3">Aún no hay generaciones Omni</h4>
+                                            <p class="text-muted mb-4">Las imágenes generadas con Omni aparecerán aquí.
+                                            </p>
                                         </div>
                                     @endif
                                 </div>
@@ -1050,46 +1202,12 @@
                 translateX = 0;
                 translateY = 0;
                 $('#modalImage').attr('src', imageSrc);
-                $('.modal-title').html(`<i class="fas fa-images"></i> ${title}`);
+                // Solo el título del modal de imágenes (antes afectaba también al modal de video)
+                $('#imageModal .modal-title').html(`<i class="fas fa-images"></i> ${title}`);
                 $('#zoomLevel').text('100%');
                 $('#zoomIndicator').text('100%');
                 updateImageTransform();
                 $('#imageModal').modal('show');
-            };
-
-            // 🔍 ZOOM CENTRADO EN EL CURSOR
-            const zoomImage = (factor) => {
-                currentZoom *= factor;
-                currentZoom = Math.max(0.5, Math.min(currentZoom, 5));
-                updateImageTransform();
-                $('#zoomLevel').text(Math.round(currentZoom * 100) + '%');
-                $('#zoomIndicator').text(Math.round(currentZoom * 100) + '%');
-            };
-
-            // 🔍 ZOOM CENTRADO EN EL CURSOR CON POSICIÓN DEL MOUSE
-            const zoomImageAtCursor = (factor, mouseX, mouseY) => {
-                const oldZoom = currentZoom;
-                currentZoom *= factor;
-                currentZoom = Math.max(0.5, Math.min(currentZoom, 5));
-
-                // Calcular el centro del contenedor de imagen
-                const container = $('.image-viewer-container');
-                const containerRect = container[0].getBoundingClientRect();
-                const containerCenterX = containerRect.width / 2;
-                const containerCenterY = containerRect.height / 2;
-
-                // Calcular la posición del mouse relativa al centro del contenedor
-                const mouseRelativeX = mouseX - containerRect.left - containerCenterX;
-                const mouseRelativeY = mouseY - containerRect.top - containerCenterY;
-
-                // Calcular el nuevo desplazamiento para mantener el zoom centrado en el cursor
-                const zoomRatio = currentZoom / oldZoom;
-                translateX = mouseRelativeX - (mouseRelativeX - translateX) * zoomRatio;
-                translateY = mouseRelativeY - (mouseRelativeY - translateY) * zoomRatio;
-
-                updateImageTransform();
-                $('#zoomLevel').text(Math.round(currentZoom * 100) + '%');
-                $('#zoomIndicator').text(Math.round(currentZoom * 100) + '%');
             };
 
             const resetZoom = () => {
@@ -1107,6 +1225,39 @@
                     transform: `translate(${translateX}px, ${translateY}px) scale(${currentZoom})`,
                     transition: isDragging ? 'none' : 'transform 0.1s ease-out'
                 });
+            };
+
+            // 🔍 ZOOM CENTRADO EN EL CURSOR CON POSICIÓN DEL MOUSE
+            const zoomImageAtCursor = (factor, mouseX, mouseY) => {
+                const oldZoom = currentZoom;
+                currentZoom *= factor;
+                currentZoom = Math.max(0.5, Math.min(currentZoom, 5));
+
+                const container = $('.image-viewer-container');
+                const containerRect = container[0].getBoundingClientRect();
+                const containerCenterX = containerRect.width / 2;
+                const containerCenterY = containerRect.height / 2;
+
+                const mouseRelativeX = mouseX - containerRect.left - containerCenterX;
+                const mouseRelativeY = mouseY - containerRect.top - containerCenterY;
+
+                const zoomRatio = currentZoom / oldZoom;
+                translateX = mouseRelativeX - (mouseRelativeX - translateX) * zoomRatio;
+                translateY = mouseRelativeY - (mouseRelativeY - translateY) * zoomRatio;
+
+                updateImageTransform();
+                $('#zoomLevel').text(Math.round(currentZoom * 100) + '%');
+                $('#zoomIndicator').text(Math.round(currentZoom * 100) + '%');
+            };
+
+            // 🔍 ZOOM CON BOTONES - CENTRADO EN LA IMAGEN
+            window.zoomImage = (factor) => {
+                const container = $('.image-viewer-container');
+                const containerRect = container[0].getBoundingClientRect();
+                const centerX = containerRect.left + containerRect.width / 2;
+                const centerY = containerRect.top + containerRect.height / 2;
+
+                zoomImageAtCursor(factor, centerX, centerY);
             };
 
             const downloadImage = () => {
@@ -1131,7 +1282,6 @@
                 startX = e.clientX - translateX;
                 startY = e.clientY - translateY;
 
-                // Cambiar cursor y deshabilitar selección
                 $(this).css({
                     'cursor': 'grabbing',
                     'user-select': 'none',
@@ -1140,10 +1290,7 @@
                     '-ms-user-select': 'none'
                 });
 
-                // Prevenir comportamiento por defecto
                 $('.image-viewer-container').addClass('dragging');
-
-                // Prevenir selección de texto durante el drag
                 $('body').css('user-select', 'none');
             });
 
@@ -1152,18 +1299,12 @@
 
                 e.preventDefault();
 
-                // Calcular nueva posición
                 const newTranslateX = e.clientX - startX;
                 const newTranslateY = e.clientY - startY;
 
-                // Aplicar límites opcionales para evitar que se salga demasiado
                 const container = $('.image-viewer-container');
-                const containerWidth = container.width();
-                const containerHeight = container.height();
-
-                // Límites suaves (opcional)
-                const maxTranslateX = containerWidth * 0.5;
-                const maxTranslateY = containerHeight * 0.5;
+                const maxTranslateX = container.width() * 0.5;
+                const maxTranslateY = container.height() * 0.5;
 
                 translateX = Math.max(-maxTranslateX, Math.min(maxTranslateX, newTranslateX));
                 translateY = Math.max(-maxTranslateY, Math.min(maxTranslateY, newTranslateY));
@@ -1171,12 +1312,11 @@
                 updateImageTransform();
             });
 
-            $(document).on('mouseup', function(e) {
+            $(document).on('mouseup', function() {
                 if (!isDragging) return;
 
                 isDragging = false;
 
-                // Restaurar cursor normal
                 $('#modalImage').css({
                     'cursor': currentZoom > 1 ? 'grab' : 'default',
                     'user-select': 'auto',
@@ -1193,45 +1333,24 @@
             $('#modalImage').on('wheel', function(e) {
                 e.preventDefault();
 
-                // Determinar dirección del scroll
                 const delta = e.originalEvent.deltaY;
                 const factor = delta > 0 ? 0.9 : 1.1;
 
-                // Obtener posición del mouse
-                const mouseX = e.clientX;
-                const mouseY = e.clientY;
-
-                // Aplicar zoom centrado en el cursor
-                zoomImageAtCursor(factor, mouseX, mouseY);
+                zoomImageAtCursor(factor, e.clientX, e.clientY);
             });
-
-            // 🔍 ZOOM CON BOTONES - CENTRADO EN LA IMAGEN
-            window.zoomImage = (factor) => {
-                // Para botones, usar el centro de la imagen
-                const container = $('.image-viewer-container');
-                const containerRect = container[0].getBoundingClientRect();
-                const centerX = containerRect.left + containerRect.width / 2;
-                const centerY = containerRect.top + containerRect.height / 2;
-
-                zoomImageAtCursor(factor, centerX, centerY);
-            };
 
             // 🖱️ PREVENIR COMPORTAMIENTOS NO DESEADOS
             $('#modalImage').on('contextmenu', function(e) {
-                e.preventDefault(); // Prevenir menú contextual
+                e.preventDefault();
             });
 
             $('#modalImage').on('dragstart', function(e) {
-                e.preventDefault(); // Prevenir drag nativo de la imagen
+                e.preventDefault();
             });
 
-            // 🔍 INDICADOR VISUAL DE ZOOM
+            // 🔍 INDICADOR VISUAL DE CURSOR
             $('#modalImage').on('mouseenter', function() {
-                if (currentZoom > 1) {
-                    $(this).css('cursor', 'grab');
-                } else {
-                    $(this).css('cursor', 'default');
-                }
+                $(this).css('cursor', currentZoom > 1 ? 'grab' : 'default');
             });
 
             // 🔍 DOBLE CLICK PARA ZOOM FIT/RESET
@@ -1239,12 +1358,8 @@
                 e.preventDefault();
 
                 if (currentZoom === 1) {
-                    // Zoom in al 200% centrado en el cursor
-                    const mouseX = e.clientX;
-                    const mouseY = e.clientY;
-                    zoomImageAtCursor(2, mouseX, mouseY);
+                    zoomImageAtCursor(2, e.clientX, e.clientY);
                 } else {
-                    // Reset zoom
                     resetZoom();
                 }
             });
@@ -1268,7 +1383,7 @@
                 document.body.removeChild(link);
             }
 
-            // FUNCIONES DE ADMINISTRACIÓN (EXISTENTES)
+            // FUNCIONES DE ADMINISTRACIÓN
             axios.defaults.headers.common['X-CSRF-TOKEN'] = document.querySelector('meta[name="csrf-token"]').getAttribute(
                 'content');
 
@@ -1355,8 +1470,6 @@
                                     const urlParams = new URLSearchParams(window.location.search);
                                     const section = urlParams.get('section') || 'all';
                                     window.location.href = `{{ route('admin.generations') }}?section=${section}`;
-                                } else if (data.reload) {
-                                    window.location.reload();
                                 } else {
                                     window.location.reload();
                                 }

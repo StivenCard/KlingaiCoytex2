@@ -79,7 +79,6 @@ class VirtualTryOnController extends Controller
         $stored = []; // para limpiar si algo falla antes de crear el registro
 
         try {
-            $baseUrl = $this->publicBaseUrl(); // falla pronto si no hay URL pública
 
             $humanPath = $this->storeHumanImage($request);
             $stored[] = $humanPath;
@@ -89,8 +88,8 @@ class VirtualTryOnController extends Controller
 
             $payload = [
                 'contents' => [
-                    ['type' => 'product_image', 'url' => $this->publicUrl($baseUrl, $garmentPath)],
-                    ['type' => 'person_image',  'url' => $this->publicUrl($baseUrl, $humanPath)],
+                    ['type' => 'product_image', 'url' => 'https://media.istockphoto.com/id/1278802435/es/foto/su%C3%A9ter-de-color-amarillo-aislado-en-blanco-ropa-de-mujer-de-moda-ropa-de-punto.jpg?s=612x612&w=0&k=20&c=mlVhz-yJxZi5awTh8qxb2Z7Li7vU925Yue1Q1PIJOQE='],
+                    ['type' => 'person_image',  'url' => 'https://img.magnific.com/fotos-premium/guapo-hombre-vestido-ropa-blanca-espacio-blanco-diseno-aislado-sobre-fondo-blanco_1356022-29818.jpg?semt=ais_hybrid&w=740&q=80'],
                 ],
                 'settings' => [
                     'keep_face'       => true,
@@ -336,38 +335,5 @@ class VirtualTryOnController extends Controller
             self::DIR_GARMENT,
             'combined_'
         );
-    }
-
-    /**
-     * Base de las URLs que Kling va a descargar. Debe ser pública (no localhost ni red privada).
-     */
-    private function publicBaseUrl(): string
-    {
-        $base = rtrim((string) (config('services.kling.public_url') ?: config('app.url')), '/');
-        $host = (string) parse_url($base, PHP_URL_HOST);
-
-        $isLocalName = $host === '' || $host === 'localhost'
-            || str_ends_with($host, '.localhost')
-            || str_ends_with($host, '.test')
-            || str_ends_with($host, '.local');
-
-        $isPrivateIp = filter_var($host, FILTER_VALIDATE_IP)
-            && !filter_var($host, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE);
-
-        if ($isLocalName || $isPrivateIp) {
-            throw new \Exception(
-                'Kling necesita descargar las imágenes desde una URL pública. '
-                    . 'Configura KLING_PUBLIC_URL en el .env con tu dominio o un túnel (por ejemplo ngrok).'
-            );
-        }
-
-        return $base;
-    }
-
-    private function publicUrl(string $baseUrl, string $path): string
-    {
-        $encoded = implode('/', array_map('rawurlencode', explode('/', $path)));
-
-        return $baseUrl . '/storage/' . $encoded;
     }
 }

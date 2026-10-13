@@ -10,6 +10,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Services\KlingAi\KlingApiService;
+use App\Models\OmniModel;
+use Carbon\Carbon;
 
 /**
  * Class AdminGenerationsController
@@ -32,17 +34,25 @@ class AdminGenerationsController extends Controller
     /**
      * Tipos de modelo soportados.
      */
-    private const MODEL_TYPES = ['video', 'tryon', 'model'];
+    private const MODEL_TYPES = ['video', 'tryon', 'model', 'omni'];
     /**
      * Mapeo de tipo de modelo a clase Eloquent correspondiente.
      */
     private const MODEL_CLASSES = [
         'video' => ImageToVideo::class,
         'tryon' => VirtualTryOn::class,
-        'model' => VirtualModel::class
+        'model' => VirtualModel::class,
+        'omni'  => OmniModel::class,
     ];
 
-     /**
+    private const SECTION_MAP = [
+        'videos' => 'video',
+        'tryons' => 'tryon',
+        'models' => 'model',
+        'omnis'  => 'omni',
+    ];
+
+    /**
      * Constructor con inyección de dependencias.
      *
      * @param KlingApiService $klingService
@@ -84,9 +94,17 @@ class AdminGenerationsController extends Controller
         // 8. Calcular estadísticas de filtro global
         $globalFilterStats = $this->calculateGlobalFilterStats($data, $filters);
 
+        $resourcePacks = $this->getResourcePacks($request->boolean('refresh'));
+
         return view('admin.generations', compact(
-            'data', 'totals', 'resourcePacks', 'filters',
-            'activeSection', 'pricingRules', 'globalFilterStats', 'noResultsForGlobalUser'
+            'data',
+            'totals',
+            'resourcePacks',
+            'filters',
+            'activeSection',
+            'pricingRules',
+            'globalFilterStats',
+            'noResultsForGlobalUser'
         ));
     }
 
@@ -95,11 +113,13 @@ class AdminGenerationsController extends Controller
      *
      * @return array
      */
-    private function getResourcePacks(): array
+    private function getResourcePacks(bool $forceRefresh = false): array
     {
         try {
-            $apiConsumption = $this->klingService->getApiConsumption();
-            $resourcePacks = $this->processApiConsumption($apiConsumption['data']['resource_pack_subscribe_infos'] ?? []);
+            $apiConsumption = $this->klingService->getApiConsumption(forceRefresh: $forceRefresh);
+            $resourcePacks  = $this->processApiConsumption(
+                $apiConsumption['data']['resource_pack_subscribe_infos'] ?? []
+            );
 
             if (empty($resourcePacks)) {
                 session()->flash('info_message', 'No hay paquetes de recursos activos o disponibles en su cuenta.');
@@ -107,7 +127,7 @@ class AdminGenerationsController extends Controller
 
             return $resourcePacks;
         } catch (\Exception $e) {
-            Log::error("Error obteniendo consumo de API: " . $e->getMessage());
+            Log::error('Error obteniendo consumo de API: ' . $e->getMessage());
             session()->flash('api_error', 'Error de la API: ' . $e->getMessage());
             return [];
         }
@@ -127,21 +147,14 @@ class AdminGenerationsController extends Controller
             'global_user_id' => $request->input('global_user_id'),
         ];
 
-        // Filtros específicos por sección
-        $sectionMap = [
-            'videos' => 'video',
-            'tryons' => 'tryon',
-            'models' => 'model'
-        ];
-
         if ($activeSection === 'all') {
             // Para sección "all", incluir todos los filtros individuales
-            foreach ($sectionMap as $sectionKey => $filterKey) {
+            foreach (self::SECTION_MAP as $sectionKey => $filterKey) {
                 $filters["{$filterKey}_user_id"] = $request->input("{$filterKey}_user_id");
             }
         } else {
-            // Para secciones individuales, usar la clave correcta
-            $filterKey = $sectionMap[$activeSection] ?? $activeSection;
+            // Para secciones individuales, usar la clave correcta\
+            $filterKey = self::SECTION_MAP[$activeSection] ?? $activeSection;
             $filters["{$filterKey}_user_id"] = $request->input("{$filterKey}_user_id");
         }
 
@@ -160,19 +173,13 @@ class AdminGenerationsController extends Controller
         $globalUserId = $filters['global_user_id'] ?? null;
         $data = [];
 
-        $sectionMap = [
-            'videos' => 'video',
-            'tryons' => 'tryon',
-            'models' => 'model'
-        ];
-
         if ($activeSection === 'all') {
-            foreach ($sectionMap as $sectionKey => $type) {
+            foreach (self::SECTION_MAP as $sectionKey => $type) {
                 $userIdFilter = $filters["{$type}_user_id"] ?? null;
                 $data[$sectionKey] = $this->getModelData($type, $userIdFilter, $globalUserId);
             }
         } else {
-            $type = $sectionMap[$activeSection] ?? rtrim($activeSection, 's');
+            $type = self::SECTION_MAP[$activeSection] ?? rtrim($activeSection, 's');
             $userIdFilter = $filters["{$type}_user_id"] ?? null;
             $data[$activeSection] = $this->getModelData($type, $userIdFilter, $globalUserId);
         }
@@ -269,26 +276,6 @@ class AdminGenerationsController extends Controller
      *
      * @return \Illuminate\Support\Collection
      */
-    //Activar para los precios anteriores pero ya no creo que se utilicen mas
-    /* private function getPricingRules()
-    {
-        $pricingMap = [
-            ['model' => 'kling-v1-6-multi-image', 'duration' => 5,  'mode' => 'std'],
-            ['model' => 'kling-v1-6-multi-image', 'duration' => 10, 'mode' => 'std'],
-            ['model' => 'kling-v1-6-multi-image', 'duration' => 5,  'mode' => 'pro'],
-            ['model' => 'kling-v1-6-multi-image', 'duration' => 10, 'mode' => 'pro'],
-            ['model' => 'kolors-virtual-try-on-v1-5',  'duration' => null, 'mode' => 'default'],
-            ['model' => 'kolors-v1-5',   'duration' => null, 'mode' => 'text-to-image'],
-        ];
-
-        return collect($pricingMap)->map(function ($map) {
-            return PricingRule::where('model_name', $map['model'])
-                ->when($map['duration'], fn($q) => $q->where('duration', $map['duration']))
-                ->when($map['mode'], fn($q) => $q->where('mode', $map['mode']))
-                ->first();
-        })->filter();
-    } */
-
     private function getPricingRules()
     {
         return PricingRule::query()
@@ -330,25 +317,49 @@ class AdminGenerationsController extends Controller
      */
     private function processApiConsumption(array $packs): array
     {
-        foreach ($packs as &$pack) {
-            $pack['used_quantity'] = $pack['total_quantity'] - $pack['remaining_quantity'];
-            $pack['percentage_used'] = $pack['total_quantity'] > 0
-                ? ($pack['used_quantity'] / $pack['total_quantity']) * 100
-                : 0;
+        $tz  = config('app.timezone');
+        $now = Carbon::now($tz);
 
-            $now = new \DateTime();
-            $purchaseDate = new \DateTime('@' . ($pack['purchase_time']/1000));
-            $daysActive = $purchaseDate->diff($now)->days ?: 1;
+        $statusMap = [
+            'online'     => ['label' => 'En uso',       'class' => 'success'],
+            'toBeOnline' => ['label' => 'Pendiente',    'class' => 'info'],
+            'expired'    => ['label' => 'Expirado',     'class' => 'danger'],
+            'runOut'     => ['label' => 'Agotado',      'class' => 'dark'],
+        ];
 
-            $pack['daily_usage'] = $pack['used_quantity'] / $daysActive;
-            $pack['formatted_dates'] = [
-                'purchase' => $purchaseDate->format('d/m/Y H:i:s'),
-                'effective'  => date('d/m/Y H:i:s', $pack['effective_time'] / 1000),
-                'expiration' => date('d/m/Y H:i:s', $pack['invalid_time'] / 1000),
+        return collect($packs)->map(function ($pack) use ($now, $tz, $statusMap) {
+            $total     = (float) ($pack['total_quantity'] ?? 0);
+            $remaining = (float) ($pack['remaining_quantity'] ?? 0);
+            $used      = max($total - $remaining, 0);
+
+            $purchase   = Carbon::createFromTimestampMs($pack['purchase_time'] ?? 0, $tz);
+            $effective  = Carbon::createFromTimestampMs($pack['effective_time'] ?? 0, $tz);
+            $expiration = Carbon::createFromTimestampMs($pack['invalid_time'] ?? 0, $tz);
+
+            // Días activos reales: desde que se activó hasta hoy (o hasta que expiró)
+            $to         = $now->lt($expiration) ? $now : $expiration;
+            $daysActive = max(1, (int) ceil(abs($to->diffInHours($effective)) / 24));
+
+            $status = $pack['status'] ?? 'unknown';
+
+            return $pack + [
+                'used_quantity'   => $used,
+                'percentage_used' => $total > 0 ? min(($used / $total) * 100, 100) : 0,
+                'daily_usage'     => $effective->isFuture() ? 0 : $used / $daysActive,
+                'status_label'    => $statusMap[$status]['label'] ?? ucfirst($status),
+                'status_class'    => $statusMap[$status]['class'] ?? 'warning',
+                'is_periodic'     => ($pack['resource_pack_type'] ?? '') === 'constant_period',
+                'formatted_dates' => [
+                    'purchase'   => $purchase->format('d/m/Y H:i:s'),
+                    'effective'  => $effective->format('d/m/Y H:i:s'),
+                    'expiration' => $expiration->format('d/m/Y H:i:s'),
+                ],
             ];
-        }
-
-        return $packs;
+        })
+            // Primero los activos
+            ->sortBy(fn($p) => $p['status'] === 'online' ? 0 : 1)
+            ->values()
+            ->all();
     }
 
     /**
@@ -378,7 +389,6 @@ class AdminGenerationsController extends Controller
                 'success' => true,
                 'message' => 'Generación eliminada con éxito'
             ]);
-
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error("Error al eliminar generación: " . $e->getMessage(), [
@@ -426,7 +436,6 @@ class AdminGenerationsController extends Controller
                 'user_id' => $userId,
                 'reload' => !$userId
             ]);
-
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Error al eliminar generaciones: ' . $e->getMessage(), [
