@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\Storage;
 
 class VirtualTryOnController extends Controller
 {
-    private const MODEL_NAME = 'kling-virtual-try-on';
+    private const MODEL_NAME = 'virtual_try_on';
     private const OUTPUT_COUNT = 1;
     private const DIR_HUMAN = 'klingai/tryon_inputs/human';
     private const DIR_GARMENT = 'klingai/tryon_inputs/garments';

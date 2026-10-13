@@ -96,8 +96,9 @@ class OmniModelController extends Controller
             $response = $this->api->createOmniImage($payload, $humanImagePath, $garmentImagePath);
 
             if ($taskId = $response['data']['task_id'] ?? null) {
-                $pricing = PricingRule::where('model_name', 'kling-v3-omni')
+                $pricing = PricingRule::where('model_name', 'kling_image_3_0_omni')
                     ->where('mode', 'default')
+                    ->where('resolution', '1K, 2K')
                     ->first();
 
                 OmniModel::create([
